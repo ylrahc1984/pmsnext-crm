@@ -40,7 +40,7 @@ import {
   ReservaPendienteDetalle,
   ReservasFacturacionService
 } from 'src/app/finanzas/services/reservas-facturacion.service';
-import { ReservasService } from 'src/app/demo/reservas/services/reservas.service';
+import { ReservasService } from 'src/app/core/services/reservas.service';
 import type {
   ConfirmarFacturaPayload,
   ConfirmarFacturaResponse,

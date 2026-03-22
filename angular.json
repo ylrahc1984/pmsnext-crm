@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "datta-able-free-angular-admin-template": {
+    "pmsnext-crm-frontend": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -65,10 +65,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "datta-able-free-angular-admin-template:build:production"
+              "buildTarget": "pmsnext-crm-frontend:build:production"
             },
             "development": {
-              "buildTarget": "datta-able-free-angular-admin-template:build:development"
+              "buildTarget": "pmsnext-crm-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -76,7 +76,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "datta-able-free-angular-admin-template:build"
+            "buildTarget": "pmsnext-crm-frontend:build"
           }
         },
         "lint": {
@@ -89,7 +89,6 @@
     }
   },
   "cli": {
-    "analytics": "0eaad924-6e2a-434b-aad5-51d9f46776fc",
     "schematicCollections": ["@angular-eslint/schematics"]
   }
 }

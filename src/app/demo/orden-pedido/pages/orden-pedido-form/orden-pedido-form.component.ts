@@ -25,7 +25,7 @@ import { ReservaPendienteModalComponent } from 'src/app/finanzas/pages-factura/n
 import { SelectorServiciosModalComponent } from 'src/app/finanzas/pages-factura/nueva-factura/selector-servicios-modal/selector-servicios-modal.component';
 import { ModoPrecio, ServicioListaPrecioItem } from 'src/app/finanzas/services/servicios-lista-precio.service';
 import { ReservaPendienteDetalle, ReservasFacturacionService } from 'src/app/finanzas/services/reservas-facturacion.service';
-import { ReservasService } from 'src/app/demo/reservas/services/reservas.service';
+import { ReservasService } from 'src/app/core/services/reservas.service';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import {
   OrdenPedidoCreatePayload,

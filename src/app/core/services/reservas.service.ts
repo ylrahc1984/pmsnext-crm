@@ -39,7 +39,6 @@ export interface Reserva {
   facturado?: number | string | boolean | null;
 }
 
-// Interfaces para detalles pendientes de asignar
 export interface DetalleReservaPendienteDto {
   PRV02_ID: number;
   PRV02_CodReserva: string;
@@ -88,7 +87,6 @@ export interface DetalleReservaPendienteDto {
   PRV02_FechaRegistro: string;
 }
 
-// Interfaz UI simplificada para orden de trabajo
 export interface ReservaDetalleDisponible {
   key: string;
   id: number;
@@ -141,9 +139,7 @@ export class ReservasService {
     if (typeof value === 'string') {
       const v = value.trim();
       if (!v) return null;
-      // If it's already an ISO-ish datetime, keep it as-is.
       if (v.includes('T')) return v;
-      // If it's a YYYY-MM-DD date, convert to ISO datetime.
       const d = new Date(v);
       if (!Number.isNaN(d.getTime())) return d.toISOString();
       return v;
@@ -154,8 +150,6 @@ export class ReservasService {
 
   private toApiPayload(payload: any, tipo: number): any {
     const p = payload ?? {};
-
-    // Support both "PRV01_*" shape and the API's expected DTO shape.
     const operador = p.operador ?? p.PRV01_Operador ?? '';
     const estado = p.estado ?? p.PRV01_Estado ?? '';
     const fecCreacion = this.toIsoDateTime(p.fecCreacion ?? p.PRV01_FecCreacion) ?? new Date().toISOString();
@@ -183,13 +177,13 @@ export class ReservasService {
   }
 
   getReservas(pageNumber: number, pageSize: number): Observable<{ data: Reserva[]; total: number }> {
-    return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`)
-      .pipe(map(res => {
-        // Adaptar a la respuesta real de la API
+    return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
+      map((res) => {
         const datos = res.datos || [];
         const total = res.paginacion?.totalRegistros ?? datos.length;
         return { data: datos, total };
-      }));
+      })
+    );
   }
 
   consultarReservas(options: {
@@ -234,13 +228,10 @@ export class ReservasService {
   }
 
   crearReserva(payload: any): Observable<any> {
-    // Algunos endpoints devuelven texto/empty-body con 200 y Angular intenta parsear JSON => "Http failure during parsing".
-    // En create normalmente necesitamos JSON para extraer codReserva; si el backend devuelve texto, esto se ajusta luego.
     return this.http.post<any>(this.apiUrl, this.toApiPayload(payload, 1));
   }
 
   actualizarReserva(codReserva: string, payload: any): Observable<any> {
-    // El backend puede responder 200 con texto (no JSON). Forzamos text para evitar error de parsing y que el interceptor lo marque como error.
     return this.http.put(`${this.apiUrl}/${codReserva}`, this.toApiPayload(payload, 2), { responseType: 'text' });
   }
 
@@ -264,7 +255,7 @@ export class ReservasService {
 
   getDetallesPendientes(fechaIngreso: string, estado?: string, codReserva?: string): Observable<ReservaDetalleDisponible[]> {
     let params = new HttpParams().set('fechaIngreso', fechaIngreso);
-    
+
     if (estado) {
       params = params.set('estado', estado);
     }
@@ -275,9 +266,7 @@ export class ReservasService {
     return this.http.get<{ datos?: DetalleReservaPendienteDto[] }>(`${this.apiUrl}/consulta-fecha-estado`, { params }).pipe(
       map((response) => {
         const datos = response?.datos ?? [];
-        return datos
-          .filter(d => d.AsignadoOT === 0) // Solo detalles no asignados
-          .map((d) => this.mapDetallePendienteFromApi(d));
+        return datos.filter((d) => d.AsignadoOT === 0).map((d) => this.mapDetallePendienteFromApi(d));
       })
     );
   }

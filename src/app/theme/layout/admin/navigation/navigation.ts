@@ -30,58 +30,6 @@ export const NavigationItems: NavigationItem[] = [
     children: [
 
       // =========================
-      // OPERACIONES
-      // =========================
-      {
-        id: 'operaciones',
-        title: 'OPERACIONES',
-        type: 'collapse',
-        icon: 'feather icon-briefcase',
-        children: [
-          {
-            id: 'operacion-diaria',
-            title: 'Operación Diaria',
-            type: 'item',
-            url: '/operaciones/operacion-diaria',
-            icon: 'feather icon-clock',
-            classes: 'nav-item'
-          },
-          {
-            id: 'reservas',
-            title: 'Reservas',
-            type: 'item',
-            url: '/operaciones/reservas',
-            icon: 'feather icon-calendar',
-            classes: 'nav-item'
-          },
-          {
-            id: 'ordenes-trabajo',
-            title: 'Asignación de Traslados',
-            type: 'item',
-            url: '/operaciones/ordenes-trabajo',
-            icon: 'feather icon-clipboard',
-            classes: 'nav-item'
-          },
-          {
-            id: 'cierre-caja',
-            title: 'Cierre de Caja',
-            type: 'item',
-            url: '/operaciones/cierre-caja',
-            icon: 'feather icon-credit-card',
-            classes: 'nav-item'
-          },
-          {
-            id: 'lista-pickup',
-            title: 'Lista Pickup',
-            type: 'item',
-            url: '/operaciones/lista-pickup',
-            icon: 'feather icon-map-pin',
-            classes: 'nav-item'
-          }
-        ]
-      },
-
-      // =========================
       // COMERCIAL
       // =========================
       {
@@ -342,14 +290,6 @@ export const NavigationItems: NavigationItem[] = [
         type: 'collapse',
         icon: 'feather icon-bar-chart-2',
         children: [
-          {
-            id: 'reporte-operaciones',
-            title: 'Operaciones',
-            type: 'item',
-            url: '/reportes/operaciones',
-            icon: 'feather icon-activity',
-            classes: 'nav-item'
-          },
           {
             id: 'reporte-finanzas',
             title: 'Finanzas',

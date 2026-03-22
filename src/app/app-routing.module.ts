@@ -6,7 +6,6 @@ import { AdminComponent } from './theme/layout/admin/admin.component';
 import { GuestComponent } from './theme/layout/guest/guest.component';
 import { AuthGuard } from './core/guards/auth.guard';
 import { LoginGuard } from './core/guards/login.guard';
-import { CanDeactivateReservaCreateGuard } from './core/guards/can-deactivate-reserva-create.guard';
 
 const routes: Routes = [
   {
@@ -47,116 +46,6 @@ const routes: Routes = [
         loadComponent: () => import('./demo/dashboard/dashboard.component').then((c) => c.DashboardComponent)
       }
     ]
-  },
-  {
-    path: 'operaciones',
-    component: AdminComponent,
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    children: [
-      {
-        path: 'reservas',
-        loadComponent: () => import('./demo/reservas/list/reservas.component').then((c) => c.ReservasComponent)
-      },
-      {
-        path: 'ordenes-trabajo',
-        loadComponent: () => import('./demo/ordenes/ordenes.component').then((c) => c.OrdenesComponent)
-      },
-      {
-        path: 'operacion-diaria',
-        loadComponent: () => import('./operaciones/operacion-diaria/operacion-diaria.component').then((c) => c.OperacionDiariaComponent)
-      },
-      {
-        path: 'cierre-caja',
-        loadComponent: () => import('./operaciones/cierre-caja/cierre-caja-list.component').then((c) => c.CierreCajaListComponent)
-      },
-      {
-        path: 'cierre-caja/nuevo',
-        loadComponent: () => import('./operaciones/cierre-caja/cierre-caja-form.component').then((c) => c.CierreCajaFormComponent)
-      },
-      {
-        path: 'cierre-caja/:id',
-        loadComponent: () => import('./operaciones/cierre-caja/cierre-caja-form.component').then((c) => c.CierreCajaFormComponent)
-      },
-      {
-        path: 'lista-pickup',
-        loadComponent: () => import('./demo/catalogos/lista-pickup/lista-pickup.component').then((c) => c.ListaPickupComponent)
-      },
-      {
-        path: 'lista-pickup/nuevo',
-        loadComponent: () => import('./demo/catalogos/lista-pickup/lista-pickup-form.component').then((c) => c.ListaPickupFormComponent)
-      },
-      {
-        path: 'lista-pickup/:id/editar',
-        loadComponent: () => import('./demo/catalogos/lista-pickup/lista-pickup-form.component').then((c) => c.ListaPickupFormComponent)
-      },
-      {
-        path: 'ordenes-trabajo/nueva',
-        loadComponent: () => import('./demo/ordenes/orden-trabajo-form.component').then((c) => c.OrdenTrabajoFormComponent)
-      },
-      {
-        path: 'ordenes-trabajo/:id/editar',
-        loadComponent: () => import('./demo/ordenes/orden-trabajo-form.component').then((c) => c.OrdenTrabajoFormComponent)
-      },
-      {
-        path: 'ordenes-trabajo/:id/detalle',
-        loadComponent: () => import('./demo/ordenes/orden-detalle.component').then((c) => c.OrdenDetalleComponent)
-      },
-      {
-        path: 'reservas/nueva',
-        canDeactivate: [CanDeactivateReservaCreateGuard],
-        loadComponent: () => import('./demo/reservas/create/reserva-create.component').then((c) => c.ReservaCreateComponent)
-      },
-      {
-        path: 'reservas/nueva-v2',
-        canDeactivate: [CanDeactivateReservaCreateGuard],
-        loadComponent: () => import('./demo/reservas/create/v2/reserva-create-v2.component').then((c) => c.ReservaCreateV2Component)
-      },
-      {
-        path: 'reservas/:id/editar-v2',
-        canDeactivate: [CanDeactivateReservaCreateGuard],
-        loadComponent: () => import('./demo/reservas/create/v2/reserva-create-v2.component').then((c) => c.ReservaCreateV2Component)
-      },
-      {
-        path: 'reservas/:id/editar',
-        canDeactivate: [CanDeactivateReservaCreateGuard],
-        loadComponent: () => import('./demo/reservas/create/v2/reserva-create-v2.component').then((c) => c.ReservaCreateV2Component)
-      },
-      {
-        path: 'reservas/:id/detalle',
-        loadComponent: () => import('./demo/reservas/detalle/reserva-detalle.component').then((c) => c.ReservaDetalleComponent)
-      }
-    ]
-  },
-  {
-    path: 'reservas',
-    redirectTo: 'operaciones/reservas',
-    pathMatch: 'full'
-  },
-  {
-    path: 'ordenes-trabajo',
-    redirectTo: 'operaciones/ordenes-trabajo',
-    pathMatch: 'full'
-  },
-  {
-    path: 'ordenes-trabajo/nueva',
-    redirectTo: 'operaciones/ordenes-trabajo/nueva',
-    pathMatch: 'full'
-  },
-  {
-    path: 'ordenes-trabajo/:id/editar',
-    redirectTo: 'operaciones/ordenes-trabajo/:id/editar',
-    pathMatch: 'full'
-  },
-  {
-    path: 'ordenes-trabajo/:id/detalle',
-    redirectTo: 'operaciones/ordenes-trabajo/:id/detalle',
-    pathMatch: 'full'
-  },
-  {
-    path: 'operacion-diaria',
-    redirectTo: 'operaciones/operacion-diaria',
-    pathMatch: 'full'
   },
   {
     path: 'comercial',
@@ -414,18 +303,6 @@ const routes: Routes = [
         loadComponent: () => import('./demo/catalogos/agencias-comisionistas/cliente-form.component').then((c) => c.ClienteFormComponent),
         data: { readOnly: true }
       },
-      {
-        path: 'lista-pickup',
-        loadComponent: () => import('./demo/catalogos/lista-pickup/lista-pickup.component').then((c) => c.ListaPickupComponent)
-      },
-      {
-        path: 'lista-pickup/nuevo',
-        loadComponent: () => import('./demo/catalogos/lista-pickup/lista-pickup-form.component').then((c) => c.ListaPickupFormComponent)
-      },
-      {
-        path: 'lista-pickup/:id/editar',
-        loadComponent: () => import('./demo/catalogos/lista-pickup/lista-pickup-form.component').then((c) => c.ListaPickupFormComponent)
-      }
     ]
   },
   {
@@ -808,10 +685,6 @@ const routes: Routes = [
     component: AdminComponent,
     children: [
       {
-        path: 'operaciones',
-        loadComponent: () => import('./demo/reportes/reservas/reservas.component').then((c) => c.ReservasComponent)
-      },
-      {
         path: 'finanzas',
         loadComponent: () => import('./demo/reportes/ingresos/ingresos.component').then((c) => c.IngresosComponent)
       },
@@ -822,10 +695,6 @@ const routes: Routes = [
       {
         path: 'ventas',
         loadComponent: () => import('./demo/reportes/ventas/ventas.component').then((c) => c.VentasComponent)
-      },
-      {
-        path: 'reservas',
-        loadComponent: () => import('./demo/reportes/reservas/reservas.component').then((c) => c.ReservasComponent)
       },
       {
         path: 'ingresos',
