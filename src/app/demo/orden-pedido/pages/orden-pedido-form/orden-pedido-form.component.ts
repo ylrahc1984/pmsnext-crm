@@ -4,7 +4,7 @@ import { FormArray, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Vali
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
-import { catchError, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 import { ClienteUI } from 'src/app/demo/catalogos/agencias-comisionistas/cliente.models';
@@ -28,12 +28,29 @@ import { ReservaPendienteDetalle, ReservasFacturacionService } from 'src/app/fin
 import { ReservasService } from 'src/app/core/services/reservas.service';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import {
+  OrdenPedidoCreateResponse,
   OrdenPedidoCreatePayload,
   OrdenPedidoDetalleItem,
   OrdenPedidoExoneracion,
   OrdenPedidoPagoItem
 } from '../../interfaces/orden-pedido.interface';
 import { OrdenPedidoService } from '../../services/orden-pedido.service';
+import { OportunidadService } from 'src/app/demo/crm/oportunidades/oportunidad.service';
+
+type OportunidadCotizacionContext = {
+  oportunidadId: number;
+  codCliente: string;
+  clienteNombre: string;
+  codVendedor: string;
+  titulo: string;
+  descripcion: string;
+  etapaActual: string;
+};
+
+type OportunidadPostCreateResult = {
+  partial: boolean;
+  message: string;
+};
 
 @Component({
   selector: 'app-orden-pedido-form',
@@ -65,6 +82,7 @@ export class OrdenPedidoFormComponent implements OnInit {
   private readonly empresaContext = inject(EmpresaContextService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly ordenPedidoService = inject(OrdenPedidoService);
+  private readonly oportunidadService = inject(OportunidadService);
   private readonly reservasFacturacionService = inject(ReservasFacturacionService);
   private readonly reservasService = inject(ReservasService);
 
@@ -121,7 +139,9 @@ export class OrdenPedidoFormComponent implements OnInit {
   showServicioModal = false;
   showReservaModal = false;
   modoReserva = false;
+  modoOportunidad = false;
   reservaActual: string | null = null;
+  oportunidadContexto: OportunidadCotizacionContext | null = null;
   reservaLoading = false;
   reservaErrorMessage = '';
   clienteCorreo = '';
@@ -180,6 +200,8 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.loadPuntosVenta();
     this.loadPlanesTarifarios();
     this.loadListasPrecio();
+    this.initOportunidadFromQuery();
+    this.initClienteFromQuery();
     this.initReservaFromQuery();
     this.recalculateTotals();
   }
@@ -227,11 +249,11 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   volverListado(): void {
-    void this.router.navigate(['/demo/ordenes-pedido']);
+    void this.router.navigate(this.getBackRoute());
   }
 
   abrirModalClientes(): void {
-    if (this.modoReserva) {
+    if (this.modoReserva || this.modoOportunidad) {
       return;
     }
     this.showClienteModal = true;
@@ -254,7 +276,7 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   abrirModalReserva(): void {
-    if (this.isSubmitting || this.modoReserva) {
+    if (this.isSubmitting || this.modoReserva || this.modoOportunidad) {
       return;
     }
     this.showReservaModal = true;
@@ -284,20 +306,10 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   onClienteSelected(cliente: ClienteUI): void {
-    if (this.modoReserva) {
+    if (this.modoReserva || this.modoOportunidad) {
       return;
     }
-    this.selectedCliente = cliente;
-    this.clienteCorreo = cliente.emailPrincipal || cliente.email || '';
-    this.form.patchValue(
-      {
-        codCliente: cliente.codigo,
-        nomCliente: cliente.nombre,
-        rucCliente: cliente.ruc
-      },
-      { emitEvent: false }
-    );
-    this.loadClienteActividad(cliente.ruc);
+    this.applySelectedCliente(cliente);
     this.showClienteModal = false;
   }
 
@@ -310,7 +322,7 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   limpiarSeleccionCliente(): void {
-    if (this.modoReserva) {
+    if (this.modoReserva || this.modoOportunidad) {
       return;
     }
     this.selectedCliente = null;
@@ -326,6 +338,20 @@ export class OrdenPedidoFormComponent implements OnInit {
       },
       { emitEvent: false }
     );
+  }
+
+  private applySelectedCliente(cliente: ClienteUI): void {
+    this.selectedCliente = cliente;
+    this.clienteCorreo = cliente.emailPrincipal || cliente.email || '';
+    this.form.patchValue(
+      {
+        codCliente: cliente.codigo,
+        nomCliente: cliente.nombre,
+        rucCliente: cliente.ruc
+      },
+      { emitEvent: false }
+    );
+    this.loadClienteActividad(cliente.ruc);
   }
 
   async guardar(): Promise<void> {
@@ -362,18 +388,27 @@ export class OrdenPedidoFormComponent implements OnInit {
 
     this.ordenPedidoService
       .crearOrden(payload)
-      .pipe(finalize(() => (this.isSubmitting = false)))
+      .pipe(
+        switchMap((response) => {
+          if (this.cleanText(response?.respuesta).toUpperCase() !== 'OK') {
+            return of({ response, opportunityResult: null as OportunidadPostCreateResult | null });
+          }
+
+          return this.syncOportunidadCotizacion(response).pipe(map((opportunityResult) => ({ response, opportunityResult })));
+        }),
+        finalize(() => (this.isSubmitting = false))
+      )
       .subscribe({
-        next: (response) => {
-          const successMessage = this.buildCreateSuccessMessage(response);
+        next: ({ response, opportunityResult }) => {
+          const successMessage = this.buildCreateSuccessMessage(response, opportunityResult?.message);
           if (this.cleanText(response?.respuesta).toUpperCase() === 'OK') {
             void Swal.fire({
-              title: 'Guardado',
+              title: opportunityResult?.partial ? 'Cotización creada con observaciones' : 'Guardado',
               text: successMessage,
-              icon: 'success',
+              icon: opportunityResult?.partial ? 'warning' : 'success',
               confirmButtonText: 'Aceptar'
             }).then(() => {
-              void this.router.navigate(['/demo/ordenes-pedido']);
+              void this.router.navigate(this.getPostSaveRoute(opportunityResult));
             });
             return;
           }
@@ -414,6 +449,22 @@ export class OrdenPedidoFormComponent implements OnInit {
     const plan = this.planesTarifariosCatalogo.find((item) => Number(item.planId ?? 0) === planId);
     const tipo = (plan?.tipoTarifa || '').toString().trim().toUpperCase();
     return tipo === 'N' ? 'N' : 'R';
+  }
+
+  get opportunityDocumentLabel(): string {
+    const titulo = this.cleanText(this.oportunidadContexto?.titulo);
+    return titulo ? `Oportunidad: ${titulo}` : 'Cotizacion generada desde CRM';
+  }
+
+  private getBackRoute(): string[] {
+    return this.modoOportunidad ? ['/crm/oportunidades'] : ['/demo/ordenes-pedido'];
+  }
+
+  private getPostSaveRoute(opportunityResult: OportunidadPostCreateResult | null): string[] {
+    if (this.modoOportunidad && !opportunityResult?.partial) {
+      return ['/crm/oportunidades'];
+    }
+    return ['/demo/ordenes-pedido'];
   }
 
   private recalculateTotals(): void {
@@ -789,12 +840,197 @@ export class OrdenPedidoFormComponent implements OnInit {
       });
   }
 
+  private initOportunidadFromQuery(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const routeOportunidadId = Number(this.route.snapshot.paramMap.get('id') ?? 0);
+      const queryOportunidadId = Number(params.get('oportunidadId') ?? 0);
+      const oportunidadId = queryOportunidadId > 0 ? queryOportunidadId : routeOportunidadId;
+
+      if (!oportunidadId || this.isSubmitting) {
+        return;
+      }
+
+      if (this.modoOportunidad && this.oportunidadContexto?.oportunidadId === oportunidadId) {
+        return;
+      }
+
+      const contexto: OportunidadCotizacionContext = {
+        oportunidadId,
+        codCliente: this.cleanText(params.get('codCliente')),
+        clienteNombre: this.cleanText(params.get('clienteNombre')),
+        codVendedor: this.cleanText(params.get('codVendedor')),
+        titulo: this.cleanText(params.get('titulo')),
+        descripcion: this.cleanText(params.get('descripcion')),
+        etapaActual: this.cleanText(params.get('etapaActual')).toUpperCase()
+      };
+
+      this.modoOportunidad = true;
+      this.oportunidadContexto = contexto;
+      this.form.controls.tipNDP.setValue('COT', { emitEvent: false });
+      this.setTipoDocumentoEditable(false);
+      this.setClienteEditable(false);
+
+      if (contexto.codVendedor) {
+        this.form.controls.codVendedor.setValue(contexto.codVendedor, { emitEvent: false });
+      }
+
+      if (!this.cleanText(this.form.controls.observaciones.value)) {
+        this.form.controls.observaciones.setValue(this.buildOpportunityObservation(contexto), { emitEvent: false });
+      }
+
+      if (contexto.codCliente) {
+        this.loadOpportunityCliente(contexto, oportunidadId);
+        return;
+      }
+
+      this.oportunidadService
+        .getById(oportunidadId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (oportunidad) => {
+            if (!oportunidad || this.oportunidadContexto?.oportunidadId !== oportunidadId) {
+              return;
+            }
+
+            this.oportunidadContexto = {
+              ...this.oportunidadContexto,
+              codCliente: oportunidad.codCliente,
+              clienteNombre: oportunidad.clienteNombre || this.oportunidadContexto.clienteNombre,
+              codVendedor: oportunidad.vendedor || this.oportunidadContexto.codVendedor,
+              titulo: oportunidad.titulo || this.oportunidadContexto.titulo,
+              descripcion: oportunidad.descripcion || this.oportunidadContexto.descripcion,
+              etapaActual: oportunidad.etapa || this.oportunidadContexto.etapaActual
+            };
+
+            if (this.oportunidadContexto.codVendedor) {
+              this.form.controls.codVendedor.setValue(this.oportunidadContexto.codVendedor, { emitEvent: false });
+            }
+
+            if (this.cleanText(this.form.controls.observaciones.value) === this.buildOpportunityObservation(contexto)) {
+              this.form.controls.observaciones.setValue(this.buildOpportunityObservation(this.oportunidadContexto), { emitEvent: false });
+            }
+
+            this.loadOpportunityCliente(this.oportunidadContexto, oportunidadId);
+          }
+        });
+    });
+  }
+
+  private initClienteFromQuery(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      if (this.modoOportunidad || this.modoReserva || this.isSubmitting) {
+        return;
+      }
+
+      const codCliente = this.cleanText(params.get('codCliente'));
+      const clienteNombre = this.cleanText(params.get('clienteNombre'));
+      const tipNDP = this.cleanText(params.get('tipNDP')).toUpperCase();
+
+      if (tipNDP === 'COT' || tipNDP === 'NDP') {
+        this.form.controls.tipNDP.setValue(tipNDP, { emitEvent: false });
+      }
+
+      if (!codCliente) {
+        if (clienteNombre && !this.cleanText(this.form.controls.nomCliente.value)) {
+          this.form.controls.nomCliente.setValue(clienteNombre, { emitEvent: false });
+        }
+        return;
+      }
+
+      if (this.selectedCliente?.codigo === codCliente) {
+        return;
+      }
+
+      this.clienteService
+        .getClienteByCodigo(codCliente)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (cliente) => {
+            if (cliente) {
+              this.applySelectedCliente(cliente);
+              return;
+            }
+
+            this.form.patchValue(
+              {
+                codCliente,
+                nomCliente: clienteNombre || codCliente
+              },
+              { emitEvent: false }
+            );
+          },
+          error: () => {
+            this.form.patchValue(
+              {
+                codCliente,
+                nomCliente: clienteNombre || codCliente
+              },
+              { emitEvent: false }
+            );
+          }
+        });
+    });
+  }
+
+  private loadOpportunityCliente(contexto: OportunidadCotizacionContext, oportunidadId: number): void {
+    this.clienteService
+      .getClienteByCodigo(contexto.codCliente)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cliente) => {
+          if (this.oportunidadContexto?.oportunidadId !== oportunidadId) {
+            return;
+          }
+
+          if (cliente) {
+            this.applySelectedCliente(cliente);
+          } else {
+            this.selectedCliente = null;
+            this.clienteCorreo = '';
+            this.clienteCodigoActividad = '';
+            this.clienteActividadLoading = false;
+            this.clienteActividadCedula = '';
+            this.form.patchValue(
+              {
+                codCliente: contexto.codCliente,
+                nomCliente: contexto.clienteNombre || contexto.codCliente,
+                rucCliente: ''
+              },
+              { emitEvent: false }
+            );
+          }
+
+          this.setClienteEditable(false);
+        },
+        error: () => {
+          if (this.oportunidadContexto?.oportunidadId !== oportunidadId) {
+            return;
+          }
+
+          this.selectedCliente = null;
+          this.clienteCorreo = '';
+          this.clienteCodigoActividad = '';
+          this.clienteActividadLoading = false;
+          this.clienteActividadCedula = '';
+          this.form.patchValue(
+            {
+              codCliente: contexto.codCliente,
+              nomCliente: contexto.clienteNombre || contexto.codCliente,
+              rucCliente: ''
+            },
+            { emitEvent: false }
+          );
+          this.setClienteEditable(false);
+        }
+      });
+  }
+
   private initReservaFromQuery(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const codReserva = (params.get('codReserva') ?? '').toString().trim();
       const codAgencia = (params.get('codAgencia') ?? '').toString().trim();
 
-      if (!codReserva || this.isSubmitting) {
+      if (!codReserva || this.isSubmitting || this.modoOportunidad) {
         return;
       }
 
@@ -926,6 +1162,16 @@ export class OrdenPedidoFormComponent implements OnInit {
         control.disable({ emitEvent: false });
       }
     });
+  }
+
+  private setTipoDocumentoEditable(enabled: boolean): void {
+    const control = this.form.controls.tipNDP;
+    if (enabled && control.disabled) {
+      control.enable({ emitEvent: false });
+    }
+    if (!enabled && control.enabled) {
+      control.disable({ emitEvent: false });
+    }
   }
 
   private setListaPrecioEditable(enabled: boolean): void {
@@ -1289,15 +1535,77 @@ export class OrdenPedidoFormComponent implements OnInit {
     return this.cleanText(currentUser?.usuario) || this.cleanText(this.form.controls.codVendedor.value);
   }
 
-  private buildCreateSuccessMessage(response: { mensaje?: string; respuesta?: string; datos?: Array<{ TipNDP?: string; Serie?: string; NumNDP?: string }> }): string {
+  private buildOpportunityObservation(contexto: OportunidadCotizacionContext): string {
+    const titulo = this.cleanText(contexto.titulo);
+    const descripcion = this.cleanText(contexto.descripcion);
+    const lineas = [`Cotizacion asociada a oportunidad #${contexto.oportunidadId}.`];
+
+    if (titulo) {
+      lineas.push(`Titulo: ${titulo}`);
+    }
+    if (descripcion) {
+      lineas.push(`Contexto: ${descripcion}`);
+    }
+
+    return lineas.join(' ');
+  }
+
+  private syncOportunidadCotizacion(response: OrdenPedidoCreateResponse) {
+    if (!this.modoOportunidad || !this.oportunidadContexto) {
+      return of(null);
+    }
+
+    const data = response?.datos?.[0];
+    const tipNDP = this.cleanText(data?.TipNDP);
+    const serieNDP = this.cleanText(data?.Serie);
+    const numNDP = this.cleanText(data?.NumNDP);
+
+    if (!tipNDP || !serieNDP || !numNDP) {
+      return of({
+        partial: true,
+        message: 'La cotizacion se creo, pero el API no devolvio el identificador documental para vincularla a la oportunidad.'
+      } satisfies OportunidadPostCreateResult);
+    }
+
+    return this.oportunidadService
+      .vincularCotizacion(this.oportunidadContexto.oportunidadId, { tipNDP, serieNDP, numNDP })
+      .pipe(
+        switchMap(() => {
+          if (this.oportunidadContexto?.etapaActual !== 'PROSPECTO') {
+            return of(null);
+          }
+          return this.oportunidadService.changeStage(this.oportunidadContexto.oportunidadId, 'COTIZACION');
+        }),
+        map(
+          () =>
+            ({
+              partial: false,
+              message: `Cotizacion vinculada a la oportunidad #${this.oportunidadContexto?.oportunidadId}.`
+            }) satisfies OportunidadPostCreateResult
+        ),
+        catchError((error) => {
+          console.error('Error al vincular la cotizacion con la oportunidad:', error);
+          return of({
+            partial: true,
+            message: 'La cotizacion se creo correctamente, pero no se pudo vincular automaticamente con la oportunidad.'
+          } satisfies OportunidadPostCreateResult);
+        })
+      );
+  }
+
+  private buildCreateSuccessMessage(
+    response: { mensaje?: string; respuesta?: string; datos?: Array<{ TipNDP?: string; Serie?: string; NumNDP?: string }> },
+    extraMessage?: string
+  ): string {
     const data = response?.datos?.[0];
     const tipNDP = this.cleanText(data?.TipNDP);
     const serie = this.cleanText(data?.Serie);
     const numNDP = this.cleanText(data?.NumNDP);
     const identificador = [tipNDP, serie, numNDP].filter(Boolean).join(' ');
     const baseMessage = this.cleanText(response?.mensaje) || this.cleanText(response?.respuesta) || 'La orden fue creada correctamente.';
+    const finalMessage = extraMessage ? `${baseMessage}\n${extraMessage}` : baseMessage;
 
-    return identificador ? `${baseMessage}\nDocumento: ${identificador}` : baseMessage;
+    return identificador ? `${finalMessage}\nDocumento: ${identificador}` : finalMessage;
   }
 
   private formatDateForApi(value: string): string {

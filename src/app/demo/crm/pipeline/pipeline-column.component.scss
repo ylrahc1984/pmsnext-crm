@@ -1,0 +1,154 @@
+.pipeline-column {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  min-height: 100%;
+  padding: 1rem 1rem 0.95rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #f8fafc, #fdfefe);
+  transition: background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.pipeline-column:hover {
+  border-color: #d7e3f4;
+  background: linear-gradient(180deg, #f8fbff, #ffffff);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+}
+
+.pipeline-column__heading {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.pipeline-column__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.1rem;
+}
+
+.pipeline-column__eyebrow {
+  margin: 0 0 0.2rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.pipeline-column__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pipeline-column__summary {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.pipeline-column__summary span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.pipeline-column__summary strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pipeline-column__count {
+  min-width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.pipeline-column__dropzone {
+  display: grid;
+  gap: 0.95rem;
+  min-height: 10.5rem;
+  padding: 0.15rem;
+  border-radius: 18px;
+  transition: background-color 0.22s ease, border-color 0.22s ease;
+}
+
+:host ::ng-deep .pipeline-column__dropzone.cdk-drop-list-receiving {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.pipeline-column__empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.45rem 1rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.pipeline-column--prospecto {
+  border-top: 4px solid #94a3b8;
+}
+
+.pipeline-column--cotizacion {
+  border-top: 4px solid #3b82f6;
+}
+
+.pipeline-column--negociacion {
+  border-top: 4px solid #f97316;
+}
+
+.pipeline-column--ganado {
+  border-top: 4px solid #22c55e;
+}
+
+.pipeline-column--perdido {
+  border-top: 4px solid #ef4444;
+}
+
+.pipeline-column__empty i {
+  font-size: 1.15rem;
+  color: #94a3b8;
+}
+
+.pipeline-column__empty strong {
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.pipeline-column__empty span {
+  font-size: 0.82rem;
+}
+
+.pipeline-column__empty-cta {
+  margin-top: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+  padding: 0 0.85rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 0.77rem;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+
+:host ::ng-deep .cdk-drop-list-dragging app-pipeline-card:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s ease;
+}

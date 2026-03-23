@@ -48,6 +48,66 @@ const routes: Routes = [
     ]
   },
   {
+    path: 'crm',
+    component: AdminComponent,
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'contactos',
+        pathMatch: 'full'
+      },
+      {
+        path: 'contactos',
+        loadComponent: () =>
+          import('./demo/catalogos/agencias-comisionistas/agencias-comisionistas.component').then((c) => c.AgenciasComisionistasComponent)
+      },
+      {
+        path: 'contactos/:id',
+        loadComponent: () =>
+          import('./demo/catalogos/agencias-comisionistas/cliente-detalle.component').then((c) => c.ClienteDetalleComponent)
+      },
+      {
+        path: 'oportunidades',
+        loadComponent: () => import('./demo/crm/oportunidades/oportunidades.component').then((c) => c.OportunidadesComponent)
+      },
+      {
+        path: 'oportunidades/nueva',
+        loadComponent: () => import('./demo/crm/oportunidades/oportunidad-form.component').then((c) => c.OportunidadFormComponent)
+      },
+      {
+        path: 'oportunidades/:id/editar',
+        loadComponent: () => import('./demo/crm/oportunidades/oportunidad-form.component').then((c) => c.OportunidadFormComponent)
+      },
+      {
+        path: 'oportunidades/:id/cotizacion',
+        loadComponent: () =>
+          import('./demo/orden-pedido/pages/orden-pedido-form/orden-pedido-form.component').then((c) => c.OrdenPedidoFormComponent)
+      },
+      {
+        path: 'oportunidades/:id',
+        loadComponent: () => import('./demo/crm/oportunidades/oportunidad-detalle.component').then((c) => c.OportunidadDetalleComponent)
+      },
+      {
+        path: 'pipeline',
+        loadComponent: () => import('./demo/crm/pipeline/pipeline.component').then((c) => c.PipelineComponent)
+      }
+    ]
+  },
+  {
+    path: 'ventas',
+    component: AdminComponent,
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    children: [
+      {
+        path: 'cotizaciones',
+        loadComponent: () => import('./demo/ventas/cotizaciones/cotizaciones.component').then((c) => c.CotizacionesComponent)
+      }
+    ]
+  },
+  {
     path: 'comercial',
     component: AdminComponent,
     canActivate: [AuthGuard],

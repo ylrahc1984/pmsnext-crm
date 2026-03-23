@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from 'src/app/core/services/auth.service';
 import {
+  ClienteListado,
   ClienteContactoDto,
   ClienteContactoPost,
   ClienteContactoUI,
@@ -95,6 +96,30 @@ export class ClienteService {
     return this.http.get<{ datos?: ClienteDto[]; paginacion?: any }>(this.apiUrl, { params }).pipe(
       map((response) => {
         const data = this.extractDatosArray(response?.datos).map((item) => this.mapFromApi(item));
+        const paginacion = response?.paginacion;
+        const totalRegistros = paginacion?.totalRegistros ?? data.length;
+        const paginaActual = paginacion?.paginaActual ?? pageNumber;
+        const size = paginacion?.pageSize ?? pageSize;
+        const totalPages = paginacion?.totalPaginas ?? (totalRegistros > 0 ? Math.ceil(totalRegistros / size) : 1);
+        return { data, totalRegistros, paginaActual, pageSize: size, totalPages };
+      })
+    );
+  }
+
+  getClientesListado(pageNumber = 1, pageSize = 50, nombreCli?: string): Observable<{
+    data: ClienteListado[];
+    totalRegistros: number;
+    paginaActual: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
+    let params = new HttpParams().set('pageNumber', String(pageNumber)).set('pageSize', String(pageSize));
+    if (nombreCli) {
+      params = params.set('nombreCli', nombreCli);
+    }
+    return this.http.get<{ datos?: ClienteDto[]; paginacion?: any }>(this.apiUrl, { params }).pipe(
+      map((response) => {
+        const data = this.extractDatosArray(response?.datos).map((item) => this.mapToListado(item));
         const paginacion = response?.paginacion;
         const totalRegistros = paginacion?.totalRegistros ?? data.length;
         const paginaActual = paginacion?.paginaActual ?? pageNumber;
@@ -223,6 +248,25 @@ export class ClienteService {
       totalContactos,
       contactos: contactos.length ? contactos : this.buildFallbackContactos(apiData, contactoPrincipal),
       operador: apiData.MPV00_Operador || ''
+    };
+  }
+
+  private mapToListado(apiData: ClienteDto): ClienteListado {
+    const cliente = this.mapFromApi(apiData);
+    return {
+      id: cliente.codigo,
+      nombre: cliente.nombre,
+      identificacion: cliente.ruc,
+      contacto: cliente.contactoPrincipal || cliente.nombreContacto || cliente.contacto || '',
+      email: cliente.emailPrincipal || cliente.email || '',
+      telefono: cliente.telefonoPrincipal || cliente.telefono1 || cliente.telefono2 || '',
+      direccion: cliente.direccion,
+      provincia: cliente.provincia,
+      ciudad: cliente.ciudad,
+      tipo: cliente.tipoCli,
+      subtipo: cliente.tCliente,
+      totalContactos: cliente.totalContactos ?? 0,
+      operador: cliente.operador || ''
     };
   }
 

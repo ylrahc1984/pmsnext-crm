@@ -1,0 +1,66 @@
+<div class="cotizaciones-page">
+  <section class="cotizaciones-hero">
+    <div>
+      <div class="cotizaciones-hero__eyebrow">VENTAS</div>
+      <h1 class="cotizaciones-hero__title">Cotizaciones</h1>
+      <p class="cotizaciones-hero__subtitle">Gestiona proformas comerciales con vista de tabla y vista kanban desde un solo lugar.</p>
+    </div>
+
+    <div class="cotizaciones-hero__actions">
+      <button type="button" class="btn btn-outline-secondary" [class.is-active]="viewMode === 'list'" (click)="setViewMode('list')">
+        <i class="feather icon-list"></i>
+        <span>List</span>
+      </button>
+      <button type="button" class="btn btn-outline-secondary" [class.is-active]="viewMode === 'kanban'" (click)="setViewMode('kanban')">
+        <i class="feather icon-layout"></i>
+        <span>Kanban</span>
+      </button>
+      <button type="button" class="btn btn-primary" (click)="openNuevo()">
+        <i class="feather icon-plus"></i>
+        <span>Nuevo</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="cotizaciones-toolbar">
+    <div class="cotizaciones-toolbar__search">
+      <i class="feather icon-search"></i>
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="searchTerm"
+        placeholder="Buscar por número, cliente o vendedor">
+    </div>
+
+    <select class="form-select" [(ngModel)]="selectedEstado">
+      <option value="">Todos los estados</option>
+      <option *ngFor="let estado of estados" [value]="estado">{{ estado }}</option>
+    </select>
+
+    <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">
+      <i class="feather icon-x"></i>
+      <span>Limpiar</span>
+    </button>
+  </section>
+
+  <div class="cotizaciones-state" *ngIf="isLoading">
+    <span class="spinner-border spinner-border-sm"></span>
+    <span>Cargando cotizaciones...</span>
+  </div>
+
+  <div class="cotizaciones-state cotizaciones-state--error" *ngIf="!isLoading && errorMessage">
+    <i class="feather icon-alert-circle"></i>
+    <span>{{ errorMessage }}</span>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="loadCotizaciones()">Reintentar</button>
+  </div>
+
+  <div class="cotizaciones-state cotizaciones-state--empty" *ngIf="!isLoading && !errorMessage && !filteredCotizaciones.length">
+    <i class="feather icon-file-text"></i>
+    <span>No hay cotizaciones para mostrar con los filtros actuales.</span>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage && filteredCotizaciones.length">
+    <app-cotizaciones-list *ngIf="viewMode === 'list'" [data]="filteredCotizaciones"></app-cotizaciones-list>
+    <app-cotizaciones-kanban *ngIf="viewMode === 'kanban'" [data]="filteredCotizaciones"></app-cotizaciones-kanban>
+  </ng-container>
+</div>

@@ -1,0 +1,239 @@
+<div class="crm-opportunities-page">
+  <section class="crm-opportunities-hero">
+    <div>
+      <div class="crm-opportunities-hero__eyebrow">CRM</div>
+      <h3 class="crm-opportunities-hero__title">Oportunidades</h3>
+      <p class="crm-opportunities-hero__subtitle">
+        Gestiona tu cartera comercial, crea oportunidades nuevas y mantén alimentado el pipeline del CRM.
+      </p>
+    </div>
+
+    <div class="crm-opportunities-hero__actions">
+      <div class="crm-opportunities-kpi">
+        <span>Total</span>
+        <strong>{{ totalOportunidades }}</strong>
+      </div>
+      <div class="crm-opportunities-kpi">
+        <span>Monto estimado</span>
+        <strong>{{ formatAmount(totalMonto) }}</strong>
+      </div>
+      <button type="button" class="btn btn-outline-secondary" (click)="goToPipeline()">
+        <i class="feather icon-activity"></i>
+        <span>Ver pipeline</span>
+      </button>
+      <button type="button" class="btn btn-primary" (click)="openNew()">
+        <i class="feather icon-plus"></i>
+        <span>Nueva</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="crm-opportunities-toolbar">
+    <div class="crm-opportunities-search">
+      <i class="feather icon-search"></i>
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="filtros.busqueda"
+        (keyup.enter)="loadOportunidades()"
+        placeholder="Buscar por cliente, título o descripción"
+      >
+    </div>
+
+    <select class="form-select" [(ngModel)]="filtros.etapa" (change)="loadOportunidades()">
+      <option value="">Todas las etapas</option>
+      <option *ngFor="let etapa of etapas" [value]="etapa">{{ etapa }}</option>
+    </select>
+
+    <select class="form-select" [(ngModel)]="filtros.estado" (change)="loadOportunidades()">
+      <option value="A">Activas</option>
+      <option value="I">Inactivas</option>
+      <option value="">Todas</option>
+    </select>
+
+    <input
+      type="text"
+      class="form-control"
+      [(ngModel)]="filtros.vendedor"
+      (keyup.enter)="loadOportunidades()"
+      placeholder="Filtrar por vendedor"
+    >
+
+    <select class="form-select" [(ngModel)]="filtros.conCotizacion" (change)="loadOportunidades()">
+      <option value="">Cotización: todas</option>
+      <option value="true">Con cotización</option>
+      <option value="false">Sin cotización</option>
+    </select>
+
+    <div class="crm-opportunities-toolbar__actions">
+      <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()" [disabled]="isLoading || !hasFilters">
+        <i class="feather icon-x"></i>
+        <span>Limpiar</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary" (click)="loadOportunidades()" [disabled]="isLoading">
+        <i class="feather icon-refresh-cw"></i>
+        <span>Actualizar</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="crm-opportunities-chips" *ngIf="hasFilters">
+    <span class="crm-opportunities-chip" *ngIf="filtros.busqueda.trim()">
+      <i class="feather icon-search"></i>
+      <span>Busqueda: {{ filtros.busqueda.trim() }}</span>
+    </span>
+    <span class="crm-opportunities-chip" *ngIf="filtros.etapa">
+      <i class="feather icon-layers"></i>
+      <span>Etapa: {{ filtros.etapa }}</span>
+    </span>
+    <span class="crm-opportunities-chip" *ngIf="filtros.estado && filtros.estado !== 'A'">
+      <i class="feather icon-toggle-left"></i>
+      <span>Estado: {{ filtros.estado === 'I' ? 'Inactivas' : 'Todas' }}</span>
+    </span>
+    <span class="crm-opportunities-chip" *ngIf="filtros.vendedor.trim()">
+      <i class="feather icon-user"></i>
+      <span>Vendedor: {{ filtros.vendedor.trim() }}</span>
+    </span>
+    <span class="crm-opportunities-chip" *ngIf="filtros.conCotizacion">
+      <i class="feather icon-file-text"></i>
+      <span>{{ filtros.conCotizacion === 'true' ? 'Con cotización' : 'Sin cotización' }}</span>
+    </span>
+  </div>
+
+  <div class="crm-opportunities-state crm-opportunities-state--error" *ngIf="loadError">
+    <i class="feather icon-alert-circle"></i>
+    <span>{{ loadError }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="loadOportunidades()">Reintentar</button>
+  </div>
+
+  <div class="crm-opportunities-loading" *ngIf="isLoading">
+    <article class="crm-opportunity-skeleton" *ngFor="let item of skeletonRows; trackBy: trackByIndex">
+      <div class="crm-skeleton crm-skeleton--title"></div>
+      <div class="crm-skeleton crm-skeleton--line"></div>
+      <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+      <div class="crm-skeleton crm-skeleton--chips"></div>
+    </article>
+  </div>
+
+  <div class="crm-opportunities-empty" *ngIf="!isLoading && !loadError && !oportunidades.length">
+    <div class="crm-opportunities-empty__icon">
+      <i class="feather icon-target"></i>
+    </div>
+    <h5>No hay oportunidades para mostrar</h5>
+    <p>Comienza creando una nueva oportunidad o ajusta los filtros para ampliar la búsqueda.</p>
+    <button type="button" class="btn btn-primary" (click)="openNew()">
+      <i class="feather icon-plus"></i>
+      <span>Crear oportunidad</span>
+    </button>
+  </div>
+
+  <div class="crm-opportunities-list" *ngIf="!isLoading && !loadError && oportunidades.length">
+    <article
+      class="crm-opportunity-card"
+      *ngFor="let oportunidad of oportunidades; trackBy: trackById"
+      [ngClass]="getStageClass(oportunidad.etapa)"
+      (click)="openDetail(oportunidad)"
+    >
+      <div class="crm-opportunity-card__main">
+        <div class="crm-opportunity-card__identity">
+          <div class="crm-opportunity-card__badges">
+            <span class="crm-opportunity-card__stage">{{ oportunidad.etapa }}</span>
+            <span class="crm-opportunity-card__status" [class.crm-opportunity-card__status--inactive]="oportunidad.estado === 'I'">
+              {{ oportunidad.estado === 'I' ? 'Inactiva' : 'Activa' }}
+            </span>
+            <span class="crm-opportunity-card__date-badge" *ngIf="oportunidad.fechaCierreEstimada">
+              <i class="feather icon-clock"></i>
+              <span>Cierre: {{ oportunidad.fechaCierreEstimada | date:'dd MMM' }}</span>
+            </span>
+          </div>
+
+          <h5 class="crm-opportunity-card__title">{{ oportunidad.titulo || 'Oportunidad sin título' }}</h5>
+          <div class="crm-opportunity-card__client">{{ oportunidad.clienteNombre || 'Cliente sin nombre' }}</div>
+
+          <p class="crm-opportunity-card__description" *ngIf="oportunidad.descripcion">
+            {{ oportunidad.descripcion }}
+          </p>
+        </div>
+
+        <div class="crm-opportunity-card__metrics">
+          <div class="crm-opportunity-card__metric crm-opportunity-card__metric--amount">
+            <span>Monto estimado</span>
+            <strong>CRC {{ formatAmount(oportunidad.montoEstimado) }}</strong>
+          </div>
+
+          <div class="crm-opportunity-card__metric">
+            <span>Probabilidad</span>
+            <div class="crm-opportunity-card__probability" [ngClass]="getProbabilityClass(oportunidad.probabilidad)">
+              <div class="crm-opportunity-card__probability-track">
+                <div class="crm-opportunity-card__probability-fill" [style.width.%]="oportunidad.probabilidad"></div>
+              </div>
+              <strong>{{ oportunidad.probabilidad }}%</strong>
+            </div>
+          </div>
+
+          <div class="crm-opportunity-card__metric">
+            <span>Vendedor</span>
+            <strong class="crm-opportunity-card__seller">{{ oportunidad.vendedor || 'Sin asignar' }}</strong>
+          </div>
+
+          <div class="crm-opportunity-card__metric">
+            <span>Cotización</span>
+            <strong class="crm-opportunity-card__quote">
+              {{ oportunidad.tieneCotizacion ? (oportunidad.tipNDP + ' ' + oportunidad.serieNDP + '-' + oportunidad.numNDP) : 'No vinculada' }}
+            </strong>
+          </div>
+        </div>
+
+        <div class="crm-opportunity-card__actions" (click)="$event.stopPropagation()">
+          <button type="button" class="btn btn-primary btn-sm" (click)="openDetail(oportunidad)">
+            <i class="feather icon-eye"></i>
+            <span>Detalle</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-sm"
+            [class.btn-outline-secondary]="!canOpenCotizacion(oportunidad)"
+            [class.crm-opportunity-card__action-disabled]="!canOpenCotizacion(oportunidad)"
+            [disabled]="!canOpenCotizacion(oportunidad)"
+            (click)="openCotizacion(oportunidad)"
+          >
+            <i class="feather icon-file-text"></i>
+            <span>{{ getCotizacionActionLabel(oportunidad) }}</span>
+          </button>
+
+          <details class="crm-opportunity-card__menu">
+            <summary class="crm-opportunity-card__menu-trigger" (click)="$event.stopPropagation()">
+              <i class="feather icon-more-vertical"></i>
+            </summary>
+            <div class="crm-opportunity-card__menu-panel" (click)="$event.stopPropagation()">
+              <button type="button" class="crm-opportunity-card__menu-item" (click)="openEdit(oportunidad)">
+                <i class="feather icon-edit-2"></i>
+                <span>Editar</span>
+              </button>
+              <button
+                type="button"
+                class="crm-opportunity-card__menu-item crm-opportunity-card__menu-item--danger"
+                [disabled]="oportunidad.estado === 'I'"
+                (click)="archive(oportunidad)"
+              >
+                <i class="feather icon-archive"></i>
+                <span>Archivar</span>
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="crm-opportunity-card__footer">
+        <span class="crm-opportunity-card__footer-item" *ngIf="oportunidad.fechaCreacion">
+          <i class="feather icon-calendar"></i>
+          <span>Creada {{ oportunidad.fechaCreacion | date:'dd/MM/yyyy' }}</span>
+        </span>
+        <span class="crm-opportunity-card__footer-item" *ngIf="oportunidad.fechaCierreEstimada">
+          <i class="feather icon-flag"></i>
+          <span>Cierre estimado {{ oportunidad.fechaCierreEstimada | date:'dd/MM/yyyy' }}</span>
+        </span>
+      </div>
+    </article>
+  </div>
+</div>

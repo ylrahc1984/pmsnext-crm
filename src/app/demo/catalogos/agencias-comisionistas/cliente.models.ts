@@ -168,3 +168,19 @@ export interface ClienteUI {
   contactos           : ClienteContactoUI[];
   operador            ?: string;
 }
+
+export interface ClienteListado {
+  id              : string;
+  nombre          : string;
+  identificacion  : string;
+  contacto        : string;
+  email           : string;
+  telefono        : string;
+  direccion       : string;
+  provincia       : string;
+  ciudad          : string;
+  tipo            : string;
+  subtipo         : string;
+  totalContactos  : number;
+  operador        : string;
+}

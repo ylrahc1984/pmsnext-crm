@@ -1,48 +1,56 @@
 <div class="dashboard-top">
   <app-welcome-card [userName]="userName"></app-welcome-card>
 
-  <app-weather-card
-    [weather]="weather"
-    [loading]="loading"
-    [error]="weatherError">
-  </app-weather-card>
-</div>
-
-<div class="row">
-  @for (sale of sales; track sale) {
-    <div class="{{ sale.design }}">
-      <app-card [hidHeader]="true" blockClass="dashboard-card-block dashboard-card-block--metric">
-        <h6 class="mb-4">{{ sale.title }}</h6>
-        <div class="row d-flex align-items-center">
-          <div class="col-9">
-            <h3 class="f-w-300 d-flex align-items-center m-b-0">
-              <i class="feather {{ sale.icon }} f-30 m-r-10"></i>
-              {{ sale.amount }}
-            </h3>
-          </div>
-          <div class="col-3 text-end">
-            <p class="m-b-0">{{ sale.percentage }}</p>
-          </div>
-        </div>
-        <div class="m-t-30">
-          <ngb-progressbar type="progress-bar {{ sale.progress_bg }}" height="7px" [value]="sale.progress"></ngb-progressbar>
-        </div>
-      </app-card>
-    </div>
-  }
+  <app-crm-pulso></app-crm-pulso>
 </div>
 
 <div class="row mt-4">
   <div class="col-12">
     <app-card cardTitle="Accesos Rápidos" blockClass="dashboard-card-block dashboard-card-block--compact">
       <div class="quick-actions">
-        <button class="quick-action quick-action--emerald" routerLink="/catalogos/clientes">
+        <button class="quick-action quick-action--emerald" routerLink="/crm/contactos">
           <span class="quick-action__icon">
             <i class="feather icon-users"></i>
           </span>
           <span class="quick-action__content">
             <span class="quick-action__label">Gestionar Clientes</span>
             <span class="quick-action__hint">Accede al catalogo y actualiza sus datos.</span>
+          </span>
+          <span class="quick-action__arrow">
+            <i class="feather icon-arrow-right"></i>
+          </span>
+        </button>
+        <button class="quick-action quick-action--primary" routerLink="/crm/oportunidades">
+          <span class="quick-action__icon">
+            <i class="feather icon-briefcase"></i>
+          </span>
+          <span class="quick-action__content">
+            <span class="quick-action__label">Oportunidades</span>
+            <span class="quick-action__hint">Monitorea el embudo comercial y abre acciones desde CRM.</span>
+          </span>
+          <span class="quick-action__arrow">
+            <i class="feather icon-arrow-right"></i>
+          </span>
+        </button>
+        <button class="quick-action quick-action--sky" routerLink="/crm/pipeline">
+          <span class="quick-action__icon">
+            <i class="feather icon-git-branch"></i>
+          </span>
+          <span class="quick-action__content">
+            <span class="quick-action__label">Pipeline</span>
+            <span class="quick-action__hint">Revisa etapas, arrastra oportunidades y valida el avance comercial.</span>
+          </span>
+          <span class="quick-action__arrow">
+            <i class="feather icon-arrow-right"></i>
+          </span>
+        </button>
+        <button class="quick-action quick-action--amber" routerLink="/demo/ordenes-pedido" [queryParams]="{ tipOrden: 'COT' }">
+          <span class="quick-action__icon">
+            <i class="feather icon-file-text"></i>
+          </span>
+          <span class="quick-action__content">
+            <span class="quick-action__label">Cotizaciones</span>
+            <span class="quick-action__hint">Consulta proformas y continúa el flujo comercial desde documentos.</span>
           </span>
           <span class="quick-action__arrow">
             <i class="feather icon-arrow-right"></i>
@@ -55,13 +63,74 @@
 
 <div class="row mt-4">
   <div class="col-xl-6">
-    <app-card cardTitle="Actividad Comercial">
-      <div id="chart-reservas" style="height: 300px"></div>
-    </app-card>
+    <app-card cardTitle="Embudo Comercial" blockClass="dashboard-card-block dashboard-card-block--compact">
+      <div class="dashboard-inline-state dashboard-inline-state--error" *ngIf="crmError">
+        <i class="feather icon-alert-circle"></i>
+        <span>{{ crmError }}</span>
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="reloadCrmResumen()">Reintentar</button>
+      </div>
+
+      <div class="dashboard-inline-state" *ngIf="crmLoading && !crmError">
+        <span class="spinner-border spinner-border-sm"></span>
+        <span>Cargando resumen del pipeline...</span>
+      </div>
+
+        <div class="dashboard-stage-list" *ngIf="!crmLoading && !crmError">
+          @for (stage of stageSnapshots; track stage.stage) {
+            <article
+              class="dashboard-stage-card"
+              [ngClass]="stage.accentClass"
+              role="button"
+              tabindex="0"
+              title="Ver oportunidades en esta etapa"
+              (click)="irAEtapa(stage.stage)"
+              (keydown.enter)="irAEtapa(stage.stage)"
+              (keydown.space)="irAEtapa(stage.stage); $event.preventDefault()">
+              <div class="dashboard-stage-card__top">
+                <div>
+                  <p class="dashboard-stage-card__eyebrow">Etapa</p>
+                  <h6 class="dashboard-stage-card__title">{{ stage.label }}</h6>
+                </div>
+                <span class="dashboard-stage-card__count">{{ stage.cantidad }}</span>
+              </div>
+
+              <div class="dashboard-stage-card__meta">
+                <span>{{ formatCurrency(stage.total) }}</span>
+                <span>{{ stage.progress }}% del pipeline</span>
+              </div>
+
+              <div class="dashboard-stage-card__progress">
+                <span class="dashboard-stage-card__progress-bar" [style.width.%]="stage.progress"></span>
+              </div>
+            </article>
+          }
+        </div>
+      </app-card>
   </div>
   <div class="col-xl-6">
-    <app-card cardTitle="Resumen Financiero">
-      <div id="chart-ingresos" style="height: 300px"></div>
+    <app-card cardTitle="Indicadores CRM" blockClass="dashboard-card-block dashboard-card-block--compact">
+      <div class="dashboard-summary-grid">
+        <div class="dashboard-summary-tile">
+          <span class="dashboard-summary-tile__label">Monto total estimado</span>
+          <strong>{{ formatCurrency(totalMontoEstimado) }}</strong>
+          <small>Potencial comercial acumulado en el pipeline.</small>
+        </div>
+        <div class="dashboard-summary-tile">
+          <span class="dashboard-summary-tile__label">Oportunidades ganadas</span>
+          <strong>{{ oportunidadesGanadas }}</strong>
+          <small>{{ tasaCierre }}% de cierre sobre oportunidades resueltas.</small>
+        </div>
+        <div class="dashboard-summary-tile">
+          <span class="dashboard-summary-tile__label">Pendientes de cierre</span>
+          <strong>{{ oportunidadesEnGestion }}</strong>
+          <small>Prospecto, cotización y negociación activas.</small>
+        </div>
+        <div class="dashboard-summary-tile">
+          <span class="dashboard-summary-tile__label">Oportunidades perdidas</span>
+          <strong>{{ oportunidadesPerdidas }}</strong>
+          <small>Sirve para medir fuga del embudo y ajustar seguimiento.</small>
+        </div>
+      </div>
     </app-card>
   </div>
 </div>

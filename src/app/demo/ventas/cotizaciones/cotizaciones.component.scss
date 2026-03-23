@@ -1,0 +1,114 @@
+.cotizaciones-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.cotizaciones-hero,
+.cotizaciones-toolbar,
+.cotizaciones-state {
+  background: #fff;
+  border: 1px solid #e7edf4;
+  border-radius: 18px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
+}
+
+.cotizaciones-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 30%), #fff;
+}
+
+.cotizaciones-hero__eyebrow {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cotizaciones-hero__title {
+  margin: 0.3rem 0 0;
+  color: #0f172a;
+  font-size: 1.9rem;
+  font-weight: 800;
+}
+
+.cotizaciones-hero__subtitle {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  max-width: 42rem;
+}
+
+.cotizaciones-hero__actions,
+.cotizaciones-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cotizaciones-hero__actions .btn.is-active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.cotizaciones-toolbar {
+  padding: 0.95rem 1rem;
+}
+
+.cotizaciones-toolbar__search {
+  position: relative;
+  flex: 1 1 18rem;
+}
+
+.cotizaciones-toolbar__search i {
+  position: absolute;
+  top: 50%;
+  left: 0.95rem;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.cotizaciones-toolbar__search .form-control {
+  min-height: 2.95rem;
+  padding-left: 2.75rem;
+  border-radius: 14px;
+}
+
+.cotizaciones-toolbar .form-select {
+  max-width: 14rem;
+  min-height: 2.95rem;
+  border-radius: 14px;
+}
+
+.cotizaciones-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  color: #475569;
+}
+
+.cotizaciones-state--error {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff2f2;
+}
+
+@media (max-width: 991.98px) {
+  .cotizaciones-hero,
+  .cotizaciones-toolbar,
+  .cotizaciones-state {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cotizaciones-hero__actions {
+    width: 100%;
+  }
+}

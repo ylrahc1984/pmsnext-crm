@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 
 import { SharedModule } from 'src/app/theme/shared/shared.module';
@@ -18,6 +18,7 @@ import { OrdenPedidoService } from '../../services/orden-pedido.service';
 export class OrdenPedidoListComponent implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly ordenPedidoService = inject(OrdenPedidoService);
 
   readonly tiposOrden = [
@@ -28,7 +29,7 @@ export class OrdenPedidoListComponent implements OnInit {
 
   readonly filtrosForm = this.fb.group({
     tipOrden: this.fb.control(this.tiposOrden[0].value),
-    fechaDesde: this.fb.control(this.getFirstDayOfMonth()),
+    fechaDesde: this.fb.control(this.getFirstDayOfYear()),
     fechaHasta: this.fb.control(this.getTodayIsoDate()),
     nomCliente: this.fb.control('')
   });
@@ -46,8 +47,12 @@ export class OrdenPedidoListComponent implements OnInit {
   totalPages = 1;
   pageStart = 0;
   pageEnd = 0;
+  private preferredSerie = '';
+  private preferredNumero = '';
+  private preferredTipOrden = '';
 
   ngOnInit(): void {
+    this.applyRouteFilters();
     this.loadOrdenes();
   }
 
@@ -59,7 +64,7 @@ export class OrdenPedidoListComponent implements OnInit {
   resetFilters(): void {
     this.filtrosForm.reset({
       tipOrden: this.tiposOrden[0].value,
-      fechaDesde: this.getFirstDayOfMonth(),
+      fechaDesde: this.getFirstDayOfYear(),
       fechaHasta: this.getTodayIsoDate(),
       nomCliente: ''
     });
@@ -160,6 +165,7 @@ export class OrdenPedidoListComponent implements OnInit {
           this.totalPages = Math.max(1, response.paginacion.totalPaginas || Math.ceil(this.totalRecords / this.pageSize) || 1);
           this.pageStart = this.totalRecords === 0 ? 0 : (this.pageNumber - 1) * this.pageSize + 1;
           this.pageEnd = this.totalRecords === 0 ? 0 : Math.min(this.pageNumber * this.pageSize, this.totalRecords);
+          this.expandPreferredOrden();
         },
         error: (error: Error) => {
           this.ordenes = [];
@@ -176,14 +182,56 @@ export class OrdenPedidoListComponent implements OnInit {
     return [item.tipOrden, item.serie, item.numero, item.fecha].join('|');
   }
 
+  private applyRouteFilters(): void {
+    const tipOrden = (this.route.snapshot.queryParamMap.get('tipOrden') ?? '').trim();
+    const nomCliente = (this.route.snapshot.queryParamMap.get('nomCliente') ?? '').trim();
+    const serie = (this.route.snapshot.queryParamMap.get('serie') ?? '').trim();
+    const numero = (this.route.snapshot.queryParamMap.get('numero') ?? '').trim();
+
+    if (!tipOrden && !nomCliente && !serie && !numero) {
+      return;
+    }
+
+    this.preferredTipOrden = tipOrden;
+    this.preferredSerie = serie;
+    this.preferredNumero = numero;
+
+    this.filtrosForm.patchValue(
+      {
+        tipOrden: tipOrden ? tipOrden.toUpperCase() : this.filtrosForm.controls.tipOrden.value,
+        nomCliente
+      },
+      { emitEvent: false }
+    );
+  }
+
+  private expandPreferredOrden(): void {
+    if (!this.preferredNumero) {
+      return;
+    }
+
+    const target = this.ordenes.find((item) => {
+      const sameTipo = !this.preferredTipOrden || (item.tipOrden || '').trim() === this.preferredTipOrden;
+      const sameSerie = !this.preferredSerie || (item.serie || '').trim() === this.preferredSerie;
+      const sameNumero = (item.numero || '').trim() === this.preferredNumero;
+      return sameTipo && sameSerie && sameNumero;
+    });
+
+    if (!target) {
+      return;
+    }
+
+    this.expandedKey = this.getRowKey(target);
+  }
+
   private getTodayIsoDate(): string {
     const now = new Date();
     return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }
 
-  private getFirstDayOfMonth(): string {
+  private getFirstDayOfYear(): string {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDay = new Date(now.getFullYear(), 0, 1);
     return new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }
 }

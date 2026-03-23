@@ -118,6 +118,49 @@
   margin: 18px 0 20px;
 }
 
+.op-opportunity-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid #cfe3f7;
+  border-radius: 12px;
+  background: #f5faff;
+}
+
+.op-opportunity-banner__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 1rem;
+  flex: 0 0 auto;
+}
+
+.op-opportunity-banner__content {
+  color: #365272;
+}
+
+.op-opportunity-banner__content strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #12365d;
+}
+
+.op-opportunity-banner__eyebrow {
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .op-card {
   background: var(--op-panel);
   border: 1px solid var(--op-border);
@@ -361,6 +404,10 @@
   .op-doc-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .op-opportunity-banner {
+    flex-direction: column;
   }
 
   .op-doc-header__date {

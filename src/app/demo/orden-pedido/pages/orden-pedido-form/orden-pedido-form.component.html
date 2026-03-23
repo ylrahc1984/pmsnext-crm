@@ -33,6 +33,20 @@
           </div>
         </section>
 
+        <section class="op-opportunity-banner" *ngIf="modoOportunidad && oportunidadContexto as contexto">
+          <div class="op-opportunity-banner__icon">
+            <i class="feather icon-link-2"></i>
+          </div>
+          <div class="op-opportunity-banner__content">
+            <span class="op-opportunity-banner__eyebrow">Flujo CRM</span>
+            <strong>{{ opportunityDocumentLabel }}</strong>
+            <p class="mb-0">
+              Esta cotizacion se generara para <strong>{{ contexto.clienteNombre || contexto.codCliente }}</strong> y se vinculara
+              automaticamente a la oportunidad #{{ contexto.oportunidadId }} al guardar.
+            </p>
+          </div>
+        </section>
+
         <div class="op-divider"></div>
 
         <section class="op-card op-context-card">
@@ -59,7 +73,7 @@
               </div>
               <div class="col-lg-6 col-md-6">
                 <label class="form-label op-label">Tipo Documento</label>
-                <select class="form-control" formControlName="tipNDP">
+                <select class="form-control" formControlName="tipNDP" [disabled]="isSubmitting || modoOportunidad">
                   <option *ngFor="let tipo of tiposDocumento" [value]="tipo.value">{{ tipo.label }}</option>
                 </select>
               </div>
@@ -116,19 +130,19 @@
             <div class="col-lg-4 col-md-6">
               <label class="form-label op-label">Código Cliente</label>
               <div class="input-group">
-                <input class="form-control" formControlName="codCliente" placeholder="Código cliente" [readonly]="modoReserva">
-                <button class="btn btn-outline-primary" type="button" (click)="abrirModalClientes()" [disabled]="isSubmitting || modoReserva">
+                <input class="form-control" formControlName="codCliente" placeholder="Código cliente" [readonly]="modoReserva || modoOportunidad">
+                <button class="btn btn-outline-primary" type="button" (click)="abrirModalClientes()" [disabled]="isSubmitting || modoReserva || modoOportunidad">
                   <i class="feather icon-search"></i>
                 </button>
               </div>
               <div class="op-client-selected" *ngIf="selectedCliente">
                 {{ selectedCliente.codigo }} - {{ selectedCliente.nombre }}
-                <button type="button" class="btn btn-link btn-sm p-0 ms-2" *ngIf="!modoReserva" (click)="limpiarSeleccionCliente()">Limpiar</button>
+                <button type="button" class="btn btn-link btn-sm p-0 ms-2" *ngIf="!modoReserva && !modoOportunidad" (click)="limpiarSeleccionCliente()">Limpiar</button>
               </div>
             </div>
             <div class="col-lg-8">
               <label class="form-label op-label">Nombre</label>
-              <input class="form-control" formControlName="nomCliente" placeholder="Nombre del cliente" [readonly]="modoReserva">
+              <input class="form-control" formControlName="nomCliente" placeholder="Nombre del cliente" [readonly]="modoReserva || modoOportunidad">
             </div>
             <div class="col-lg-4 col-md-6">
               <label class="form-label op-label">Cédula</label>
@@ -178,7 +192,7 @@
               <button
                 class="btn btn-sm btn-outline-primary op-outline-btn"
                 type="button"
-                *ngIf="!modoReserva"
+                *ngIf="!modoReserva && !modoOportunidad"
                 (click)="abrirModalReserva()"
                 [disabled]="isSubmitting || reservaLoading"
               >

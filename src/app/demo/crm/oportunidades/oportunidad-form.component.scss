@@ -1,0 +1,427 @@
+.crm-opportunity-form-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-opportunity-form-hero,
+.crm-opportunity-form-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+.crm-opportunity-form-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+}
+
+.crm-opportunity-form-hero__eyebrow {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.crm-opportunity-form-hero__title {
+  margin: 0.1rem 0 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.crm-opportunity-form-hero__subtitle {
+  margin: 0.35rem 0 0;
+  max-width: 42rem;
+  color: #475569;
+}
+
+.crm-opportunity-form-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.crm-opportunity-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(19rem, 0.95fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.crm-opportunity-form-card {
+  padding: 1rem 1.1rem;
+}
+
+.crm-opportunity-form-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-opportunity-form-section {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.crm-opportunity-form-section__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.crm-opportunity-form-section__header h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.crm-opportunity-form-section__header p {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+}
+
+.crm-opportunity-form-section__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.crm-opportunity-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.crm-opportunity-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.crm-opportunity-field label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.crm-opportunity-field .form-control,
+.crm-opportunity-field .form-select {
+  min-height: 3rem;
+  border-radius: 12px;
+  border-color: #dbe3ef;
+  box-shadow: none;
+}
+
+.crm-opportunity-field textarea.form-control {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.crm-opportunity-field .form-control:focus,
+.crm-opportunity-field .form-select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.crm-opportunity-field .form-control[disabled],
+.crm-opportunity-field .form-select[disabled] {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.crm-opportunity-field--full {
+  grid-column: 1 / -1;
+}
+
+.crm-opportunity-field__hint {
+  color: #64748b;
+}
+
+.crm-opportunity-cliente-picker {
+  position: relative;
+}
+
+.crm-opportunity-cliente-picker__input-wrap {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+}
+
+.crm-opportunity-cliente-picker__icon {
+  position: absolute;
+  top: 50%;
+  left: 0.9rem;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.crm-opportunity-cliente-picker__input {
+  padding-left: 2.5rem;
+}
+
+.crm-opportunity-cliente-picker__create {
+  min-height: 3rem;
+  padding-inline: 0.95rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.crm-opportunity-cliente-picker__dropdown {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.45rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+}
+
+.crm-opportunity-cliente-picker__option {
+  width: 100%;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.75rem 0.85rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.crm-opportunity-cliente-picker__option strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.crm-opportunity-cliente-picker__option span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.crm-opportunity-cliente-picker__option:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.crm-opportunity-cliente-picker__empty {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem 0.85rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.crm-opportunity-cliente-picker__empty .btn {
+  justify-self: start;
+}
+
+.crm-opportunity-form-sidebar {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-opportunity-form-card--sidebar h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.crm-opportunity-form-card__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.crm-opportunity-summary {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.crm-opportunity-summary span {
+  display: block;
+  margin-bottom: 0.18rem;
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.crm-opportunity-summary strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.crm-opportunity-summary-badge,
+.crm-opportunity-summary-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.crm-opportunity-summary-badge {
+  background: #eef2ff;
+  color: #475569;
+}
+
+.crm-opportunity-summary-badge--quote {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.crm-opportunity-summary-status {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.crm-opportunity-summary-status--ready {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.crm-opportunity-quote-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.crm-opportunity-quote-toggle strong {
+  display: block;
+  color: #0f172a;
+}
+
+.crm-opportunity-quote-toggle p {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+}
+
+.crm-opportunity-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.crm-opportunity-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.crm-opportunity-switch__slider {
+  position: relative;
+  width: 3.35rem;
+  height: 1.95rem;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background 0.2s ease;
+}
+
+.crm-opportunity-switch__slider::before {
+  content: '';
+  position: absolute;
+  top: 0.22rem;
+  left: 0.22rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  transition: transform 0.2s ease;
+}
+
+.crm-opportunity-switch input:checked + .crm-opportunity-switch__slider {
+  background: #2563eb;
+}
+
+.crm-opportunity-switch input:checked + .crm-opportunity-switch__slider::before {
+  transform: translateX(1.4rem);
+}
+
+.crm-opportunity-quote-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  animation: crm-opportunity-fade-in 0.2s ease;
+}
+
+.crm-opportunity-quote-panel__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+@keyframes crm-opportunity-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .crm-opportunity-form-hero {
+    flex-direction: column;
+  }
+
+  .crm-opportunity-form-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .crm-opportunity-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-opportunity-cliente-picker__input-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-opportunity-quote-toggle,
+  .crm-opportunity-form-card__title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

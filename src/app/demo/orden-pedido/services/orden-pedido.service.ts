@@ -24,14 +24,12 @@ export class OrdenPedidoService {
       .set('pageNumber', String(filters.pageNumber))
       .set('pageSize', String(filters.pageSize));
 
-    const tipOrden = this.clean(filters.tipOrden);
+    const tipOrden = this.normalizeTipOrden(filters.tipOrden);
     const fechaDesde = this.formatDateForApi(filters.fechaDesde);
     const fechaHasta = this.formatDateForApi(filters.fechaHasta);
     const nomCliente = this.clean(filters.nomCliente);
 
-    if (tipOrden) {
-      params = params.set('tipOrden', tipOrden);
-    }
+    params = params.set('tipOrden', tipOrden);
     if (fechaDesde) {
       params = params.set('fechaDesde', fechaDesde);
     }
@@ -159,6 +157,11 @@ export class OrdenPedidoService {
 
   private clean(value: unknown): string {
     return String(value ?? '').trim();
+  }
+
+  private normalizeTipOrden(value: unknown): string {
+    const normalized = this.clean(value).toUpperCase();
+    return normalized === 'COT' ? 'COT' : 'NDP';
   }
 
   private formatDateForApi(value: unknown): string {

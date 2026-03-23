@@ -1,0 +1,77 @@
+<article
+  class="pipeline-card"
+  cdkDrag
+  [cdkDragData]="opportunity()"
+  [cdkDragDisabled]="isUpdating()"
+  [class.pipeline-card--updating]="isUpdating()"
+  role="button"
+  tabindex="0"
+  title="Arrastrar para cambiar de etapa"
+  (click)="openFromCard()"
+  (keydown.enter)="openFromCard()"
+>
+  <div class="pipeline-card__toolbar">
+    <div class="pipeline-card__drag-handle" cdkDragHandle title="Arrastrar para cambiar de etapa">
+      <i class="feather icon-move"></i>
+    </div>
+
+    <div class="pipeline-card__toolbar-actions">
+      <span class="pipeline-card__status-chip">{{ opportunity().etapa }}</span>
+      <button
+        type="button"
+        class="pipeline-card__menu-trigger"
+        aria-label="Más acciones"
+        (click)="toggleMenu($event)">
+        <i class="feather icon-more-vertical"></i>
+      </button>
+
+      <div class="pipeline-card__menu" *ngIf="menuOpen">
+        <button type="button" class="pipeline-card__menu-item" (click)="openDetail($event)">
+          <i class="feather icon-eye"></i>
+          <span>Detalle</span>
+        </button>
+        <button type="button" class="pipeline-card__menu-item" (click)="openEdit($event)">
+          <i class="feather icon-edit-2"></i>
+          <span>Editar</span>
+        </button>
+        <button type="button" class="pipeline-card__menu-item" (click)="openCliente($event)" [disabled]="!opportunity().codCliente">
+          <i class="feather icon-user"></i>
+          <span>Cliente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-card__header">
+    <p class="pipeline-card__client">{{ opportunity().clienteNombre || 'Cliente sin nombre' }}</p>
+  </div>
+
+  <div class="pipeline-card__amount-block">
+    <span class="pipeline-card__amount-label">Monto estimado</span>
+    <strong class="pipeline-card__amount">CRC {{ formatAmount(opportunity().montoEstimado) }}</strong>
+  </div>
+
+  <div class="pipeline-card__meta">
+    <div class="pipeline-card__meta-main">
+      <span class="pipeline-card__probability" [class]="probabilityClass()">
+        {{ opportunity().probabilidad }}% probabilidad
+      </span>
+    </div>
+
+    <div class="pipeline-card__meta-secondary">
+      <i class="feather icon-user"></i>
+      <span>{{ opportunity().vendedor || 'Sin asignar' }}</span>
+    </div>
+  </div>
+
+  <div class="pipeline-card__footer">
+    <span class="pipeline-card__id">ID {{ opportunity().id }}</span>
+    <div class="pipeline-card__footer-actions">
+      <span class="pipeline-card__updating-chip" *ngIf="isUpdating()">Actualizando...</span>
+      <button type="button" class="pipeline-card__action-btn pipeline-card__action-btn--primary" (click)="openCotizacion($event)">
+        <i class="feather icon-file-text"></i>
+        <span>{{ opportunity().tieneCotizacion ? 'Ver cotización' : 'Cotizar' }}</span>
+      </button>
+    </div>
+  </div>
+</article>

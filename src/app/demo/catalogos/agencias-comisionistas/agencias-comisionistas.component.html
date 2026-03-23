@@ -1,130 +1,237 @@
-<div class="clientes-wrapper">
-  <div class="page-header">
-    <div>
-      <h4 class="title">Clientes / Agencias</h4>
-      <p class="subtitle">Administra clientes, agencias y comisionistas.</p>
+<div class="crm-contactos-page">
+  <div class="crm-contactos-hero">
+    <div class="crm-contactos-hero__content">
+      <div>
+        <div class="crm-contactos-hero__eyebrow">CRM</div>
+        <h4 class="crm-contactos-hero__title">Contactos</h4>
+        <p class="crm-contactos-hero__subtitle">
+          Gestiona clientes y contactos comerciales desde una vista central, limpia y preparada para crecer hacia detalle y edición.
+        </p>
+      </div>
+
+      <div class="crm-contactos-kpis">
+        <div class="crm-contactos-kpi">
+          <span class="crm-contactos-kpi__label">Total clientes</span>
+          <strong>{{ totalContactosListado }}</strong>
+        </div>
+        <div class="crm-contactos-kpi">
+          <span class="crm-contactos-kpi__label">Activos</span>
+          <strong>{{ contactosActivosCount }}</strong>
+        </div>
+        <div class="crm-contactos-kpi">
+          <span class="crm-contactos-kpi__label">Nuevos este mes</span>
+          <strong>{{ nuevosEsteMesCount }}</strong>
+        </div>
+      </div>
     </div>
-    <div>
-      <button class="btn btn-primary" (click)="openForm()" [disabled]="isLoading">
-        <i class="feather icon-plus"></i> Nuevo Cliente/Agencia
+
+    <div class="crm-contactos-hero__actions">
+      <button type="button" class="btn btn-primary crm-contactos-hero__button" (click)="openForm()">
+        <span class="crm-contactos-hero__button-icon">
+          <i class="feather icon-plus"></i>
+        </span>
+        <span class="crm-contactos-hero__button-copy">
+          <small>Acción rápida</small>
+          <strong>Nuevo</strong>
+        </span>
       </button>
     </div>
   </div>
 
-  <div class="filters-card">
-    <div class="row">
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label class="small-label">Nombre</label>
-        <input class="form-control" [(ngModel)]="filterNombre" placeholder="Buscar por nombre">
+  <div class="crm-contactos-toolbar">
+    <div class="crm-contactos-search">
+      <i class="feather icon-search"></i>
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="contactosSearchTerm"
+        (keyup.enter)="onBuscar()"
+        placeholder="Buscar por nombre, identificación o email"
+      >
+    </div>
+
+    <div class="crm-contactos-toolbar__actions">
+      <button type="button" class="btn btn-outline-secondary crm-contactos-toolbar__clear" (click)="onLimpiar()" [disabled]="isLoading || !hasSearchTerm">
+        <i class="feather icon-x"></i>
+        Limpiar
+      </button>
+      <button type="button" class="btn btn-outline-primary" (click)="onBuscar()" [disabled]="isLoading">
+        <i class="feather icon-search"></i>
+        Buscar
+      </button>
+    </div>
+  </div>
+
+  <div class="crm-contactos-loading" *ngIf="isLoading">
+    <div class="crm-contactos-skeleton-card" *ngFor="let skeleton of skeletonCards; trackBy: trackByIndex">
+      <div class="crm-contactos-skeleton-card__top">
+        <span class="crm-skeleton crm-skeleton--avatar"></span>
+        <div class="crm-contactos-skeleton-card__identity">
+          <span class="crm-skeleton crm-skeleton--title"></span>
+          <span class="crm-skeleton crm-skeleton--subtitle"></span>
+        </div>
+        <span class="crm-skeleton crm-skeleton--badge"></span>
       </div>
-      <div class="col-lg-3 col-md-6 mb-3">
-        <label class="small-label">Tipo de Cliente</label>
-        <select class="form-control" [(ngModel)]="filterTipo" (change)="applyLocalFilters()">
-          <option value="">Todos</option>
-          <option value="AGE">Agencia</option>
-          <option value="CLI">Cliente final</option>
-        </select>
+      <div class="crm-contactos-skeleton-card__body">
+        <span class="crm-skeleton crm-skeleton--line"></span>
+        <span class="crm-skeleton crm-skeleton--line"></span>
+        <span class="crm-skeleton crm-skeleton--line"></span>
+        <span class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></span>
       </div>
-      <div class="col-lg-3 col-md-12 mb-3 d-flex align-items-end justify-content-end">
-        <button class="btn btn-outline-secondary me-2" (click)="onLimpiar()" [disabled]="isLoading">Limpiar</button>
-        <button class="btn btn-primary" (click)="onBuscar()" [disabled]="isLoading">Buscar</button>
+      <div class="crm-contactos-skeleton-card__footer">
+        <span class="crm-skeleton crm-skeleton--meta"></span>
+        <span class="crm-skeleton crm-skeleton--button"></span>
       </div>
     </div>
   </div>
 
-  <div class="table-card">
-    <div class="table-header">
-      <h6 class="m-0"><i class="feather icon-users"></i> Listado</h6>
-      <span class="count-chip">{{ totalRegistros }} registros</span>
+  <div class="crm-contactos-state crm-contactos-state--error" *ngIf="!isLoading && contactosLoadError">
+    <i class="feather icon-alert-circle"></i>
+    <div>
+      <strong>Error de carga</strong>
+      <p class="mb-0">{{ contactosLoadError }}</p>
     </div>
-    <div class="table-responsive" *ngIf="filteredClientes.length; else noData">
-      <table class="table table-hover mb-0 table-compact">
-        <thead>
-          <tr>
-            <th>Codigo</th>
-            <th>Nombre</th>
-            <th>Contacto Principal</th>
-            <th>Telefono</th>
-            <th>Email</th>
-            <th>Tipo</th>
-            <th class="text-center">Contactos</th>
-            <th>Operador</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let cliente of filteredClientes">
-            <td>{{ cliente.codigo }}</td>
-            <td>
-              <div class="entity-name">{{ cliente.nombre }}</div>
-              <div class="entity-meta" *ngIf="cliente.ruc">{{ cliente.ruc }}</div>
-            </td>
-            <td>
-              <div class="contact-name">{{ getContactoLabel(cliente) }}</div>
-              <div class="entity-meta" *ngIf="cliente.cargoPrincipal">{{ cliente.cargoPrincipal }}</div>
-            </td>
-            <td>{{ getTelefonoLabel(cliente) }}</td>
-            <td>{{ getEmailLabel(cliente) }}</td>
-            <td><span class="badge bg-light text-dark">{{ getTipoLabel(cliente.tipoCli) }}</span></td>
-            <td class="text-center">
-              <span class="contact-count-chip" [class.is-single]="cliente.totalContactos <= 1">
-                {{ cliente.totalContactos || 0 }}
-              </span>
-            </td>
-            <td class="text-center">{{ cliente.operador }}</td>
-            <td class="text-center">
-              <div ngbDropdown container="body" placement="bottom-end" class="cliente-action-menu">
-                <button type="button" ngbDropdownToggle class="cliente-action-toggle" aria-label="Abrir acciones del cliente">
-                  <i class="feather icon-more-horizontal" aria-hidden="true"></i>
-                </button>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="loadContactosListado()">Reintentar</button>
+  </div>
 
-                <div ngbDropdownMenu class="dropdown-menu cliente-action-dropdown">
-                  <button type="button" ngbDropdownItem class="dropdown-item" (click)="verDetalle(cliente)">
-                    <i class="feather icon-eye" aria-hidden="true"></i>
-                    <span>Ver detalle</span>
-                  </button>
-
-                  <button type="button" ngbDropdownItem class="dropdown-item" (click)="editar(cliente)">
-                    <i class="feather icon-edit" aria-hidden="true"></i>
-                    <span>Editar registro</span>
-                  </button>
-
-                  <div class="cliente-action-divider"></div>
-
-                  <button type="button" ngbDropdownItem class="dropdown-item dropdown-item--danger" (click)="eliminar(cliente)">
-                    <i class="feather icon-trash" aria-hidden="true"></i>
-                    <span>Eliminar registro</span>
-                  </button>
-                </div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="crm-contactos-empty" *ngIf="!isLoading && !contactosLoadError && !contactosListado.length">
+    <div class="crm-contactos-empty__icon">
+      <i class="feather icon-users"></i>
     </div>
-    <ng-template #noData>
-      <div class="empty-state text-center p-4">
-        <i class="feather icon-file-text empty-icon"></i>
-        <p class="mb-2">No hay clientes para mostrar.</p>
-        <button class="btn btn-primary" (click)="openForm()"><i class="feather icon-plus"></i> Crear registro</button>
-      </div>
-    </ng-template>
+    <h5 class="mb-2">No hay contactos registrados</h5>
+    <p class="mb-3">Crea tu primer contacto para empezar a organizar clientes, oportunidades y seguimiento comercial.</p>
+    <button type="button" class="btn btn-primary" (click)="openForm()">
+      <i class="feather icon-plus"></i>
+      <span>Crear contacto</span>
+    </button>
+  </div>
 
-    <div class="row mt-3 align-items-center" *ngIf="totalPages > 0">
-      <div class="col-md-4 text-muted">
-        Pagina {{ currentPage }} de {{ totalPages }} ({{ totalRegistros }} registros)
-      </div>
-      <div class="col-md-4 text-center">
-        <select class="form-select form-select-sm d-inline-block w-auto" [(ngModel)]="pageSize" (change)="onPageSizeChange()" [disabled]="isLoading">
-          <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} por pagina</option>
-        </select>
-      </div>
-      <div class="col-md-4 text-end">
-        <div class="btn-group" role="group">
-          <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage === 1 || isLoading" (click)="goToPageRelative(-1)">Prev</button>
-          <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage === totalPages || isLoading" (click)="goToPageRelative(1)">Next</button>
+  <div class="crm-contactos-grid" *ngIf="!isLoading && !contactosLoadError && contactosListado.length">
+    <article
+      class="crm-contact-card"
+      *ngFor="let contacto of contactosListado; trackBy: trackByListadoId"
+      tabindex="0"
+      role="button"
+      (click)="openContactoDetalle(contacto)"
+      (keydown)="handleCardKeydown($event, contacto)">
+      <button type="button" class="crm-contact-card__quick-action" (click)="$event.stopPropagation(); crearOportunidad(contacto)">
+        <i class="feather icon-plus-circle"></i>
+        <span>Oportunidad</span>
+      </button>
+
+      <div class="crm-contact-card__top">
+        <div class="crm-contact-card__avatar crm-contact-card__avatar--large" [ngStyle]="getAvatarStyle(contacto)">
+          {{ getListadoInitials(contacto) }}
+        </div>
+
+        <div class="crm-contact-card__identity">
+          <h5 class="crm-contact-card__name">{{ contacto.nombre }}</h5>
+          <div class="crm-contact-card__id">{{ contacto.identificacion || 'Sin identificación' }}</div>
+          <div class="crm-contact-card__badges">
+            <span class="crm-contact-card__badge" [ngClass]="getListadoTipoClass(contacto.tipo, contacto.subtipo)">
+              {{ getListadoTipoLabel(contacto.tipo, contacto.subtipo) }}
+            </span>
+            <span class="crm-contact-card__badge crm-contact-card__badge--status">Activo</span>
+            <span class="crm-contact-card__badge crm-contact-card__badge--new" *ngIf="shouldShowNuevoBadge(contacto)">Nuevo</span>
+          </div>
+        </div>
+
+        <div class="crm-contact-card__actions" (click)="$event.stopPropagation()">
+          <button type="button" class="btn btn-sm btn-primary" (click)="openContactoDetalle(contacto)">
+            <i class="feather icon-eye"></i>
+            <span>Ver</span>
+          </button>
+          <button type="button" class="crm-contact-card__icon-btn" title="Editar" (click)="openContactoEditar(contacto)">
+            <i class="feather icon-edit-2"></i>
+          </button>
+          <details class="crm-contact-card__menu">
+            <summary class="crm-contact-card__menu-trigger" title="Más acciones" (click)="$event.stopPropagation()">
+              <i class="feather icon-more-vertical"></i>
+            </summary>
+            <div class="crm-contact-card__menu-panel" (click)="$event.stopPropagation()">
+              <button type="button" class="crm-contact-card__menu-item" (click)="openContactoEditar(contacto)">
+                <i class="feather icon-edit-2"></i>
+                <span>Editar</span>
+              </button>
+              <button type="button" class="crm-contact-card__menu-item" (click)="crearOportunidad(contacto)">
+                <i class="feather icon-briefcase"></i>
+                <span>Crear oportunidad</span>
+              </button>
+              <button type="button" class="crm-contact-card__menu-item crm-contact-card__menu-item--danger" (click)="eliminarContacto(contacto)">
+                <i class="feather icon-trash-2"></i>
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </details>
         </div>
       </div>
+
+      <div class="crm-contact-card__body">
+        <section class="crm-contact-card__section">
+          <div class="crm-contact-card__section-title">
+            <i class="feather icon-user"></i>
+            <span>Contacto</span>
+          </div>
+          <div class="crm-contact-card__row">
+            <i class="feather icon-user-check"></i>
+            <span>{{ contacto.contacto || 'Sin contacto principal' }}</span>
+          </div>
+          <div class="crm-contact-card__row">
+            <i class="feather icon-mail"></i>
+            <span>{{ contacto.email || 'Sin correo principal' }}</span>
+          </div>
+          <div class="crm-contact-card__row">
+            <i class="feather icon-phone"></i>
+            <span>{{ contacto.telefono || 'Sin teléfono' }}</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="crm-contact-card__footer">
+        <div class="crm-contact-card__meta">
+          <span class="crm-contact-card__count">
+            <i class="feather icon-users"></i>
+            {{ contacto.totalContactos || 0 }} contacto(s)
+          </span>
+          <span class="crm-contact-card__operator" *ngIf="contacto.operador">Operador {{ contacto.operador }}</span>
+        </div>
+
+        <div class="crm-contact-card__footer-link">
+          <span>Explorar perfil</span>
+          <i class="feather icon-arrow-right"></i>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="crm-contactos-pagination" *ngIf="!isLoading && !contactosLoadError && totalContactosListado > 0">
+    <div class="crm-contactos-pagination__summary">
+      Página {{ contactosCurrentPage }} de {{ contactosTotalPages }} · {{ totalContactosListado }} registro(s)
+    </div>
+
+    <div class="crm-contactos-pagination__actions">
+      <label class="crm-contactos-pagination__size">
+        <span>Mostrar</span>
+        <select class="form-select form-select-sm" [(ngModel)]="contactosPageSize" (change)="onPageSizeChange()" [disabled]="isLoading">
+          <option *ngFor="let size of contactosPageSizeOptions" [ngValue]="size">{{ size }}</option>
+        </select>
+      </label>
+
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        (click)="goToPageRelative(-1)"
+        [disabled]="contactosCurrentPage <= 1 || isLoading">
+        Anterior
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        (click)="goToPageRelative(1)"
+        [disabled]="contactosCurrentPage >= contactosTotalPages || isLoading">
+        Siguiente
+      </button>
     </div>
   </div>
 </div>

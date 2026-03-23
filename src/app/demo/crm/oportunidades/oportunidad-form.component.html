@@ -1,0 +1,263 @@
+<div class="crm-opportunity-form-page">
+  <header class="crm-opportunity-form-hero">
+    <div>
+      <div class="crm-opportunity-form-hero__eyebrow">CRM</div>
+      <h3 class="crm-opportunity-form-hero__title">{{ pageTitle }}</h3>
+      <p class="crm-opportunity-form-hero__subtitle">
+        Registra una oportunidad comercial y deja lista su etapa inicial para el pipeline.
+      </p>
+    </div>
+
+    <div class="crm-opportunity-form-hero__actions">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
+        <i class="feather icon-arrow-left"></i>
+        <span>Volver</span>
+      </button>
+      <button type="button" class="btn btn-primary" (click)="save()" [disabled]="isSaving || isLoading">
+        <i class="feather icon-save"></i>
+        <span>{{ isSaving ? 'Guardando...' : 'Guardar' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="crm-opportunity-form-layout">
+    <section class="crm-opportunity-form-card">
+      <form [formGroup]="form" class="crm-opportunity-form-stack">
+        <section class="crm-opportunity-form-section">
+          <div class="crm-opportunity-form-section__header">
+            <div class="crm-opportunity-form-section__icon">
+              <i class="feather icon-file-text"></i>
+            </div>
+            <div>
+              <h5>Información básica</h5>
+              <p>Define el cliente, el título y el contexto principal de la oportunidad.</p>
+            </div>
+          </div>
+
+          <div class="crm-opportunity-form-grid">
+            <div class="crm-opportunity-field crm-opportunity-field--full">
+              <label for="codCliente">
+                <i class="feather icon-user"></i>
+                <span>Cliente</span>
+              </label>
+              <div class="crm-opportunity-cliente-picker">
+                <div class="crm-opportunity-cliente-picker__input-wrap">
+                  <i class="feather icon-search crm-opportunity-cliente-picker__icon"></i>
+                  <input
+                    id="codCliente"
+                    type="text"
+                    class="form-control crm-opportunity-cliente-picker__input"
+                    [value]="clienteSearchTerm"
+                    [readonly]="clienteFieldLocked"
+                    placeholder="Buscar por nombre o código"
+                    autocomplete="off"
+                    (input)="onClienteSearchInput($any($event.target).value)"
+                    (focus)="openClienteDropdown()"
+                    (blur)="closeClienteDropdown()"
+                  >
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary crm-opportunity-cliente-picker__create"
+                    [disabled]="clienteFieldLocked"
+                    (click)="openNuevoCliente()"
+                  >
+                    <i class="feather icon-plus"></i>
+                    <span>Nuevo cliente</span>
+                  </button>
+                </div>
+
+                <div class="crm-opportunity-cliente-picker__dropdown" *ngIf="clienteDropdownOpen && !clienteFieldLocked">
+                  <button
+                    type="button"
+                    class="crm-opportunity-cliente-picker__option"
+                    *ngFor="let cliente of filteredClientesOptions"
+                    (mousedown)="selectCliente(cliente); $event.preventDefault()"
+                  >
+                    <strong>{{ cliente.label }}</strong>
+                    <span>{{ cliente.value }}</span>
+                  </button>
+
+                  <div class="crm-opportunity-cliente-picker__empty" *ngIf="showCreateClienteHint">
+                    <span>No encontramos clientes con "{{ clienteSearchTerm }}".</span>
+                    <button type="button" class="btn btn-sm btn-primary" (mousedown)="openNuevoCliente(); $event.preventDefault()">
+                      <i class="feather icon-user-plus"></i>
+                      <span>Crear cliente</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <small class="text-danger" *ngIf="form.get('codCliente')?.invalid && form.get('codCliente')?.touched">Seleccione un cliente.</small>
+            </div>
+
+            <div class="crm-opportunity-field crm-opportunity-field--full">
+              <label for="titulo">Título</label>
+              <input id="titulo" type="text" class="form-control" formControlName="titulo" placeholder="Ej. Renovación de contrato anual">
+              <small class="text-danger" *ngIf="form.get('titulo')?.invalid && form.get('titulo')?.touched">El título es obligatorio.</small>
+            </div>
+
+            <div class="crm-opportunity-field crm-opportunity-field--full">
+              <label for="descripcion">Descripción</label>
+              <textarea
+                id="descripcion"
+                rows="5"
+                class="form-control"
+                formControlName="descripcion"
+                placeholder="Describe el contexto comercial de la oportunidad"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="crm-opportunity-form-section">
+          <div class="crm-opportunity-form-section__header">
+            <div class="crm-opportunity-form-section__icon">
+              <i class="feather icon-dollar-sign"></i>
+            </div>
+            <div>
+              <h5>Información comercial</h5>
+              <p>Controla la etapa, la probabilidad y el monto esperado del negocio.</p>
+            </div>
+          </div>
+
+          <div class="crm-opportunity-form-grid">
+            <div class="crm-opportunity-field">
+              <label for="montoEstimado">
+                <i class="feather icon-credit-card"></i>
+                <span>Monto estimado</span>
+              </label>
+              <input id="montoEstimado" type="number" min="0" class="form-control" formControlName="montoEstimado">
+              <small class="crm-opportunity-field__hint" *ngIf="selectedCotizacion">Monto tomado desde la cotización seleccionada.</small>
+            </div>
+
+            <div class="crm-opportunity-field">
+              <label for="probabilidad">Probabilidad (%)</label>
+              <input id="probabilidad" type="number" min="0" max="100" class="form-control" formControlName="probabilidad">
+            </div>
+
+            <div class="crm-opportunity-field">
+              <label for="etapa">Etapa inicial</label>
+              <select id="etapa" class="form-select" formControlName="etapa">
+                <option *ngFor="let etapa of etapas" [value]="etapa">{{ etapa }}</option>
+              </select>
+            </div>
+
+            <div class="crm-opportunity-field">
+              <label for="vendedor">Vendedor</label>
+              <input id="vendedor" type="text" class="form-control" formControlName="vendedor" placeholder="Código o nombre del vendedor">
+            </div>
+          </div>
+        </section>
+
+        <section class="crm-opportunity-form-section">
+          <div class="crm-opportunity-form-section__header">
+            <div class="crm-opportunity-form-section__icon">
+              <i class="feather icon-file"></i>
+            </div>
+            <div>
+              <h5>Cotización asociada</h5>
+              <p>Relaciona una cotización existente o crea una nueva desde el flujo comercial.</p>
+            </div>
+          </div>
+
+          <div class="crm-opportunity-quote-toggle">
+            <div>
+              <strong>¿Desea asociar una cotización?</strong>
+              <p>Si eliges una cotización, se precargan monto y contexto comercial.</p>
+            </div>
+            <label class="crm-opportunity-switch">
+              <input type="checkbox" formControlName="usarCotizacion">
+              <span class="crm-opportunity-switch__slider"></span>
+            </label>
+          </div>
+
+          <div class="crm-opportunity-quote-panel" *ngIf="cotizacionActiva">
+            <div class="crm-opportunity-field crm-opportunity-field--full">
+              <label for="cotizacionId">
+                <i class="feather icon-link"></i>
+                <span>Seleccionar cotización existente</span>
+              </label>
+              <select id="cotizacionId" class="form-select" formControlName="cotizacionId" (change)="onCotizacionSelected($any($event.target).value)">
+                <option value="">Seleccione una cotización</option>
+                <option *ngFor="let cotizacion of cotizacionesOptions" [value]="cotizacion.id">{{ cotizacion.label }}</option>
+              </select>
+              <small class="crm-opportunity-field__hint" *ngIf="cotizacionesLoading">Cargando cotizaciones del cliente...</small>
+              <small class="text-danger" *ngIf="cotizacionesError">{{ cotizacionesError }}</small>
+              <small class="text-danger" *ngIf="form.get('cotizacionId')?.invalid && form.get('cotizacionId')?.touched">
+                Seleccione una cotización para continuar.
+              </small>
+            </div>
+
+            <div class="crm-opportunity-quote-panel__actions">
+              <button type="button" class="btn btn-outline-primary" (click)="openNuevaCotizacion()">
+                <i class="feather icon-plus-circle"></i>
+                <span>Crear nueva cotización</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </form>
+    </section>
+
+    <aside class="crm-opportunity-form-sidebar">
+      <section class="crm-opportunity-form-card crm-opportunity-form-card--sidebar">
+        <div class="crm-opportunity-form-card__title-row">
+          <h5>Resumen comercial</h5>
+          <span class="crm-opportunity-summary-badge" [class.crm-opportunity-summary-badge--quote]="selectedCotizacion">
+            Origen: {{ origenLabel }}
+          </span>
+        </div>
+
+        <div class="crm-opportunity-summary">
+          <div>
+            <span>Cliente</span>
+            <strong>{{ selectedClienteLabel }}</strong>
+          </div>
+          <div>
+            <span>Etapa</span>
+            <strong>{{ form.get('etapa')?.value || 'PROSPECTO' }}</strong>
+          </div>
+          <div>
+            <span>Probabilidad</span>
+            <strong>{{ form.get('probabilidad')?.value || 0 }}%</strong>
+          </div>
+          <div>
+            <span>Monto estimado</span>
+            <strong>{{ (form.get('montoEstimado')?.value || 0) | number:'1.0-2' }}</strong>
+          </div>
+          <div>
+            <span>Cotización seleccionada</span>
+            <strong>{{ cotizacionSeleccionadaLabel }}</strong>
+          </div>
+          <div>
+            <span>Estado de vínculo</span>
+            <strong class="crm-opportunity-summary-status" [class.crm-opportunity-summary-status--ready]="selectedCotizacion">
+              {{ cotizacionEstadoLabel }}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="crm-opportunity-form-card crm-opportunity-form-card--sidebar" *ngIf="isEditing && loadedOportunidad">
+        <h5>Información actual</h5>
+        <div class="crm-opportunity-summary">
+          <div>
+            <span>ID</span>
+            <strong>{{ loadedOportunidad.id }}</strong>
+          </div>
+          <div>
+            <span>Estado</span>
+            <strong>{{ loadedOportunidad.estado === 'I' ? 'Inactiva' : 'Activa' }}</strong>
+          </div>
+          <div>
+            <span>Creación</span>
+            <strong>{{ loadedOportunidad.fechaCreacion ? (loadedOportunidad.fechaCreacion | date:'dd/MM/yyyy') : 'Sin fecha' }}</strong>
+          </div>
+          <div>
+            <span>Cotización</span>
+            <strong>{{ loadedOportunidad.tieneCotizacion ? 'Vinculada' : 'Sin vínculo' }}</strong>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>

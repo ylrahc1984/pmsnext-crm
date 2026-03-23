@@ -1,19 +1,35 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
 
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { DashboardService } from './dashboard.service';
-import { Weather } from './models/weather.model';
 import { WelcomeCardComponent } from './components/welcome-card/welcome-card.component';
-import { WeatherCardComponent } from './components/weather-card/weather-card.component';
+import { CrmPulsoComponent } from './components/crm-pulso/crm-pulso.component';
+import { OportunidadEtapa, OportunidadResumenPipeline } from '../crm/oportunidades/oportunidad.models';
+import { OportunidadService } from '../crm/oportunidades/oportunidad.service';
+
+interface DashboardStageSnapshot {
+  stage: OportunidadEtapa;
+  label: string;
+  cantidad: number;
+  total: number;
+  progress: number;
+  accentClass: string;
+}
+
+interface DashboardStageConfig {
+  stage: OportunidadEtapa;
+  label: string;
+  accentClass: string;
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SharedModule, WelcomeCardComponent, WeatherCardComponent],
+  imports: [CommonModule, RouterModule, SharedModule, WelcomeCardComponent, CrmPulsoComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -21,78 +37,113 @@ import { WeatherCardComponent } from './components/weather-card/weather-card.com
 export class DashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly authService = inject(AuthService);
-  weather: Weather | null = null;
-  loading = false;
-  weatherError: string | null = null;
-  readonly defaultCity = 'San Jose';
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly router = inject(Router);
+  private readonly oportunidadService = inject(OportunidadService);
+  crmLoading = false;
+  crmError: string | null = null;
   readonly userName = this.resolveUserName();
-
-  sales = [
-    {
-      title: 'Clientes Activos',
-      amount: '0',
-      percentage: '+0%',
-      progress: 0,
-      progress_bg: 'bg-c-blue',
-      icon: 'icon-calendar',
-      design: 'col-xl-3 col-md-6'
-    },
-    {
-      title: 'Gestiones Pendientes',
-      amount: '0',
-      percentage: '0%',
-      progress: 0,
-      progress_bg: 'bg-c-green',
-      icon: 'icon-clock',
-      design: 'col-xl-3 col-md-6'
-    },
-    {
-      title: 'Documentos del Dia',
-      amount: '0',
-      percentage: '0%',
-      progress: 0,
-      progress_bg: 'bg-c-yellow',
-      icon: 'icon-clipboard',
-      design: 'col-xl-3 col-md-6'
-    },
-    {
-      title: 'Ingresos del Mes',
-      amount: 'CRC 0',
-      percentage: '+0%',
-      progress: 0,
-      progress_bg: 'bg-c-red',
-      icon: 'icon-dollar-sign',
-      design: 'col-xl-3 col-md-6'
-    }
-  ];
-
-  private dashboardService = inject(DashboardService);
+  pipelineResumen: OportunidadResumenPipeline[] = [];
 
   ngOnInit() {
-    this.initializeMetrics();
-    this.bindWeatherState();
-    this.dashboardService.loadWeather(this.defaultCity);
+    this.loadCrmResumen();
   }
 
-  private initializeMetrics() {
-    this.sales = this.sales.map((metric) => ({
-      ...metric,
-      amount: metric.title === 'Ingresos del Mes' ? 'CRC 0' : '0'
-    }));
+  get stageSnapshots(): DashboardStageSnapshot[] {
+    const total = this.totalOportunidades;
+    const stageMap = new Map<string, OportunidadResumenPipeline>(this.pipelineResumen.map((item) => [item.etapa, item]));
+    const stageConfigs: DashboardStageConfig[] = [
+      { stage: 'PROSPECTO', label: 'Prospecto', accentClass: 'dashboard-stage--prospecto' },
+      { stage: 'COTIZACION', label: 'Cotización', accentClass: 'dashboard-stage--cotizacion' },
+      { stage: 'NEGOCIACION', label: 'Negociación', accentClass: 'dashboard-stage--negociacion' },
+      { stage: 'GANADO', label: 'Ganado', accentClass: 'dashboard-stage--ganado' },
+      { stage: 'PERDIDO', label: 'Perdido', accentClass: 'dashboard-stage--perdido' }
+    ];
+
+    return stageConfigs.map((config) => {
+      const match = stageMap.get(config.stage);
+      const cantidad = match?.cantidad ?? 0;
+      return {
+        ...config,
+        cantidad,
+        total: match?.total ?? 0,
+        progress: total > 0 ? Math.round((cantidad / total) * 100) : 0
+      };
+    });
   }
 
-  private bindWeatherState(): void {
-    this.dashboardService.weather$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((weather) => {
-      this.weather = weather;
-    });
+  get totalOportunidades(): number {
+    return this.pipelineResumen.reduce((acc, item) => acc + item.cantidad, 0);
+  }
 
-    this.dashboardService.loading$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((loading) => {
-      this.loading = loading;
-    });
+  get totalMontoEstimado(): number {
+    return this.pipelineResumen.reduce((acc, item) => acc + item.total, 0);
+  }
 
-    this.dashboardService.error$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((error) => {
-      this.weatherError = error;
+  get oportunidadesEnGestion(): number {
+    return this.getStageCount('PROSPECTO') + this.getStageCount('COTIZACION') + this.getStageCount('NEGOCIACION');
+  }
+
+  get oportunidadesGanadas(): number {
+    return this.getStageCount('GANADO');
+  }
+
+  get oportunidadesPerdidas(): number {
+    return this.getStageCount('PERDIDO');
+  }
+
+  get tasaCierre(): number {
+    const resolved = this.oportunidadesGanadas + this.oportunidadesPerdidas;
+    if (!resolved) {
+      return 0;
+    }
+    return Math.round((this.oportunidadesGanadas / resolved) * 100);
+  }
+
+  reloadCrmResumen(): void {
+    this.loadCrmResumen();
+  }
+
+  irAEtapa(etapa: OportunidadEtapa): void {
+    void this.router.navigate(['/crm/pipeline'], {
+      queryParams: { etapa }
     });
+  }
+
+  formatCurrency(value: number): string {
+    return `CRC ${new Intl.NumberFormat('es-CR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(value || 0)}`;
+  }
+
+  private loadCrmResumen(): void {
+    this.crmLoading = true;
+    this.crmError = null;
+
+    this.oportunidadService
+      .getPipelineResumen()
+      .pipe(
+        finalize(() => {
+          this.crmLoading = false;
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (resumen) => {
+          this.pipelineResumen = resumen;
+        },
+        error: (error) => {
+          console.error('Error cargando resumen CRM del dashboard:', error);
+          this.pipelineResumen = [];
+          this.crmError = 'No se pudo cargar el resumen comercial del CRM.';
+        }
+      });
+  }
+
+  private getStageCount(stage: string): number {
+    return this.pipelineResumen.find((item) => item.etapa === stage)?.cantidad ?? 0;
   }
 
   private resolveUserName(): string {

@@ -1,0 +1,189 @@
+<div class="crm-pipeline-page">
+  <section class="crm-pipeline-shell">
+    <div class="crm-pipeline-hero">
+      <div>
+        <div class="crm-pipeline-hero__eyebrow">CRM</div>
+        <h3 class="crm-pipeline-hero__title">Pipeline</h3>
+        <p class="crm-pipeline-hero__subtitle">
+          Visualiza oportunidades por etapa, reorganiza el flujo comercial con drag & drop.
+        </p>
+      </div>
+
+      <div class="crm-pipeline-hero__metrics">
+        <div class="crm-pipeline-metric">
+          <span>Total oportunidades</span>
+          <strong>{{ totalOpportunities }}</strong>
+        </div>
+        <div class="crm-pipeline-metric">
+          <span>Monto estimado</span>
+          <strong>{{ formatAmount(totalEstimatedAmount) }}</strong>
+        </div>
+        <button type="button" class="btn btn-outline-primary crm-pipeline-hero__refresh" (click)="loadPipeline()" [disabled]="isLoading">
+          <i class="feather icon-refresh-cw"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="crm-pipeline-filters">
+      <div class="crm-pipeline-filters__header">
+        <div>
+          <div class="crm-pipeline-hero__eyebrow">Filtros</div>
+          <h4 class="crm-pipeline-filters__title">Refina el tablero comercial</h4>
+        </div>
+
+        <div class="crm-pipeline-filters__summary">
+          <span class="crm-pipeline-filters__chip" *ngIf="hasActiveFilters">{{ activeFilterCount }} filtros activos</span>
+          <span class="crm-pipeline-filters__chip crm-pipeline-filters__chip--muted" *ngIf="!hasActiveFilters">Sin filtros aplicados</span>
+        </div>
+      </div>
+
+      <div class="crm-pipeline-filters__grid">
+        <div class="crm-pipeline-filter-field crm-pipeline-filter-field--search">
+          <label class="crm-pipeline-filter-field__label" for="pipeline-busqueda">Búsqueda</label>
+          <div class="crm-pipeline-filter-field__surface">
+            <span class="crm-pipeline-filter-field__icon">
+              <i class="feather icon-search"></i>
+            </span>
+            <input
+              id="pipeline-busqueda"
+              type="text"
+              class="form-control crm-pipeline-filter-field__control crm-pipeline-filter-field__control--icon"
+              [(ngModel)]="filters.busqueda"
+              (keyup.enter)="applyFilters()"
+              placeholder="Cliente, título o descripción"
+            />
+          </div>
+        </div>
+
+        <div class="crm-pipeline-filter-field">
+          <label class="crm-pipeline-filter-field__label" for="pipeline-etapa">Etapa</label>
+          <div class="crm-pipeline-filter-field__surface">
+            <span class="crm-pipeline-filter-field__icon">
+              <i class="feather icon-layers"></i>
+            </span>
+            <select
+              id="pipeline-etapa"
+              class="form-control crm-pipeline-filter-field__control crm-pipeline-filter-field__control--icon"
+              [(ngModel)]="filters.etapa"
+            >
+              <option value="">Todas</option>
+              <option *ngFor="let stage of etapas" [value]="stage">{{ stage }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="crm-pipeline-filter-field">
+          <label class="crm-pipeline-filter-field__label" for="pipeline-vendedor">Vendedor</label>
+          <div class="crm-pipeline-filter-field__surface">
+            <span class="crm-pipeline-filter-field__icon">
+              <i class="feather icon-user"></i>
+            </span>
+            <input
+              id="pipeline-vendedor"
+              type="text"
+              class="form-control crm-pipeline-filter-field__control crm-pipeline-filter-field__control--icon"
+              [(ngModel)]="filters.vendedor"
+              (keyup.enter)="applyFilters()"
+              placeholder="Código o nombre"
+            />
+          </div>
+        </div>
+
+        <div class="crm-pipeline-filter-field">
+          <label class="crm-pipeline-filter-field__label" for="pipeline-cotizacion">Cotización</label>
+          <div class="crm-pipeline-filter-field__surface">
+            <span class="crm-pipeline-filter-field__icon">
+              <i class="feather icon-file-text"></i>
+            </span>
+            <select
+              id="pipeline-cotizacion"
+              class="form-control crm-pipeline-filter-field__control crm-pipeline-filter-field__control--icon"
+              [(ngModel)]="filters.conCotizacion"
+            >
+              <option *ngFor="let option of cotizacionOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="crm-pipeline-filters__actions">
+          <button type="button" class="btn btn-primary btn-sm crm-pipeline-filters__btn crm-pipeline-filters__btn--primary" (click)="applyFilters()" [disabled]="isLoading">
+            <i class="feather icon-filter"></i>
+            <span>Aplicar</span>
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm crm-pipeline-filters__btn" (click)="clearFilters()" [disabled]="isLoading && !hasActiveFilters">
+            <i class="feather icon-x-circle"></i>
+            <span>Limpiar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="crm-pipeline-state crm-pipeline-state--error" *ngIf="actionError">
+    <i class="feather icon-alert-circle"></i>
+    <span>{{ actionError }}</span>
+  </div>
+
+  <div class="crm-pipeline-state crm-pipeline-state--info" *ngIf="showRefreshingNotice">
+    <i class="feather icon-refresh-cw"></i>
+    <span>Actualizando pipeline...</span>
+  </div>
+
+  <div class="crm-pipeline-state crm-pipeline-state--error" *ngIf="!isLoading && loadError">
+    <i class="feather icon-cloud-off"></i>
+    <span>{{ loadError }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="loadPipeline()">Reintentar</button>
+  </div>
+
+  <div class="crm-pipeline-state crm-pipeline-state--loading" *ngIf="showLoadingNotice">
+    <span class="crm-pipeline-state__pulse"></span>
+    <div>
+      <strong>Cargando pipeline...</strong>
+      <p class="mb-0">Consultando oportunidades y etapas disponibles.</p>
+    </div>
+  </div>
+
+  <div class="crm-pipeline-empty" *ngIf="!isLoading && !loadError && !totalOpportunities">
+    <div class="crm-pipeline-empty__icon">
+      <i class="feather icon-briefcase"></i>
+    </div>
+    <h5>{{ hasActiveFilters ? 'Sin resultados para los filtros aplicados' : 'Pipeline sin oportunidades' }}</h5>
+    <p>
+      {{
+        hasActiveFilters
+          ? 'No se encontraron oportunidades con los filtros actuales. Ajuste la búsqueda o limpie los filtros para ver más resultados.'
+          : 'El API respondió correctamente, pero no devolvió registros para mostrar en las etapas del pipeline.'
+      }}
+    </p>
+    <div class="crm-pipeline-empty__stages">
+      <span *ngFor="let stage of etapas">{{ stage }}</span>
+    </div>
+    <div class="crm-pipeline-empty__actions">
+      <button type="button" class="btn btn-primary btn-sm" (click)="openCreateOpportunity()">
+        <i class="feather icon-plus"></i>
+        <span>Nueva oportunidad</span>
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openOportunidades()">
+        <i class="feather icon-list"></i>
+        <span>Ir a oportunidades</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="loadPipeline()">
+        <i class="feather icon-refresh-cw"></i>
+        <span>Volver a consultar</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="crm-pipeline-board" *ngIf="!isLoading && !loadError && totalOpportunities" cdkDropListGroup>
+    <app-pipeline-column
+      *ngFor="let column of columns; trackBy: trackByStage"
+      [stage]="column.stage"
+      [items]="column.items"
+      [dropListId]="dropListId(column.stage)"
+      [connectedDropLists]="connectedDropLists(column.stage)"
+      [updatingIds]="updatingOpportunityIds"
+      (stageDropped)="handleStageDrop($event)">
+    </app-pipeline-column>
+  </div>
+</div>

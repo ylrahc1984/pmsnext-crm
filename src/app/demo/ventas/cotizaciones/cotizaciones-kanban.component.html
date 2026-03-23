@@ -1,0 +1,27 @@
+<div class="cotizaciones-kanban">
+  <article class="cotizaciones-kanban__column" *ngFor="let column of columns()">
+    <header class="cotizaciones-kanban__header">
+      <span class="cotizacion-badge" [ngClass]="getEstadoClass(column.estado)">{{ column.estado }}</span>
+      <strong>{{ column.items.length }}</strong>
+    </header>
+
+    <div class="cotizaciones-kanban__cards">
+      <div class="cotizaciones-kanban__card" *ngFor="let item of column.items">
+        <div class="cotizaciones-kanban__card-top">
+          <div>
+            <h3>{{ item.cliente || 'Sin cliente' }}</h3>
+            <p>{{ item.numeroCompleto || item.numero || 'Sin número' }}</p>
+          </div>
+          <span class="cotizacion-badge" [ngClass]="getEstadoClass(item.estado)">{{ item.estado || 'Pendiente' }}</span>
+        </div>
+
+        <strong class="cotizaciones-kanban__total">{{ item.total | currency:'CRC':'symbol-narrow':'1.0-2' }}</strong>
+
+        <div class="cotizaciones-kanban__meta">
+          <span>{{ formatFecha(item.fecha) }}</span>
+          <span>{{ item.vendedor || 'Sin vendedor' }}</span>
+        </div>
+      </div>
+    </div>
+  </article>
+</div>

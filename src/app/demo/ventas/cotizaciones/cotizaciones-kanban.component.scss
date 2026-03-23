@@ -1,0 +1,110 @@
+.cotizaciones-kanban {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.cotizaciones-kanban__column {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+  padding: 0.95rem;
+  border: 1px solid #e7edf4;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.cotizaciones-kanban__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cotizaciones-kanban__cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cotizaciones-kanban__card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border: 1px solid #e7edf4;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cotizaciones-kanban__card:hover {
+  transform: translateY(-2px);
+  border-color: #d7e3f0;
+  box-shadow: 0 16px 26px rgba(15, 23, 42, 0.08);
+}
+
+.cotizaciones-kanban__card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cotizaciones-kanban__card h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cotizaciones-kanban__card p,
+.cotizaciones-kanban__meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.cotizaciones-kanban__total {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.cotizaciones-kanban__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.cotizacion-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.34rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cotizacion-badge--cotizacion {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.cotizacion-badge--aprobada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cotizacion-badge--rechazada {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.cotizacion-badge--pendiente {
+  background: #e2e8f0;
+  color: #475569;
+}

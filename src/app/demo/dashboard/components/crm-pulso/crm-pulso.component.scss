@@ -1,0 +1,222 @@
+.crm-pulso-card {
+  min-height: 208px;
+  border-radius: 20px;
+  padding: 16px 20px;
+  color: #fff;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 34%),
+    linear-gradient(135deg, #0f3b68, #2563eb);
+  box-shadow: var(--shadow-soft, 0 18px 44px rgba(31, 112, 255, 0.18));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  display: grid;
+  gap: 0.95rem;
+  transition: transform 0.3s ease;
+}
+
+.crm-pulso-card:hover {
+  transform: translateY(-3px);
+}
+
+.crm-pulso-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.crm-pulso-card__eyebrow {
+  margin: 0 0 0.2rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.crm-pulso-card__title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.crm-pulso-card__refresh,
+.crm-pulso-card__retry {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-radius: 14px;
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+.crm-pulso-card__refresh {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+}
+
+.crm-pulso-card__refresh:hover:not(:disabled),
+.crm-pulso-card__retry:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.crm-pulso-card__body {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.crm-pulso-card__amount {
+  font-size: 2.35rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.crm-pulso-card__caption {
+  margin-top: 0.2rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.crm-pulso-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.crm-pulso-card__metric {
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.crm-pulso-card__metric strong {
+  display: block;
+  margin-top: 0.18rem;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.crm-pulso-card__metric-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.crm-pulso-card__metric--success strong {
+  color: #d1fae5;
+}
+
+.crm-pulso-card__metric--warning strong {
+  color: #fde68a;
+}
+
+.crm-pulso-card__metric--danger strong {
+  color: #fecaca;
+}
+
+.crm-pulso-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.crm-pulso-card__rate-label {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.84rem;
+}
+
+.crm-pulso-card__rate-value {
+  font-size: 1.1rem;
+}
+
+.crm-pulso-card__state {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  gap: 0.8rem;
+  text-align: center;
+}
+
+.crm-pulso-card__state--error {
+  color: #ffe2e2;
+}
+
+.crm-pulso-card__retry {
+  padding: 0.55rem 0.9rem;
+}
+
+.crm-pulso-card__skeleton {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.crm-pulso-card__skeleton-kpi,
+.crm-pulso-card__skeleton-text,
+.crm-pulso-card__skeleton-detail {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.crm-pulso-card__skeleton-kpi::after,
+.crm-pulso-card__skeleton-text::after,
+.crm-pulso-card__skeleton-detail::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  animation: crm-pulso-shimmer 1.4s infinite;
+}
+
+.crm-pulso-card__skeleton-kpi {
+  width: 58%;
+  height: 44px;
+}
+
+.crm-pulso-card__skeleton-text {
+  width: 42%;
+  height: 16px;
+}
+
+.crm-pulso-card__skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.crm-pulso-card__skeleton-detail {
+  height: 66px;
+}
+
+@keyframes crm-pulso-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .crm-pulso-card {
+    padding: 16px 20px;
+  }
+
+  .crm-pulso-card__header,
+  .crm-pulso-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .crm-pulso-card__metrics,
+  .crm-pulso-card__skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-pulso-card__skeleton-kpi,
+  .crm-pulso-card__skeleton-text {
+    width: 100%;
+  }
+}

@@ -1,0 +1,543 @@
+<div class="cliente-detalle-page">
+  <ng-container *ngIf="isLoading; else detailState">
+    <div class="cliente-detalle-skeleton cliente-detalle-skeleton--hero">
+      <div class="crm-skeleton crm-skeleton--avatar"></div>
+      <div class="cliente-detalle-skeleton__content">
+        <div class="crm-skeleton crm-skeleton--title"></div>
+        <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+      </div>
+      <div class="cliente-detalle-skeleton__actions">
+        <div class="crm-skeleton crm-skeleton--button"></div>
+        <div class="crm-skeleton crm-skeleton--button"></div>
+      </div>
+    </div>
+
+    <div class="cliente-detalle-kpis cliente-detalle-kpis--loading">
+      <div class="cliente-detalle-skeleton" *ngFor="let card of [1, 2, 3, 4]">
+        <div class="crm-skeleton crm-skeleton--section-title"></div>
+        <div class="cliente-detalle-skeleton__rows">
+          <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cliente-detalle-skeleton">
+      <div class="crm-skeleton crm-skeleton--section-title"></div>
+      <div class="cliente-detalle-skeleton__rows">
+        <div class="crm-skeleton crm-skeleton--line"></div>
+        <div class="crm-skeleton crm-skeleton--line"></div>
+        <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #detailState>
+    <div class="cliente-detalle-state cliente-detalle-state--error" *ngIf="loadError">
+      <i class="feather icon-alert-circle"></i>
+      <div>
+        <strong>Error de carga</strong>
+        <p class="mb-0">{{ loadError }}</p>
+      </div>
+      <div class="cliente-detalle-state__actions">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goBack()">Volver</button>
+        <button type="button" class="btn btn-outline-primary btn-sm" (click)="retryLoad()">Reintentar</button>
+      </div>
+    </div>
+
+    <div class="cliente-detalle-state" *ngIf="!loadError && !cliente">
+      <i class="feather icon-file-text"></i>
+      <div>
+        <strong>Sin datos</strong>
+        <p class="mb-0">No existe información disponible para este cliente.</p>
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goBack()">Volver</button>
+    </div>
+
+    <ng-container *ngIf="cliente as currentCliente">
+      <header class="cliente-detalle-hero">
+        <div class="cliente-detalle-hero__identity">
+          <div class="cliente-detalle-avatar" [ngStyle]="getAvatarStyle()">{{ getAvatarInitials() }}</div>
+
+          <div class="cliente-detalle-hero__content">
+            <div class="cliente-detalle-hero__eyebrow">CRM · Perfil 360</div>
+            <h1 class="cliente-detalle-hero__title">{{ currentCliente.nombre || 'Cliente sin nombre' }}</h1>
+
+            <div class="cliente-detalle-hero__meta">
+              <span class="cliente-detalle-badge" [ngClass]="getTipoClass(currentCliente.tipoCli, currentCliente.tCliente)">
+                {{ getTipoLabel(currentCliente.tipoCli, currentCliente.tCliente) }}
+              </span>
+              <span class="cliente-detalle-badge cliente-detalle-badge--muted">Activo</span>
+              <span class="cliente-detalle-hero__meta-item">{{ currentCliente.ruc || 'Sin identificación' }}</span>
+              <span class="cliente-detalle-hero__meta-item">{{ getUbicacion() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cliente-detalle-hero__actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
+            <i class="feather icon-arrow-left"></i>
+            <span>Volver</span>
+          </button>
+          <button type="button" class="btn btn-outline-primary" (click)="openEdit()">
+            <i class="feather icon-edit-2"></i>
+            <span>Editar cliente</span>
+          </button>
+          <button type="button" class="btn btn-outline-primary" (click)="openCreateOpportunity()">
+            <i class="feather icon-briefcase"></i>
+            <span>Crear oportunidad</span>
+          </button>
+          <button type="button" class="btn btn-primary" (click)="openCreateQuotation()">
+            <i class="feather icon-file-text"></i>
+            <span>Crear cotización</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="cliente-detalle-kpis">
+        <article class="cliente-detalle-kpi-card">
+          <span class="cliente-detalle-kpi-card__label">Total pipeline</span>
+          <strong>{{ totalPipeline | currency:'CRC':'symbol-narrow':'1.0-2' }}</strong>
+        </article>
+        <article class="cliente-detalle-kpi-card">
+          <span class="cliente-detalle-kpi-card__label">Oportunidades activas</span>
+          <strong>{{ oportunidadesActivas }}</strong>
+        </article>
+        <article class="cliente-detalle-kpi-card">
+          <span class="cliente-detalle-kpi-card__label">Ganadas</span>
+          <strong>{{ oportunidadesGanadas }}</strong>
+        </article>
+        <article class="cliente-detalle-kpi-card">
+          <span class="cliente-detalle-kpi-card__label">Perdidas</span>
+          <strong>{{ oportunidadesPerdidas }}</strong>
+        </article>
+      </section>
+
+      <nav class="cliente-detalle-tabs" aria-label="Secciones del cliente">
+        <button
+          *ngFor="let tab of tabs"
+          type="button"
+          class="cliente-detalle-tabs__item"
+          [class.is-active]="activeTab === tab.id"
+          (click)="setActiveTab(tab.id)">
+          <span>{{ tab.label }}</span>
+          <small *ngIf="getTabCount(tab.id) !== null">{{ getTabCount(tab.id) }}</small>
+        </button>
+      </nav>
+
+      <section class="cliente-detalle-tab-panel" *ngIf="activeTab === 'resumen'">
+        <div class="cliente-detalle-layout">
+          <main class="cliente-detalle-main">
+            <section class="cliente-detalle-card">
+              <div class="cliente-detalle-card__header">
+                <div class="cliente-detalle-card__icon"><i class="feather icon-file-text"></i></div>
+                <div>
+                  <h2 class="cliente-detalle-card__title">Información General</h2>
+                  <p class="cliente-detalle-card__caption">Datos base del perfil comercial del cliente.</p>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-grid">
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Nombre</span>
+                  <strong>{{ currentCliente.nombre || 'Sin dato' }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Identificación</span>
+                  <strong>{{ currentCliente.ruc || 'Sin dato' }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Tipo</span>
+                  <strong>{{ getTipoLabel(currentCliente.tipoCli, currentCliente.tCliente) }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Operador</span>
+                  <strong>{{ currentCliente.operador || 'Sin asignar' }}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="cliente-detalle-card">
+              <div class="cliente-detalle-card__header">
+                <div class="cliente-detalle-card__icon"><i class="feather icon-users"></i></div>
+                <div>
+                  <h2 class="cliente-detalle-card__title">Contactos</h2>
+                  <p class="cliente-detalle-card__caption">Personas relacionadas con el cliente y sus canales principales.</p>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-contact-list" *ngIf="contactos.length; else noContacts">
+                <article class="cliente-detalle-contact-card" *ngFor="let contacto of contactos; trackBy: trackByContacto">
+                  <div class="cliente-detalle-contact-card__top">
+                    <div>
+                      <h3 class="cliente-detalle-contact-card__name">{{ contacto.nomContacto || 'Contacto sin nombre' }}</h3>
+                      <p class="cliente-detalle-contact-card__role">{{ contacto.cargo || 'Sin cargo' }}</p>
+                    </div>
+
+                    <div class="cliente-detalle-contact-card__badges">
+                      <span class="cliente-detalle-badge cliente-detalle-badge--principal" *ngIf="contacto.principal">Principal</span>
+                      <span class="cliente-detalle-badge cliente-detalle-badge--muted" *ngIf="contacto.activo === false">Inactivo</span>
+                    </div>
+                  </div>
+
+                  <div class="cliente-detalle-contact-card__rows">
+                    <div class="cliente-detalle-contact-card__row">
+                      <i class="feather icon-mail"></i>
+                      <span>{{ contacto.email || 'Sin correo' }}</span>
+                    </div>
+                    <div class="cliente-detalle-contact-card__row">
+                      <i class="feather icon-phone"></i>
+                      <span>{{ getContactoTelefono(contacto) }}</span>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <ng-template #noContacts>
+                <div class="cliente-detalle-empty">
+                  <i class="feather icon-user-x"></i>
+                  <span>No hay contactos asociados a este cliente.</span>
+                </div>
+              </ng-template>
+            </section>
+
+            <section class="cliente-detalle-card">
+              <div class="cliente-detalle-card__header">
+                <div class="cliente-detalle-card__icon"><i class="feather icon-phone-call"></i></div>
+                <div>
+                  <h2 class="cliente-detalle-card__title">Comunicación</h2>
+                  <p class="cliente-detalle-card__caption">Canales principales de contacto disponibles en CRM.</p>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-grid">
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Email principal</span>
+                  <strong>{{ currentCliente.emailPrincipal || currentCliente.email || 'Sin dato' }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Teléfono principal</span>
+                  <strong>{{ currentCliente.telefonoPrincipal || currentCliente.telefono1 || 'Sin dato' }}</strong>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          <aside class="cliente-detalle-sidebar">
+            <section class="cliente-detalle-card cliente-detalle-card--sidebar">
+              <div class="cliente-detalle-card__header">
+                <div class="cliente-detalle-card__icon"><i class="feather icon-map-pin"></i></div>
+                <div>
+                  <h2 class="cliente-detalle-card__title">Ubicación y Comercial</h2>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-stack">
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Ubicación</span>
+                  <strong>{{ getUbicacion() }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Dirección</span>
+                  <strong>{{ currentCliente.direccion || 'Sin dirección registrada' }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Monto de crédito</span>
+                  <strong>{{ currentCliente.mtoCredito | currency:'CRC':'symbol-narrow':'1.0-2' }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Zona</span>
+                  <strong>{{ currentCliente.zona || 'Sin zona registrada' }}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="cliente-detalle-card cliente-detalle-card--sidebar">
+              <div class="cliente-detalle-card__header">
+                <div class="cliente-detalle-card__icon"><i class="feather icon-bar-chart-2"></i></div>
+                <div>
+                  <h2 class="cliente-detalle-card__title">Pulso comercial</h2>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-stack">
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Contacto principal</span>
+                  <strong>{{ contactoPrincipal?.nomContacto || currentCliente.contactoPrincipal || 'Sin definir' }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Cotizaciones</span>
+                  <strong>{{ cotizaciones.length }}</strong>
+                </div>
+                <div class="cliente-detalle-field">
+                  <span class="cliente-detalle-field__label">Pedidos</span>
+                  <strong>{{ pedidos.length }}</strong>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="cliente-detalle-tab-panel" *ngIf="activeTab === 'oportunidades'">
+        <section class="cliente-detalle-card">
+          <div class="cliente-detalle-card__header">
+            <div class="cliente-detalle-card__icon"><i class="feather icon-briefcase"></i></div>
+            <div>
+              <h2 class="cliente-detalle-card__title">Oportunidades del cliente</h2>
+              <p class="cliente-detalle-card__caption">Seguimiento comercial activo asociado a este cliente.</p>
+            </div>
+          </div>
+
+          <div class="cliente-detalle-inline-state" *ngIf="isLoadingOportunidades">
+            <span class="spinner-border spinner-border-sm"></span>
+            <span>Cargando oportunidades del cliente...</span>
+          </div>
+
+          <div class="cliente-detalle-inline-state cliente-detalle-inline-state--error" *ngIf="!isLoadingOportunidades && oportunidadesError">
+            <i class="feather icon-alert-circle"></i>
+            <span>{{ oportunidadesError }}</span>
+          </div>
+
+          <div class="cliente-detalle-opportunity-list" *ngIf="!isLoadingOportunidades && !oportunidadesError && oportunidades.length; else noOpportunities">
+            <article class="cliente-detalle-opportunity-card" *ngFor="let oportunidad of oportunidades; trackBy: trackByOportunidad">
+              <div class="cliente-detalle-opportunity-card__top">
+                <div>
+                  <h3 class="cliente-detalle-opportunity-card__title">{{ oportunidad.titulo || 'Oportunidad sin título' }}</h3>
+                  <p class="cliente-detalle-opportunity-card__meta">
+                    {{ oportunidad.vendedor || 'Sin vendedor' }} · {{ oportunidad.probabilidad }}% probabilidad
+                  </p>
+                </div>
+
+                <div class="cliente-detalle-opportunity-card__badges">
+                  <span class="cliente-detalle-badge" [ngClass]="getOpportunityStageClass(oportunidad.etapa)">{{ getPipelineStageLabel(oportunidad.etapa) }}</span>
+                  <span class="cliente-detalle-badge cliente-detalle-badge--muted">{{ getOpportunityStatusLabel(oportunidad) }}</span>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-opportunity-card__grid">
+                <div class="cliente-detalle-opportunity-metric">
+                  <span class="cliente-detalle-field__label">Monto estimado</span>
+                  <strong>{{ oportunidad.montoEstimado | currency:'CRC':'symbol-narrow':'1.0-2' }}</strong>
+                </div>
+                <div class="cliente-detalle-opportunity-metric">
+                  <span class="cliente-detalle-field__label">Cierre estimado</span>
+                  <strong>{{ oportunidad.fechaCierreEstimada ? (oportunidad.fechaCierreEstimada | date:'dd/MM/yyyy') : 'Sin fecha' }}</strong>
+                </div>
+                <div class="cliente-detalle-opportunity-metric cliente-detalle-opportunity-metric--full">
+                  <span class="cliente-detalle-field__label">Descripción</span>
+                  <strong>{{ oportunidad.descripcion || 'Sin descripción registrada' }}</strong>
+                </div>
+              </div>
+
+              <div class="cliente-detalle-opportunity-card__actions">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openOpportunityDetail(oportunidad)">
+                  <i class="feather icon-eye"></i>
+                  <span>Ver</span>
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="openOpportunityEdit(oportunidad)">
+                  <i class="feather icon-edit-2"></i>
+                  <span>Editar</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" (click)="openOpportunityQuotation(oportunidad)">
+                  <i class="feather icon-file-text"></i>
+                  <span>{{ oportunidad.tieneCotizacion ? 'Ver cotización' : 'Cotizar' }}</span>
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <ng-template #noOpportunities>
+            <div class="cliente-detalle-empty" *ngIf="!isLoadingOportunidades && !oportunidadesError">
+              <i class="feather icon-briefcase"></i>
+              <span>No hay oportunidades activas asociadas a este cliente.</span>
+            </div>
+          </ng-template>
+        </section>
+      </section>
+
+      <section class="cliente-detalle-tab-panel" *ngIf="activeTab === 'pipeline'">
+        <section class="cliente-detalle-card">
+          <div class="cliente-detalle-card__header cliente-detalle-card__header--space">
+            <div>
+              <h2 class="cliente-detalle-card__title">Pipeline del cliente</h2>
+              <p class="cliente-detalle-card__caption">Vista por etapas con foco exclusivo en este cliente.</p>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="openPipeline()">
+              <i class="feather icon-external-link"></i>
+              <span>Abrir pipeline completo</span>
+            </button>
+          </div>
+
+          <div class="cliente-detalle-pipeline" *ngIf="oportunidades.length; else noPipeline">
+            <article class="cliente-detalle-pipeline-column" *ngFor="let column of pipelineColumns">
+              <header class="cliente-detalle-pipeline-column__header">
+                <span class="cliente-detalle-badge" [ngClass]="getOpportunityStageClass(column.etapa)">{{ getPipelineStageLabel(column.etapa) }}</span>
+                <strong>{{ column.items.length }}</strong>
+              </header>
+
+              <div class="cliente-detalle-pipeline-column__amount">{{ column.total | currency:'CRC':'symbol-narrow':'1.0-2' }}</div>
+
+              <div class="cliente-detalle-pipeline-column__list" *ngIf="column.items.length; else emptyStage">
+                <button
+                  type="button"
+                  class="cliente-detalle-pipeline-item"
+                  *ngFor="let oportunidad of column.items; trackBy: trackByOportunidad"
+                  (click)="openOpportunityDetail(oportunidad)">
+                  <strong>{{ oportunidad.titulo }}</strong>
+                  <span>{{ oportunidad.montoEstimado | currency:'CRC':'symbol-narrow':'1.0-2' }}</span>
+                </button>
+              </div>
+
+              <ng-template #emptyStage>
+                <div class="cliente-detalle-pipeline-column__empty">Sin oportunidades</div>
+              </ng-template>
+            </article>
+          </div>
+
+          <ng-template #noPipeline>
+            <div class="cliente-detalle-empty">
+              <i class="feather icon-git-branch"></i>
+              <span>No hay movimiento comercial para construir el pipeline de este cliente.</span>
+            </div>
+          </ng-template>
+        </section>
+      </section>
+
+      <section class="cliente-detalle-tab-panel" *ngIf="activeTab === 'cotizaciones'">
+        <section class="cliente-detalle-card">
+          <div class="cliente-detalle-card__header cliente-detalle-card__header--space">
+            <div>
+              <h2 class="cliente-detalle-card__title">Cotizaciones</h2>
+              <p class="cliente-detalle-card__caption">Documentos PPV05 relacionados con este cliente.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openCreateQuotation()">
+              <i class="feather icon-plus"></i>
+              <span>Nueva cotización</span>
+            </button>
+          </div>
+
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="cliente-detalle-field__label mb-0">Rango</span>
+            <button
+              *ngFor="let preset of documentDatePresets"
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="documentDatePreset === preset.id"
+              [class.btn-outline-secondary]="documentDatePreset !== preset.id"
+              (click)="setDocumentDatePreset(preset.id)">
+              {{ preset.label }}
+            </button>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 ms-auto" *ngIf="documentDatePreset === 'custom'">
+              <input type="date" class="form-control form-control-sm" style="width: 11rem" [(ngModel)]="documentDateFromInput">
+              <input type="date" class="form-control form-control-sm" style="width: 11rem" [(ngModel)]="documentDateToInput">
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="applyCustomDocumentRange()">
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+          <div class="cliente-detalle-inline-state" *ngIf="isLoadingCotizaciones">
+            <span class="spinner-border spinner-border-sm"></span>
+            <span>Cargando cotizaciones...</span>
+          </div>
+
+          <div class="cliente-detalle-inline-state cliente-detalle-inline-state--error" *ngIf="!isLoadingCotizaciones && cotizacionesError">
+            <i class="feather icon-alert-circle"></i>
+            <span>{{ cotizacionesError }}</span>
+          </div>
+
+          <div class="cliente-detalle-document-list" *ngIf="!isLoadingCotizaciones && !cotizacionesError && cotizaciones.length; else noCotizaciones">
+            <article class="cliente-detalle-document-card" *ngFor="let documento of cotizaciones; trackBy: trackByDocumento">
+              <div>
+                <h3 class="cliente-detalle-document-card__title">{{ getDocumentLabel(documento) }}</h3>
+                <p class="cliente-detalle-document-card__meta">{{ documento.cliente || currentCliente.nombre }}</p>
+              </div>
+              <div class="cliente-detalle-document-card__info">
+                <span>{{ documento.total | currency:'CRC':'symbol-narrow':'1.0-2' }}</span>
+                <span class="cliente-detalle-badge cliente-detalle-badge--muted">{{ documento.estado || 'Sin estado' }}</span>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="openDocumento(documento)">
+                <i class="feather icon-external-link"></i>
+                <span>Ver documento</span>
+              </button>
+            </article>
+          </div>
+
+          <ng-template #noCotizaciones>
+            <div class="cliente-detalle-empty" *ngIf="!isLoadingCotizaciones && !cotizacionesError">
+              <i class="feather icon-file-text"></i>
+              <span>No hay cotizaciones registradas para este cliente.</span>
+            </div>
+          </ng-template>
+        </section>
+      </section>
+
+      <section class="cliente-detalle-tab-panel" *ngIf="activeTab === 'pedidos'">
+        <section class="cliente-detalle-card">
+          <div class="cliente-detalle-card__header">
+            <div>
+              <h2 class="cliente-detalle-card__title">Pedidos</h2>
+              <p class="cliente-detalle-card__caption">Órdenes generadas asociadas al cliente.</p>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="cliente-detalle-field__label mb-0">Rango</span>
+            <button
+              *ngFor="let preset of documentDatePresets"
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="documentDatePreset === preset.id"
+              [class.btn-outline-secondary]="documentDatePreset !== preset.id"
+              (click)="setDocumentDatePreset(preset.id)">
+              {{ preset.label }}
+            </button>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 ms-auto" *ngIf="documentDatePreset === 'custom'">
+              <input type="date" class="form-control form-control-sm" style="width: 11rem" [(ngModel)]="documentDateFromInput">
+              <input type="date" class="form-control form-control-sm" style="width: 11rem" [(ngModel)]="documentDateToInput">
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="applyCustomDocumentRange()">
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+          <div class="cliente-detalle-inline-state" *ngIf="isLoadingPedidos">
+            <span class="spinner-border spinner-border-sm"></span>
+            <span>Cargando pedidos...</span>
+          </div>
+
+          <div class="cliente-detalle-inline-state cliente-detalle-inline-state--error" *ngIf="!isLoadingPedidos && pedidosError">
+            <i class="feather icon-alert-circle"></i>
+            <span>{{ pedidosError }}</span>
+          </div>
+
+          <div class="cliente-detalle-document-list" *ngIf="!isLoadingPedidos && !pedidosError && pedidos.length; else noPedidos">
+            <article class="cliente-detalle-document-card" *ngFor="let documento of pedidos; trackBy: trackByDocumento">
+              <div>
+                <h3 class="cliente-detalle-document-card__title">{{ getDocumentLabel(documento) }}</h3>
+                <p class="cliente-detalle-document-card__meta">{{ documento.cliente || currentCliente.nombre }}</p>
+              </div>
+              <div class="cliente-detalle-document-card__info">
+                <span>{{ documento.total | currency:'CRC':'symbol-narrow':'1.0-2' }}</span>
+                <span class="cliente-detalle-badge cliente-detalle-badge--muted">{{ documento.estado || 'Sin estado' }}</span>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="openDocumento(documento)">
+                <i class="feather icon-external-link"></i>
+                <span>Ver pedido</span>
+              </button>
+            </article>
+          </div>
+
+          <ng-template #noPedidos>
+            <div class="cliente-detalle-empty" *ngIf="!isLoadingPedidos && !pedidosError">
+              <i class="feather icon-shopping-bag"></i>
+              <span>No hay pedidos registrados para este cliente.</span>
+            </div>
+          </ng-template>
+        </section>
+      </section>
+    </ng-container>
+  </ng-template>
+</div>

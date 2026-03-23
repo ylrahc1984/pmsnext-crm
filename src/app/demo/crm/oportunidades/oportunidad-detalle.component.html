@@ -1,0 +1,535 @@
+<div class="oportunidad-detalle-page">
+  <ng-container *ngIf="isLoading; else detailState">
+    <div class="oportunidad-detalle-skeleton oportunidad-detalle-skeleton--hero">
+      <div class="crm-skeleton crm-skeleton--avatar"></div>
+      <div class="oportunidad-detalle-skeleton__content">
+        <div class="crm-skeleton crm-skeleton--title"></div>
+        <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+      </div>
+      <div class="oportunidad-detalle-skeleton__actions">
+        <div class="crm-skeleton crm-skeleton--button"></div>
+        <div class="crm-skeleton crm-skeleton--button"></div>
+      </div>
+    </div>
+
+    <div class="oportunidad-detalle-layout">
+      <div class="oportunidad-detalle-main">
+        <div class="oportunidad-detalle-skeleton" *ngFor="let section of [1, 2, 3]">
+          <div class="crm-skeleton crm-skeleton--section-title"></div>
+          <div class="oportunidad-detalle-skeleton__rows">
+            <div class="crm-skeleton crm-skeleton--line"></div>
+            <div class="crm-skeleton crm-skeleton--line"></div>
+            <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="oportunidad-detalle-sidebar">
+        <div class="oportunidad-detalle-skeleton" *ngFor="let card of [1, 2, 3]">
+          <div class="crm-skeleton crm-skeleton--section-title"></div>
+          <div class="oportunidad-detalle-skeleton__rows">
+            <div class="crm-skeleton crm-skeleton--line"></div>
+            <div class="crm-skeleton crm-skeleton--line crm-skeleton--line-short"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </ng-container>
+
+  <ng-template #detailState>
+    <div class="oportunidad-detalle-state oportunidad-detalle-state--error" *ngIf="loadError">
+      <i class="feather icon-alert-circle"></i>
+      <div>
+        <strong>Error de carga</strong>
+        <p class="mb-0">{{ loadError }}</p>
+      </div>
+      <div class="oportunidad-detalle-state__actions">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goBack()">Volver</button>
+        <button type="button" class="btn btn-outline-primary btn-sm" (click)="retryLoad()">Reintentar</button>
+      </div>
+    </div>
+
+    <div class="oportunidad-detalle-state" *ngIf="!loadError && !oportunidad">
+      <i class="feather icon-briefcase"></i>
+      <div>
+        <strong>Sin datos</strong>
+        <p class="mb-0">No existe información disponible para esta oportunidad.</p>
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goBack()">Volver</button>
+    </div>
+
+    <ng-container *ngIf="oportunidad as current">
+      <header class="oportunidad-detalle-hero">
+        <div class="oportunidad-detalle-hero__identity">
+          <div class="oportunidad-detalle-avatar" [ngStyle]="getAvatarStyle()">{{ getAvatarInitials() }}</div>
+
+          <div class="oportunidad-detalle-hero__content">
+            <div class="oportunidad-detalle-hero__eyebrow">CRM · Oportunidad</div>
+            <h1 class="oportunidad-detalle-hero__title">{{ current.titulo || 'Oportunidad sin título' }}</h1>
+            <p class="oportunidad-detalle-hero__client">{{ current.clienteNombre || 'Cliente sin nombre' }}</p>
+
+            <div class="oportunidad-detalle-hero__meta">
+              <span class="oportunidad-detalle-badge" [ngClass]="getStageClass()">{{ current.etapa }}</span>
+              <span class="oportunidad-detalle-badge oportunidad-detalle-badge--neutral">{{ current.estado === 'I' ? 'Inactiva' : 'Activa' }}</span>
+              <span class="oportunidad-detalle-hero__meta-item">ID {{ current.id }}</span>
+              <span class="oportunidad-detalle-hero__meta-item">{{ current.codCliente || 'Sin cliente' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="oportunidad-detalle-hero__actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
+            <i class="feather icon-arrow-left"></i>
+            <span>Volver</span>
+          </button>
+          <button type="button" class="btn btn-outline-primary" (click)="openCotizacion()">
+            <i class="feather icon-file-text"></i>
+            <span>{{ current.tieneCotizacion ? 'Ver cotización' : 'Crear cotización' }}</span>
+          </button>
+          <button type="button" class="btn btn-primary" (click)="openEdit()">
+            <i class="feather icon-edit-2"></i>
+            <span>Editar</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="oportunidad-detalle-layout">
+        <main class="oportunidad-detalle-main">
+          <section class="oportunidad-detalle-card">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-briefcase"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Información General</h2>
+                <p class="oportunidad-detalle-card__caption">Resumen comercial y operativo de la oportunidad.</p>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-grid">
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Cliente</span>
+                <strong>{{ current.clienteNombre || 'Sin dato' }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Monto estimado</span>
+                <strong>{{ formatAmount(current.montoEstimado) }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Probabilidad</span>
+                <strong>{{ current.probabilidad }}%</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Vendedor</span>
+                <strong>{{ current.vendedor || 'Sin asignar' }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Origen</span>
+                <strong>{{ current.origen || 'No definido' }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Prioridad</span>
+                <strong>
+                  <span class="oportunidad-detalle-badge" [ngClass]="getPriorityClass()">{{ current.prioridad || 'Sin prioridad' }}</span>
+                </strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Tipo cliente</span>
+                <strong>{{ getTipoClienteLabel() }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Fecha creación</span>
+                <strong>{{ current.fechaCreacion ? (current.fechaCreacion | date:'dd/MM/yyyy') : 'Sin fecha' }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Cierre estimado</span>
+                <strong>{{ current.fechaCierreEstimada ? (current.fechaCierreEstimada | date:'dd/MM/yyyy') : 'Sin fecha' }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="oportunidad-detalle-card">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-align-left"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Descripción</h2>
+                <p class="oportunidad-detalle-card__caption">Contexto y objetivo comercial capturado para esta oportunidad.</p>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-description">
+              {{ current.descripcion || 'No hay descripción registrada para esta oportunidad.' }}
+            </div>
+          </section>
+
+          <section class="oportunidad-detalle-card">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-users"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Contactos del Cliente</h2>
+                <p class="oportunidad-detalle-card__caption">Contactos disponibles para gestionar esta oportunidad.</p>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-contact-list" *ngIf="contactos.length; else noContacts">
+              <article class="oportunidad-detalle-contact-card" *ngFor="let contacto of contactos; trackBy: trackByContacto">
+                <div class="oportunidad-detalle-contact-card__top">
+                  <div>
+                    <h3 class="oportunidad-detalle-contact-card__name">{{ contacto.nomContacto || 'Contacto sin nombre' }}</h3>
+                    <p class="oportunidad-detalle-contact-card__role">{{ contacto.cargo || 'Sin cargo' }}</p>
+                  </div>
+                  <span class="oportunidad-detalle-badge oportunidad-detalle-badge--principal" *ngIf="contacto.principal">Principal</span>
+                </div>
+
+                <div class="oportunidad-detalle-contact-card__rows">
+                  <div class="oportunidad-detalle-contact-card__row">
+                    <i class="feather icon-mail"></i>
+                    <span>{{ contacto.email || 'Sin correo' }}</span>
+                  </div>
+                  <div class="oportunidad-detalle-contact-card__row">
+                    <i class="feather icon-phone"></i>
+                    <span>{{ contacto.telefono1 || contacto.movil || contacto.telefono2 || 'Sin teléfono' }}</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <ng-template #noContacts>
+              <div class="oportunidad-detalle-empty">
+                <i class="feather icon-user-x"></i>
+                <span>No hay contactos disponibles para este cliente.</span>
+              </div>
+            </ng-template>
+          </section>
+        </main>
+
+        <aside class="oportunidad-detalle-sidebar">
+          <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-git-branch"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Pipeline</h2>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-stack">
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Etapa actual</span>
+                <strong>
+                  <span class="oportunidad-detalle-badge" [ngClass]="getStageClass()">{{ current.etapa }}</span>
+                </strong>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-link-form oportunidad-detalle-link-form--stage">
+              <div class="oportunidad-detalle-link-form__title">
+                <i class="feather icon-repeat"></i>
+                <span>Cambiar etapa</span>
+              </div>
+
+              <p class="oportunidad-detalle-link-form__caption">
+                Actualice la etapa comercial sin salir del detalle de la oportunidad.
+              </p>
+
+              <div class="alert alert-danger py-2 mb-3" *ngIf="stageError">{{ stageError }}</div>
+              <div class="alert alert-success py-2 mb-3" *ngIf="stageSuccess">{{ stageSuccess }}</div>
+
+              <div>
+                <label class="oportunidad-detalle-field__label" for="oportunidadEtapa">Nueva etapa</label>
+                <select
+                  id="oportunidadEtapa"
+                  class="form-control oportunidad-detalle-input"
+                  [(ngModel)]="selectedStage"
+                  [disabled]="isUpdatingStage"
+                >
+                  <option *ngFor="let etapa of etapas" [value]="etapa">{{ etapa }}</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary w-100 mt-3"
+                (click)="updateStage()"
+                [disabled]="isUpdatingStage"
+              >
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isUpdatingStage"></span>
+                <i class="feather icon-save" *ngIf="!isUpdatingStage"></i>
+                <span>Guardar etapa</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-file-text"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Cotización</h2>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-stack">
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Estado</span>
+                <strong>{{ current.tieneCotizacion ? 'Vinculada' : 'Pendiente' }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Documento</span>
+                <strong>{{ cotizacionDocumento }}</strong>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary w-100 mt-3" (click)="openCotizacion()">
+              <i class="feather icon-external-link"></i>
+              <span>{{ current.tieneCotizacion ? 'Ver documento' : 'Crear cotización' }}</span>
+            </button>
+
+            <div class="oportunidad-detalle-link-form">
+              <div class="oportunidad-detalle-link-form__title">
+                <i class="feather icon-link-2"></i>
+                <span>Vincular cotización existente</span>
+              </div>
+
+              <p class="oportunidad-detalle-link-form__caption">
+                Use este bloque cuando la cotización ya existe en el sistema y solo falta asociarla a la oportunidad.
+              </p>
+
+              <button type="button" class="btn btn-outline-secondary w-100 mb-3" (click)="openCotizacionSearchModal()">
+                <i class="feather icon-search"></i>
+                <span>Buscar cotización existente</span>
+              </button>
+
+              <div class="alert alert-danger py-2 mb-3" *ngIf="linkError">{{ linkError }}</div>
+              <div class="alert alert-success py-2 mb-3" *ngIf="linkSuccess">{{ linkSuccess }}</div>
+
+              <div class="oportunidad-detalle-link-grid">
+                <div>
+                  <label class="oportunidad-detalle-field__label" for="tipNDP">Tipo</label>
+                  <select
+                    id="tipNDP"
+                    class="form-control oportunidad-detalle-input"
+                    [(ngModel)]="cotizacionForm.tipNDP"
+                    [disabled]="isLinkingCotizacion"
+                  >
+                    <option value="COT">COT</option>
+                    <option value="NDP">NDP</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="oportunidad-detalle-field__label" for="serieNDP">Serie</label>
+                  <input
+                    id="serieNDP"
+                    type="text"
+                    class="form-control oportunidad-detalle-input"
+                    [(ngModel)]="cotizacionForm.serieNDP"
+                    [disabled]="isLinkingCotizacion"
+                    placeholder="001"
+                  />
+                </div>
+
+                <div>
+                  <label class="oportunidad-detalle-field__label" for="numNDP">Número</label>
+                  <input
+                    id="numNDP"
+                    type="text"
+                    class="form-control oportunidad-detalle-input"
+                    [(ngModel)]="cotizacionForm.numNDP"
+                    [disabled]="isLinkingCotizacion"
+                    placeholder="000123"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary w-100 mt-3"
+                (click)="linkCotizacion()"
+                [disabled]="isLinkingCotizacion"
+              >
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isLinkingCotizacion"></span>
+                <i class="feather icon-link-2" *ngIf="!isLinkingCotizacion"></i>
+                <span>{{ current.tieneCotizacion ? 'Actualizar vínculo' : 'Vincular cotización' }}</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-user"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Cliente Relacionado</h2>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-stack">
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Código</span>
+                <strong>{{ current.codCliente || 'Sin código' }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Email principal</span>
+                <strong>{{ getPrimaryEmail() }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Teléfono</span>
+                <strong>{{ getPrimaryPhone() }}</strong>
+              </div>
+              <div class="oportunidad-detalle-field">
+                <span class="oportunidad-detalle-field__label">Ubicación</span>
+                <strong>{{ getUbicacion() }}</strong>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-secondary w-100 mt-3" (click)="openCliente()">
+              <i class="feather icon-user-check"></i>
+              <span>Ver perfil del cliente</span>
+            </button>
+          </section>
+
+          <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
+            <div class="oportunidad-detalle-card__header">
+              <div class="oportunidad-detalle-card__icon"><i class="feather icon-zap"></i></div>
+              <div>
+                <h2 class="oportunidad-detalle-card__title">Acciones rápidas</h2>
+              </div>
+            </div>
+
+            <div class="oportunidad-detalle-quick-actions">
+              <button type="button" class="btn btn-primary" (click)="openEdit()">
+                <i class="feather icon-edit-2"></i>
+                <span>Editar oportunidad</span>
+              </button>
+              <button type="button" class="btn btn-outline-primary" (click)="openCotizacion()">
+                <i class="feather icon-file-text"></i>
+                <span>{{ current.tieneCotizacion ? 'Ir a cotización' : 'Crear cotización' }}</span>
+              </button>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </ng-container>
+  </ng-template>
+
+  <div class="oportunidad-detalle-modal-backdrop" *ngIf="isCotizacionModalOpen" (click)="closeCotizacionSearchModal()"></div>
+
+  <section class="oportunidad-detalle-modal" *ngIf="isCotizacionModalOpen" role="dialog" aria-modal="true" aria-labelledby="cotizacion-search-title">
+    <header class="oportunidad-detalle-modal__header">
+      <div>
+        <div class="oportunidad-detalle-hero__eyebrow">CRM · Cotizaciones</div>
+        <h2 id="cotizacion-search-title" class="oportunidad-detalle-modal__title">Buscar cotización existente</h2>
+        <p class="oportunidad-detalle-modal__caption">Seleccione el documento correcto y el sistema completará tipo, serie y número.</p>
+      </div>
+
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeCotizacionSearchModal()">
+        <i class="feather icon-x"></i>
+      </button>
+    </header>
+
+    <div class="oportunidad-detalle-modal__filters">
+      <div>
+        <label class="oportunidad-detalle-field__label" for="modalTipOrden">Tipo</label>
+        <select id="modalTipOrden" class="form-control oportunidad-detalle-input" [(ngModel)]="cotizacionSearch.tipOrden">
+          <option value="COT">COT</option>
+          <option value="NDP">NDP</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="oportunidad-detalle-field__label" for="modalNomCliente">Cliente</label>
+        <input
+          id="modalNomCliente"
+          type="text"
+          class="form-control oportunidad-detalle-input"
+          [(ngModel)]="cotizacionSearch.nomCliente"
+          placeholder="Buscar por nombre del cliente"
+        />
+      </div>
+
+      <div>
+        <label class="oportunidad-detalle-field__label" for="modalFechaDesde">Desde</label>
+        <input id="modalFechaDesde" type="date" class="form-control oportunidad-detalle-input" [(ngModel)]="cotizacionSearch.fechaDesde" />
+      </div>
+
+      <div>
+        <label class="oportunidad-detalle-field__label" for="modalFechaHasta">Hasta</label>
+        <input id="modalFechaHasta" type="date" class="form-control oportunidad-detalle-input" [(ngModel)]="cotizacionSearch.fechaHasta" />
+      </div>
+
+      <div class="oportunidad-detalle-modal__filters-action">
+        <button type="button" class="btn btn-primary" (click)="searchCotizaciones(1)" [disabled]="isSearchingCotizaciones">
+          <i class="feather icon-search" *ngIf="!isSearchingCotizaciones"></i>
+          <span class="spinner-border spinner-border-sm me-2" *ngIf="isSearchingCotizaciones"></span>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-danger py-2 mb-3" *ngIf="cotizacionSearchError">{{ cotizacionSearchError }}</div>
+
+    <div class="oportunidad-detalle-modal__body" *ngIf="!cotizacionSearchError">
+      <div class="oportunidad-detalle-modal__loading" *ngIf="isSearchingCotizaciones">
+        <span class="spinner-border spinner-border-sm"></span>
+        <span>Cargando cotizaciones...</span>
+      </div>
+
+      <div class="oportunidad-detalle-modal__empty" *ngIf="!isSearchingCotizaciones && !cotizacionResults.length">
+        <i class="feather icon-file-minus"></i>
+        <span>No se encontraron documentos con los filtros actuales.</span>
+      </div>
+
+      <div class="oportunidad-detalle-modal__results" *ngIf="!isSearchingCotizaciones && cotizacionResults.length">
+        <article class="oportunidad-detalle-modal__result-card" *ngFor="let item of cotizacionResults; trackBy: trackByCotizacion">
+          <div class="oportunidad-detalle-modal__result-top">
+            <div>
+              <h3>{{ item.cliente || 'Cliente sin nombre' }}</h3>
+              <p>{{ item.tipOrden }} {{ item.serie }} {{ item.numero }}</p>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="selectCotizacion(item)">Seleccionar</button>
+          </div>
+
+          <div class="oportunidad-detalle-modal__result-grid">
+            <div>
+              <span class="oportunidad-detalle-field__label">Fecha</span>
+              <strong>{{ formatOrdenFecha(item.fecha) }}</strong>
+            </div>
+            <div>
+              <span class="oportunidad-detalle-field__label">Total</span>
+              <strong>{{ formatAmount(item.total) }}</strong>
+            </div>
+            <div>
+              <span class="oportunidad-detalle-field__label">Estado</span>
+              <strong>{{ item.estado || 'Sin estado' }}</strong>
+            </div>
+            <div>
+              <span class="oportunidad-detalle-field__label">Operador</span>
+              <strong>{{ item.operador || 'Sin operador' }}</strong>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <footer class="oportunidad-detalle-modal__footer">
+      <span class="oportunidad-detalle-modal__pagination-text">
+        {{ cotizacionSearchTotalRecords }} registros · Página {{ cotizacionSearchPageNumber }} de {{ cotizacionSearchTotalPages }}
+      </span>
+
+      <div class="oportunidad-detalle-modal__pagination-actions">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          (click)="goToCotizacionSearchPage(-1)"
+          [disabled]="cotizacionSearchPageNumber <= 1 || isSearchingCotizaciones"
+        >
+          Anterior
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          (click)="goToCotizacionSearchPage(1)"
+          [disabled]="cotizacionSearchPageNumber >= cotizacionSearchTotalPages || isSearchingCotizaciones"
+        >
+          Siguiente
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

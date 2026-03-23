@@ -1,0 +1,64 @@
+<section class="crm-pulso-card">
+  <div class="crm-pulso-card__header">
+    <div>
+      <p class="crm-pulso-card__eyebrow">Pulso CRM</p>
+      <h3 class="crm-pulso-card__title">Resumen comercial en tiempo real</h3>
+    </div>
+
+    <button
+      type="button"
+      class="crm-pulso-card__refresh"
+      (click)="reload()"
+      [disabled]="loading"
+      aria-label="Refrescar pulso CRM">
+      <i class="feather icon-refresh-cw"></i>
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="crm-pulso-card__skeleton" aria-hidden="true">
+    <div class="crm-pulso-card__skeleton-kpi"></div>
+    <div class="crm-pulso-card__skeleton-text"></div>
+    <div class="crm-pulso-card__skeleton-grid">
+      <div class="crm-pulso-card__skeleton-detail"></div>
+      <div class="crm-pulso-card__skeleton-detail"></div>
+      <div class="crm-pulso-card__skeleton-detail"></div>
+      <div class="crm-pulso-card__skeleton-detail"></div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && error" class="crm-pulso-card__state crm-pulso-card__state--error">
+    <span>{{ error }}</span>
+    <button type="button" class="crm-pulso-card__retry" (click)="reload()">Reintentar</button>
+  </div>
+
+  <div *ngIf="!loading && !error" class="crm-pulso-card__body">
+    <div class="crm-pulso-card__primary">
+      <div class="crm-pulso-card__amount">{{ formatCurrency(totalPipeline) }}</div>
+      <div class="crm-pulso-card__caption">Pipeline total estimado</div>
+    </div>
+
+    <div class="crm-pulso-card__metrics">
+      <article class="crm-pulso-card__metric">
+        <span class="crm-pulso-card__metric-label">Total oportunidades</span>
+        <strong>{{ totalOportunidades }}</strong>
+      </article>
+      <article class="crm-pulso-card__metric crm-pulso-card__metric--warning">
+        <span class="crm-pulso-card__metric-label">En negociación</span>
+        <strong>{{ enNegociacion }}</strong>
+      </article>
+      <article class="crm-pulso-card__metric crm-pulso-card__metric--success">
+        <span class="crm-pulso-card__metric-label">Ganadas</span>
+        <strong>{{ ganadas }}</strong>
+      </article>
+      <article class="crm-pulso-card__metric crm-pulso-card__metric--danger">
+        <span class="crm-pulso-card__metric-label">Perdidas</span>
+        <strong>{{ perdidas }}</strong>
+      </article>
+    </div>
+
+    <div class="crm-pulso-card__footer">
+      <span class="crm-pulso-card__rate-label">Tasa de cierre</span>
+      <strong class="crm-pulso-card__rate-value">{{ tasaCierre }}%</strong>
+    </div>
+  </div>
+</section>

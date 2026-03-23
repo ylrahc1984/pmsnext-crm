@@ -23,6 +23,7 @@ interface titleType {
   styleUrls: ['./breadcrumbs.component.scss']
 })
 export class BreadcrumbsComponent {
+  private readonly appTitle = 'PmsNext CRM';
   private route = inject(Router);
   private titleService = inject(Title);
 
@@ -47,10 +48,14 @@ export class BreadcrumbsComponent {
         const activeLink = router.url;
         const breadcrumbList = this.filterNavigation(this.navigations, activeLink);
         this.navigationList = breadcrumbList;
-        // Mantener el título del proyecto constante
-        this.titleService.setTitle('PMS - Sistema de Gestión Hotelera');
+        this.titleService.setTitle(this.resolvePageTitle(breadcrumbList));
       }
     });
+  }
+
+  private resolvePageTitle(breadcrumbList: titleType[]): string {
+    const currentPage = breadcrumbList.length > 0 ? breadcrumbList[breadcrumbList.length - 1].title?.trim() : '';
+    return currentPage ? `${currentPage} | ${this.appTitle}` : this.appTitle;
   }
 
   filterNavigation(navItems: NavigationItem[], activeLink: string): titleType[] {

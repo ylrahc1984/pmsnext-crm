@@ -28,230 +28,62 @@ export const NavigationItems: NavigationItem[] = [
     title: 'NAVEGACION PRINCIPAL',
     type: 'group',
     children: [
-
-      // =========================
-      // COMERCIAL
-      // =========================
       {
-        id: 'comercial',
-        title: 'COMERCIAL',
+        id: 'crm',
+        title: 'CRM',
+        type: 'collapse',
+        icon: 'feather icon-users',
+        children: [
+          {
+            id: 'crm-contactos',
+            title: 'Contactos',
+            type: 'item',
+            url: '/crm/contactos',
+            icon: 'feather icon-user',
+            classes: 'nav-item'
+          },
+          {
+            id: 'crm-oportunidades',
+            title: 'Oportunidades',
+            type: 'item',
+            url: '/crm/oportunidades',
+            icon: 'feather icon-target',
+            classes: 'nav-item'
+          },
+          {
+            id: 'crm-pipeline',
+            title: 'Pipeline',
+            type: 'item',
+            url: '/crm/pipeline',
+            icon: 'feather icon-activity',
+            classes: 'nav-item'
+          }
+        ]
+      },
+      {
+        id: 'ventas',
+        title: 'VENTAS',
         type: 'collapse',
         icon: 'feather icon-shopping-cart',
         children: [
           {
-            id: 'servicios',
-            title: 'Servicios',
+            id: 'ventas-cotizaciones',
+            title: 'Cotizaciones',
             type: 'item',
-            url: '/catalogos/servicios',
-            icon: 'feather icon-settings',
+            url: '/ventas/cotizaciones',
+            icon: 'feather icon-file-text',
             classes: 'nav-item'
           },
           {
-            id: 'listas-precios',
-            title: 'Listas de Precios',
-            type: 'item',
-            url: '/catalogos/listas-precios',
-            icon: 'feather icon-tag',
-            classes: 'nav-item'
-          },
-          {
-            id: 'agencias-comisionistas',
-            title: 'Agencias / Comisionistas',
-            type: 'item',
-            url: '/catalogos/clientes',
-            icon: 'feather icon-briefcase',
-            classes: 'nav-item'
-          },
-          {
-            id: 'suplidores',
-            title: 'Transportistas',
-            type: 'item',
-            url: '/comercial/suplidores',
-            icon: 'feather icon-users',
-            classes: 'nav-item'
-          },
-        {
-            id: 'ordenes-pedido',
-            title: 'Ordenes de Pedido',
+            id: 'ventas-ordenes',
+            title: 'Órdenes',
             type: 'item',
             url: '/demo/ordenes-pedido',
-            icon: 'feather icon-file-text',
-            classes: 'nav-item'
-          },
-          {
-            id: 'consulta-documentos-comercial',
-            title: 'Consulta Documentos',
-            type: 'item',
-            url: '/finanzas/consulta-documentos',
-            icon: 'feather icon-search',
-            classes: 'nav-item'
-          },
-          {
-            id: 'notas-credito-comercial',
-            title: 'Notas de Crédito',
-            type: 'item',
-            url: '/finanzas/notas-credito',
-            icon: 'feather icon-file-minus',
-            classes: 'nav-item'
-          }
-        ]
-      },
-
-      // =========================
-      // COMPRAS E INVENTARIO
-      // =========================
-      {
-        id: 'compras',
-        title: 'COMPRAS E INVENTARIO',
-        type: 'collapse',
-        icon: 'feather icon-package',
-        children: [
-          {
-            id: 'proveedores',
-            title: 'Proveedores',
-            type: 'item',
-            url: '/compras/proveedores',
-            icon: 'feather icon-users',
-            classes: 'nav-item'
-          },
-          {
-            id: 'producto-list',
-            title: 'Productos',
-            type: 'item',
-            url: '/compras/producto-list',
-            icon: 'feather icon-box',
-            classes: 'nav-item'
-          },
-          {
-            id: 'servicios-compras',
-            title: 'Servicios',
-            type: 'item',
-            url: '/compras/servicios',
-            icon: 'feather icon-briefcase',
-            classes: 'nav-item'
-          },
-          {
-            id: 'ordenes-compra',
-            title: 'Ordenes de Compra',
-            type: 'item',
-            url: '/compras/ordenes-compra',
             icon: 'feather icon-clipboard',
             classes: 'nav-item'
-          },
-          {
-            id: 'recepcion-facturas',
-            title: 'Recepcion de Facturas',
-            type: 'item',
-            url: '/compras/recepcion-facturas',
-            icon: 'feather icon-inbox',
-            classes: 'nav-item'
-          },
-          {
-            id: 'historia-pagos',
-            title: 'Historia de Pagos',
-            type: 'item',
-            url: '/compras/historia-pagos',
-            icon: 'feather icon-credit-card',
-            classes: 'nav-item'
-          },
-          {
-            id: 'configuracion-compras',
-            title: 'Configuracion',
-            type: 'item',
-            url: '/compras/configuracion',
-            icon: 'feather icon-settings',
-            classes: 'nav-item'
           }
-          // Futuro:
-          // Órdenes de Compra
-          // Inventario
-          // Ajustes
         ]
       },
-
-      // =========================
-      // FINANZAS
-      // =========================
-      {
-        id: 'finanzas',
-        title: 'FINANZAS',
-        type: 'collapse',
-        icon: 'feather icon-pie-chart',
-        children: [
-          {
-            id: 'cuentas-cobrar',
-            title: 'Cuentas por Cobrar',
-            type: 'item',
-            url: '/finanzas/cuentas-cobrar',
-            icon: 'feather icon-credit-card',
-            classes: 'nav-item'
-          },
-          {
-            id: 'cuentas-pagar',
-            title: 'Cuentas por Pagar',
-            type: 'item',
-            url: '/finanzas/cuentas-pagar',
-            icon: 'feather icon-credit-card',
-            classes: 'nav-item'
-          },
-          {
-            id: 'depositos',
-            title: 'Depósitos Bancarios',
-            type: 'item',
-            url: '/finanzas/bancos/depositos-cxc',
-            icon: 'feather icon-download',
-            classes: 'nav-item'
-          },
-          {
-            id: 'retiros',
-            title: 'Retiros Bancarios',
-            type: 'item',
-            url: '/finanzas/bancos/retiros-cxp',
-            icon: 'feather icon-upload',
-            classes: 'nav-item'
-          },
-          {
-            id: 'recibos',
-            title: 'Recibos',
-            type: 'item',
-            url: '/finanzas/recibos',
-            icon: 'feather icon-file-text',
-            classes: 'nav-item'
-          },
-          {
-            id: 'consulta-documentos',
-            title: 'Consulta Documentos',
-            type: 'item',
-            url: '/finanzas/consulta-documentos',
-            icon: 'feather icon-search',
-            classes: 'nav-item'
-          },
-          {
-            id: 'notas-credito',
-            title: 'Notas de Crédito',
-            type: 'item',
-            url: '/finanzas/notas-credito',
-            icon: 'feather icon-file-minus',
-            classes: 'nav-item'
-          },
-          {
-            id: 'configuracion-finanzas',
-            title: 'Configuracion',
-            type: 'item',
-            url: '/finanzas/configuracion',
-            icon: 'feather icon-settings',
-            classes: 'nav-item'
-          }
-          // Futuro:
-          // Caja
-          // Bancos
-          // Asientos contables
-        ]
-      },
-
-      // =========================
-      // ADMINISTRACIÓN
-      // =========================
       {
         id: 'administracion',
         title: 'ADMINISTRACIÓN',
@@ -274,16 +106,8 @@ export const NavigationItems: NavigationItem[] = [
             icon: 'feather icon-user',
             classes: 'nav-item'
           }
-          // Futuro:
-          // Usuarios
-          // Roles
-          // Permisos
         ]
       },
-
-      // =========================
-      // REPORTES
-      // =========================
       {
         id: 'reportes',
         title: 'REPORTES',
@@ -308,7 +132,6 @@ export const NavigationItems: NavigationItem[] = [
           }
         ]
       }
-
     ]
   }
 ];

@@ -1,0 +1,37 @@
+<section class="pipeline-column" [class]="stageClass()">
+  <header class="pipeline-column__header">
+    <div class="pipeline-column__heading">
+      <p class="pipeline-column__eyebrow">Etapa</p>
+      <h5 class="pipeline-column__title">{{ stageLabel() }}</h5>
+      <div class="pipeline-column__summary">
+        <span>{{ items().length }} {{ items().length === 1 ? 'oportunidad' : 'oportunidades' }}</span>
+        <strong>{{ formatAmount(totalAmount()) }}</strong>
+      </div>
+    </div>
+    <span class="pipeline-column__count">{{ items().length }}</span>
+  </header>
+
+  <div
+    class="pipeline-column__dropzone"
+    cdkDropList
+    [id]="dropListId()"
+    [cdkDropListData]="items()"
+    [cdkDropListConnectedTo]="connectedDropLists()"
+    (cdkDropListDropped)="emitDrop($event)">
+    <app-pipeline-card
+      *ngFor="let opportunity of items(); trackBy: trackByOpportunity"
+      [opportunity]="opportunity"
+      [isUpdating]="isUpdating(opportunity.id)">
+    </app-pipeline-card>
+
+    <div class="pipeline-column__empty" *ngIf="!items().length">
+      <i class="feather icon-inbox"></i>
+      <strong>Sin oportunidades</strong>
+      <span>No hay movimientos en {{ stageLabel().toLowerCase() }} por ahora.</span>
+      <button type="button" class="pipeline-column__empty-cta" disabled>
+        <i class="feather icon-plus"></i>
+        <span>Crear oportunidad en esta etapa</span>
+      </button>
+    </div>
+  </div>
+</section>
