@@ -3,19 +3,32 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, forkJoin, of } from 'rxjs';
-import { catchError, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
+import { Observable, Subject, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
-import { ClienteListado } from 'src/app/demo/catalogos/agencias-comisionistas/cliente.models';
+import { ClienteListado, ClienteUI } from 'src/app/demo/catalogos/agencias-comisionistas/cliente.models';
 import { ClienteService } from 'src/app/demo/catalogos/agencias-comisionistas/cliente.service';
-import { OrdenPedidoListadoItem } from 'src/app/demo/orden-pedido/interfaces/orden-pedido.interface';
-import { OrdenPedidoService } from 'src/app/demo/orden-pedido/services/orden-pedido.service';
 import { OPORTUNIDAD_ETAPAS, OportunidadFormValue, OportunidadUI } from './oportunidad.models';
 import { OportunidadService } from './oportunidad.service';
+import { OrdenPedidoReturnInfo } from 'src/app/demo/orden-pedido/interfaces/orden-pedido-return.interface';
 
-type ClienteOption = { value: string; label: string };
-type CotizacionOption = OrdenPedidoListadoItem & { id: string; label: string };
+type ClienteOption = { value: string; name: string; label: string };
 type SaveOutcome = { message: string; partial?: boolean };
+type OportunidadNavigationDraft = {
+  form: {
+    codCliente: string;
+    titulo: string;
+    descripcion: string;
+    montoEstimado: number;
+    probabilidad: number;
+    etapa: string;
+    vendedor: string;
+    tipNDP: string;
+    serieNDP: string;
+    numNDP: string;
+  };
+  clienteSearchTerm: string;
+};
 
 @Component({
   selector: 'app-oportunidad-form',
@@ -31,7 +44,6 @@ export class OportunidadFormComponent implements OnInit {
   private router = inject(Router);
   private oportunidadService = inject(OportunidadService);
   private clienteService = inject(ClienteService);
-  private ordenPedidoService = inject(OrdenPedidoService);
 
   readonly etapas = OPORTUNIDAD_ETAPAS;
 
@@ -41,12 +53,14 @@ export class OportunidadFormComponent implements OnInit {
   oportunidadId: number | null = null;
   clientesOptions: ClienteOption[] = [];
   loadedOportunidad: OportunidadUI | null = null;
-  cotizacionesLoading = false;
-  cotizacionesError = '';
-  cotizacionesOptions: CotizacionOption[] = [];
-  selectedCotizacion: CotizacionOption | null = null;
   clienteSearchTerm = '';
   clienteDropdownOpen = false;
+  clienteSearchLoading = false;
+  private clienteSuggestions: ClienteOption[] = [];
+  private clienteSearchInput$ = new Subject<string>();
+  private pendingOrderResultFromNavigation: OrdenPedidoReturnInfo | null = null;
+  private pendingDraftFromNavigation: OportunidadNavigationDraft | null = null;
+  private shouldCleanReturnState = false;
 
   form = this.fb.group({
     codCliente: ['', [Validators.required]],
@@ -56,11 +70,13 @@ export class OportunidadFormComponent implements OnInit {
     probabilidad: [50, [Validators.min(0), Validators.max(100)]],
     etapa: ['PROSPECTO', [Validators.required]],
     vendedor: [''],
-    usarCotizacion: [false],
-    cotizacionId: ['']
+    tipNDP: [''],
+    serieNDP: [''],
+    numNDP: ['']
   });
 
   ngOnInit(): void {
+    this.restoreOrderResultFromNavigation();
     const routeId = this.route.snapshot.paramMap.get('id');
     this.oportunidadId = routeId ? Number(routeId) : null;
     this.isEditing = !!this.oportunidadId;
@@ -101,6 +117,7 @@ export class OportunidadFormComponent implements OnInit {
       .subscribe(({ clientes, oportunidad }) => {
         this.clientesOptions = clientes.data.map((cliente) => ({
           value: cliente.id,
+          name: cliente.nombre,
           label: `${cliente.nombre} (${cliente.id})`
         }));
 
@@ -120,22 +137,14 @@ export class OportunidadFormComponent implements OnInit {
             montoEstimado: oportunidad.montoEstimado,
             probabilidad: oportunidad.probabilidad,
             etapa: oportunidad.etapa,
-            vendedor: oportunidad.vendedor
+            vendedor: oportunidad.vendedor,
+            tipNDP: oportunidad.tipNDP,
+            serieNDP: oportunidad.serieNDP,
+            numNDP: oportunidad.numNDP
           });
-
-          if (oportunidad.tieneCotizacion) {
-            const selected = this.createCotizacionOptionFromOportunidad(oportunidad);
-            this.selectedCotizacion = selected;
-            this.cotizacionesOptions = [selected];
-            this.form.patchValue(
-              {
-                usarCotizacion: true,
-                cotizacionId: selected.id
-              },
-              { emitEvent: false }
-            );
-          }
         }
+
+        this.applyNavigationReturnState();
 
         this.syncCotizacionValidation();
         this.syncLockedFields();
@@ -152,39 +161,62 @@ export class OportunidadFormComponent implements OnInit {
     return this.clientesOptions.find((item) => item.value === value)?.label || 'Sin cliente seleccionado';
   }
 
+  get selectedClienteNombre(): string {
+    const value = this.form.get('codCliente')?.value ?? '';
+    const option = this.clientesOptions.find((item) => item.value === value);
+    if (option?.name) {
+      return option.name;
+    }
+    return this.extractClienteNombre(this.clienteSearchTerm, value) || value;
+  }
+
   get clienteFieldLocked(): boolean {
-    return this.isEditing || !!this.selectedCotizacion;
+    return this.isEditing || this.hasCotizacionAsociada;
   }
 
   get filteredClientesOptions(): ClienteOption[] {
     const term = this.clienteSearchTerm.trim().toLowerCase();
+    const baseItems = term ? this.clienteSuggestions : this.clientesOptions;
     const items = !term
-      ? this.clientesOptions
-      : this.clientesOptions.filter(
-          (item) => item.label.toLowerCase().includes(term) || item.value.toLowerCase().includes(term)
-        );
+      ? baseItems
+      : baseItems.filter((item) => item.label.toLowerCase().includes(term) || item.value.toLowerCase().includes(term));
 
     return items.slice(0, 8);
   }
 
   get showCreateClienteHint(): boolean {
-    return !this.clienteFieldLocked && !!this.clienteSearchTerm.trim() && !this.filteredClientesOptions.length;
+    return !this.clienteFieldLocked && !this.clienteSearchLoading && !!this.clienteSearchTerm.trim() && !this.filteredClientesOptions.length;
   }
 
-  get cotizacionActiva(): boolean {
-    return !!this.form.get('usarCotizacion')?.value;
+  get hasCotizacionAsociada(): boolean {
+    const { tipNDP, serieNDP, numNDP } = this.getCotizacionData();
+    return !!tipNDP || !!serieNDP || !!numNDP;
+  }
+
+  get hasCotizacionVinculada(): boolean {
+    const { tipNDP, serieNDP, numNDP } = this.getCotizacionData();
+    return !!tipNDP && !!serieNDP && !!numNDP;
   }
 
   get cotizacionSeleccionadaLabel(): string {
-    return this.selectedCotizacion?.label || 'Sin cotización seleccionada';
+    if (!this.hasCotizacionAsociada) {
+      return 'Sin cotización';
+    }
+
+    const { tipNDP, serieNDP, numNDP } = this.getCotizacionData();
+    return `${tipNDP || '---'} ${serieNDP || '---'}-${numNDP || '---'}`;
   }
 
   get cotizacionEstadoLabel(): string {
-    return this.selectedCotizacion ? 'Seleccionada' : 'Pendiente';
+    if (this.hasCotizacionVinculada) {
+      return 'Vinculada';
+    }
+
+    return this.hasCotizacionAsociada ? 'Incompleta' : 'Pendiente';
   }
 
   get origenLabel(): string {
-    return this.selectedCotizacion ? 'Cotización' : 'Manual';
+    return this.hasCotizacionAsociada ? 'Cotización' : 'Manual';
   }
 
   save(): void {
@@ -195,15 +227,15 @@ export class OportunidadFormComponent implements OnInit {
     }
 
     this.isSaving = true;
+    const codCliente = this.resolveClienteCode();
     const payload: OportunidadFormValue = {
-      codCliente: this.form.get('codCliente')?.value ?? '',
+      codCliente,
       titulo: this.form.get('titulo')?.value ?? '',
       descripcion: this.form.get('descripcion')?.value ?? '',
       montoEstimado: Number(this.form.get('montoEstimado')?.value ?? 0),
       probabilidad: Number(this.form.get('probabilidad')?.value ?? 0),
       etapa: (this.form.get('etapa')?.value as OportunidadFormValue['etapa']) ?? 'PROSPECTO',
-      vendedor: this.form.get('vendedor')?.value ?? '',
-      cotizacionId: this.form.get('cotizacionId')?.value ?? ''
+      vendedor: this.form.get('vendedor')?.value ?? ''
     };
 
     const request$ =
@@ -268,6 +300,8 @@ export class OportunidadFormComponent implements OnInit {
     if (!value.trim() || value.trim() !== this.selectedClienteLabel) {
       this.form.patchValue({ codCliente: '' }, { emitEvent: false });
     }
+
+    this.clienteSearchInput$.next(value);
   }
 
   openClienteDropdown(): void {
@@ -276,6 +310,19 @@ export class OportunidadFormComponent implements OnInit {
     }
 
     this.clienteDropdownOpen = true;
+  }
+
+  clearClienteSearch(): void {
+    if (this.clienteFieldLocked) {
+      return;
+    }
+
+    this.clienteSearchTerm = '';
+    this.clienteSuggestions = [];
+    this.clienteSearchLoading = false;
+    this.form.patchValue({ codCliente: '' }, { emitEvent: false });
+    this.clienteDropdownOpen = true;
+    this.form.get('codCliente')?.markAsTouched();
   }
 
   closeClienteDropdown(): void {
@@ -293,6 +340,7 @@ export class OportunidadFormComponent implements OnInit {
     }
 
     this.ensureClienteOption(option.value, option.label);
+    this.clienteSuggestions = [];
     this.clienteSearchTerm = option.label;
     this.form.patchValue({ codCliente: option.value }, { emitEvent: true });
     this.clienteDropdownOpen = false;
@@ -303,39 +351,103 @@ export class OportunidadFormComponent implements OnInit {
   }
 
   openNuevaCotizacion(): void {
-    this.router.navigate(['/demo/ordenes-pedido/nuevo']);
-  }
-
-  onCotizacionSelected(cotizacionId: string): void {
-    const selected = this.cotizacionesOptions.find((item) => item.id === cotizacionId) || null;
-    this.selectedCotizacion = selected;
-
-    if (!selected) {
-      this.syncLockedFields();
+    const codCliente = this.resolveClienteCode();
+    if (!codCliente) {
+      window.alert('Seleccione un cliente antes de crear la cotización.');
       return;
     }
 
-    this.form.patchValue(
-      {
-        cotizacionId: selected.id,
-        montoEstimado: selected.total || 0,
-        descripcion: selected.observaciones || this.form.get('descripcion')?.value || '',
-        vendedor: this.form.get('vendedor')?.value || selected.operador || ''
-      },
-      { emitEvent: false }
-    );
+    if (!this.cleanText(this.form.get('codCliente')?.value)) {
+      this.form.patchValue({ codCliente }, { emitEvent: false });
+    }
 
-    this.syncLockedFields();
+    const clienteContext = this.buildClienteContextFromForm();
+    if (!clienteContext) {
+      window.alert('La información del cliente no está disponible. Intente seleccionarlo nuevamente.');
+      return;
+    }
+
+    const queryParams: Record<string, string | number> = {
+      origin: 'oportunidad-form',
+      codCliente,
+      clienteNombre: this.cleanText(clienteContext.nombre) || codCliente,
+      returnUrl: this.router.url,
+      codVendedor: this.cleanText(this.form.get('vendedor')?.value),
+      titulo: this.cleanText(this.form.get('titulo')?.value),
+      descripcion: this.cleanText(this.form.get('descripcion')?.value),
+      etapaActual: this.cleanText(this.form.get('etapa')?.value)
+    };
+
+    if (this.oportunidadId) {
+      queryParams['oportunidadId'] = this.oportunidadId;
+    }
+
+    const state = {
+      origin: 'oportunidad-form',
+      cliente: clienteContext,
+      returnUrl: this.router.url,
+      oportunidadDraft: this.buildNavigationDraft()
+    };
+
+    void this.router.navigate(['/demo/ordenes-pedido/nuevo'], {
+      queryParams,
+      state
+    });
   }
 
   private ensureClienteOption(value: string, label: string): void {
-    if (!value || this.clientesOptions.some((item) => item.value === value)) {
+    const codigo = this.cleanText(value);
+    if (!codigo || this.clientesOptions.some((item) => item.value === codigo)) {
       return;
     }
-    this.clientesOptions = [{ value, label: `${label} (${value})` }, ...this.clientesOptions];
+    const name = this.extractClienteNombre(label, codigo) || codigo;
+    this.clientesOptions = [{ value: codigo, name, label: `${name} (${codigo})` }, ...this.clientesOptions];
+  }
+
+  private buildClienteContextFromForm(): ClienteUI | null {
+    const codigo = this.cleanText(this.form.get('codCliente')?.value);
+    if (!codigo) {
+      return null;
+    }
+    const nombre = this.selectedClienteNombre || codigo;
+    return {
+      codigo                ,
+      nombre                ,
+      ruc                   : '',
+      contacto              : '',
+      nombreContacto        : '',
+      contactoPrincipal     : '',
+      emailPrincipal        : '',
+      telefonoPrincipal     : '',
+      cargoPrincipal        : '',
+      direccion             : '',
+      provincia             : '',
+      ciudad                : '',
+      pais                  : '',
+      zona                  : '',
+      email                 : '',
+      telefono1             : '',
+      telefono2             : '',
+      fax                   : '',
+      tipoCli               : '',
+      mtoCredito            : 0,
+      idProvincia           : '',
+      idCanton              : '',
+      idDistrito            : '',
+      tCliente              : '',
+      enviarCorreo          : false,
+      totalContactos        : 0,
+      contactos             : []
+    };
   }
 
   private setupCotizacionBehavior(): void {
+    this.clienteSearchInput$
+      .pipe(debounceTime(250), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((term) => {
+        this.searchClientes(term);
+      });
+
     this.form
       .get('codCliente')
       ?.valueChanges.pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -343,110 +455,185 @@ export class OportunidadFormComponent implements OnInit {
         this.syncClienteSearchTerm();
       });
 
-    this.form
-      .get('usarCotizacion')
-      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((enabled) => {
-        const isEnabled = !!enabled;
-
-        if (!isEnabled) {
-          this.cotizacionesError = '';
-          this.cotizacionesOptions = [];
-          this.selectedCotizacion = null;
-          this.form.patchValue({ cotizacionId: '' }, { emitEvent: false });
-          this.syncCotizacionValidation();
-          this.syncLockedFields();
-          return;
-        }
-
-        this.syncCotizacionValidation();
-        this.loadCotizacionesForSelectedCliente();
-      });
-
-    this.form
-      .get('codCliente')
-      ?.valueChanges.pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.cotizacionActiva) {
-          return;
-        }
-
-        this.selectedCotizacion = null;
-        this.form.patchValue({ cotizacionId: '' }, { emitEvent: false });
-        this.loadCotizacionesForSelectedCliente();
-      });
+    this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.syncCotizacionValidation();
+      this.syncLockedFields();
+    });
   }
 
-  private loadCotizacionesForSelectedCliente(): void {
-    const codCliente = (this.form.get('codCliente')?.value ?? '').trim();
-
-    if (!codCliente) {
-      this.cotizacionesOptions = this.selectedCotizacion ? [this.selectedCotizacion] : [];
-      this.cotizacionesError = 'Seleccione un cliente para consultar sus cotizaciones.';
-      this.syncLockedFields();
+  private searchClientes(value: string): void {
+    const term = this.cleanText(value);
+    if (this.clienteFieldLocked || !term) {
+      this.clienteSearchLoading = false;
+      this.clienteSuggestions = [];
       return;
     }
 
-    this.cotizacionesLoading = true;
-    this.cotizacionesError = '';
-
-    this.ordenPedidoService
-      .getOrdenes({
-        tipOrden: 'COT',
-        fechaDesde: `01/01/${new Date().getFullYear()}`,
-        fechaHasta: this.getTodayForApi(),
-        nomCliente: this.getClienteSearchName(),
-        pageNumber: 1,
-        pageSize: 50
-      })
-      .pipe(finalize(() => (this.cotizacionesLoading = false)))
-      .subscribe({
-        next: (response) => {
-          const items = response.datos.map((item) => this.mapCotizacionOption(item));
-          this.cotizacionesOptions = this.mergeCotizaciones(items);
-          this.cotizacionesError = items.length ? '' : 'No se encontraron cotizaciones para el cliente seleccionado.';
-          this.syncLockedFields();
-        },
-        error: (error) => {
-          console.error('Error al cargar cotizaciones para oportunidad:', error);
-          this.cotizacionesOptions = this.selectedCotizacion ? [this.selectedCotizacion] : [];
-          this.cotizacionesError = 'No se pudieron cargar las cotizaciones del cliente.';
-          this.syncLockedFields();
-        }
+    this.clienteSearchLoading = true;
+    this.clienteService
+      .getClientesListado(1, 20, term)
+      .pipe(
+        catchError((error) => {
+          console.error('Error al buscar clientes para oportunidades:', error);
+          return of({
+            data: [] as ClienteListado[],
+            totalRegistros: 0,
+            paginaActual: 1,
+            pageSize: 20,
+            totalPages: 1
+          });
+        }),
+        finalize(() => {
+          this.clienteSearchLoading = false;
+        })
+      )
+      .subscribe((response) => {
+        this.clienteSuggestions = (response.data ?? []).map((cliente) => ({
+          value: cliente.id,
+          name: cliente.nombre,
+          label: `${cliente.nombre} (${cliente.id})`
+        }));
       });
+  }
+
+  private restoreOrderResultFromNavigation(): void {
+    const navigationState = this.router.getCurrentNavigation()?.extras.state as
+      | (Record<string, unknown> & { from?: string; orderResult?: OrdenPedidoReturnInfo; oportunidadDraft?: OportunidadNavigationDraft })
+      | null;
+    const fallbackState =
+      typeof window !== 'undefined'
+        ? (window.history.state as Record<string, unknown> & { from?: string; orderResult?: OrdenPedidoReturnInfo; oportunidadDraft?: OportunidadNavigationDraft })
+        : null;
+    const state = navigationState ?? fallbackState;
+    if (state?.from !== 'orden-pedido-form') {
+      return;
+    }
+
+    this.pendingOrderResultFromNavigation = state.orderResult || null;
+    this.pendingDraftFromNavigation = state.oportunidadDraft || null;
+    this.shouldCleanReturnState = true;
+  }
+
+  private applyNavigationReturnState(): void {
+    if (this.pendingDraftFromNavigation) {
+      this.applyDraftFromNavigation(this.pendingDraftFromNavigation);
+      this.pendingDraftFromNavigation = null;
+    }
+
+    if (this.pendingOrderResultFromNavigation) {
+      this.applyOrderResultFromNavigation(this.pendingOrderResultFromNavigation);
+      this.pendingOrderResultFromNavigation = null;
+    }
+
+    if (this.shouldCleanReturnState && typeof window !== 'undefined') {
+      const fallbackState = window.history.state as Record<string, unknown>;
+      const cleaned = { ...fallbackState };
+      delete cleaned['orderResult'];
+      delete cleaned['oportunidadDraft'];
+      delete cleaned['from'];
+      window.history.replaceState(cleaned, '', window.location.href);
+      this.shouldCleanReturnState = false;
+    }
+  }
+
+  private applyDraftFromNavigation(draft: OportunidadNavigationDraft): void {
+    const form = draft?.form;
+    if (!form) {
+      return;
+    }
+
+    if (form.codCliente) {
+      const clienteNombre = this.extractClienteNombre(draft.clienteSearchTerm, form.codCliente) || form.codCliente;
+      this.ensureClienteOption(form.codCliente, clienteNombre);
+    }
+
+    this.form.patchValue(
+      {
+        codCliente        : this.cleanText(form.codCliente),
+        titulo            : this.cleanText(form.titulo),
+        descripcion       : this.cleanText(form.descripcion),
+        montoEstimado     : Number(form.montoEstimado || 0),
+        probabilidad      : Number(form.probabilidad || 0),
+        etapa             : this.cleanText(form.etapa) || 'PROSPECTO',
+        vendedor          : this.cleanText(form.vendedor),
+        tipNDP            : this.cleanText(form.tipNDP),
+        serieNDP          : this.cleanText(form.serieNDP),
+        numNDP            : this.cleanText(form.numNDP)
+      },
+      { emitEvent: false }
+    );
+
+    if (draft.clienteSearchTerm) {
+      this.clienteSearchTerm = draft.clienteSearchTerm;
+    }
+  }
+
+  private buildNavigationDraft(): OportunidadNavigationDraft {
+    const raw = this.form.getRawValue();
+    return {
+      form: {
+        codCliente        : this.cleanText(raw.codCliente),
+        titulo            : this.cleanText(raw.titulo),
+        descripcion       : this.cleanText(raw.descripcion),
+        montoEstimado     : Number(raw.montoEstimado || 0),
+        probabilidad      : Number(raw.probabilidad || 0),
+        etapa             : this.cleanText(raw.etapa),
+        vendedor          : this.cleanText(raw.vendedor),
+        tipNDP            : this.cleanText(raw.tipNDP),
+        serieNDP          : this.cleanText(raw.serieNDP),
+        numNDP            : this.cleanText(raw.numNDP)
+      },
+      clienteSearchTerm: this.cleanText(this.clienteSearchTerm)
+    };
+  }
+
+  private applyOrderResultFromNavigation(orderResult: OrdenPedidoReturnInfo): void {
+    if (!orderResult) {
+      return;
+    }
+
+    this.form.patchValue(
+      {
+        montoEstimado   : orderResult.total,
+        tipNDP          : this.cleanText(orderResult.tipOrden).toUpperCase(),
+        serieNDP        : this.cleanText(orderResult.serie),
+        numNDP          : this.cleanText(orderResult.numero)
+      },
+      { emitEvent: false }
+    );
+
+    this.syncCotizacionValidation();
+    this.syncLockedFields();
   }
 
   private syncCotizacionValidation(): void {
-    const cotizacionControl = this.form.get('cotizacionId');
-    if (!cotizacionControl) {
+    const tipControl = this.form.get('tipNDP');
+    const serieControl = this.form.get('serieNDP');
+    const numeroControl = this.form.get('numNDP');
+    if (!tipControl || !serieControl || !numeroControl) {
       return;
     }
 
-    if (this.cotizacionActiva) {
-      cotizacionControl.setValidators([Validators.required]);
-    } else {
-      cotizacionControl.clearValidators();
-    }
-
-    cotizacionControl.updateValueAndValidity({ emitEvent: false });
+    const requiresAll = this.hasCotizacionAsociada;
+    const controls = [tipControl, serieControl, numeroControl];
+    controls.forEach((control) => {
+      if (requiresAll) {
+        control.setValidators([Validators.required]);
+      } else {
+        control.clearValidators();
+      }
+      control.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   private syncLockedFields(): void {
     const codClienteControl = this.form.get('codCliente');
-    const montoControl = this.form.get('montoEstimado');
-    const lockCliente = this.isEditing || !!this.selectedCotizacion;
-    const lockMonto = !!this.selectedCotizacion;
+    const lockCliente = this.isEditing || this.hasCotizacionAsociada;
 
     if (lockCliente) {
       codClienteControl?.disable({ emitEvent: false });
     } else {
       codClienteControl?.enable({ emitEvent: false });
-    }
-
-    if (lockMonto) {
-      montoControl?.disable({ emitEvent: false });
-    } else {
-      montoControl?.enable({ emitEvent: false });
     }
   }
 
@@ -466,14 +653,15 @@ export class OportunidadFormComponent implements OnInit {
   }
 
   private syncCotizacionAfterSave(payload: OportunidadFormValue): Observable<SaveOutcome | null> {
-    if (!this.selectedCotizacion) {
+    const { tipNDP, serieNDP, numNDP } = this.getCotizacionData();
+    if (!tipNDP || !serieNDP || !numNDP) {
       return of<SaveOutcome | null>(null);
     }
 
     const cotizacionPayload = {
-      tipNDP: (this.selectedCotizacion.tipOrden || 'COT').trim().toUpperCase(),
-      serieNDP: (this.selectedCotizacion.serie || '').trim(),
-      numNDP: (this.selectedCotizacion.numero || '').trim()
+      tipNDP,
+      serieNDP,
+      numNDP
     };
 
     if (this.isEditing && this.oportunidadId) {
@@ -514,49 +702,59 @@ export class OportunidadFormComponent implements OnInit {
     );
   }
 
-  private createCotizacionOptionFromOportunidad(oportunidad: OportunidadUI): CotizacionOption {
-    const id = [oportunidad.tipNDP, oportunidad.serieNDP, oportunidad.numNDP].filter(Boolean).join('|');
-    const total = Number(oportunidad.montoEstimado || 0);
+  private getCotizacionData(): { tipNDP: string; serieNDP: string; numNDP: string } {
     return {
-      id,
-      label: `${oportunidad.tipNDP || 'COT'} ${oportunidad.serieNDP || '---'} - ${oportunidad.numNDP || '---'} - ${oportunidad.clienteNombre || oportunidad.codCliente} - CRC ${this.formatAmount(total)}`,
-      tipOrden: oportunidad.tipNDP || 'COT',
-      serie: oportunidad.serieNDP || '',
-      numero: oportunidad.numNDP || '',
-      fecha: '',
-      cliente: oportunidad.clienteNombre || oportunidad.codCliente,
-      ruc: '',
-      items: 0,
-      subtotal: total,
-      impuesto: 0,
-      total,
-      estado: oportunidad.estado,
-      observaciones: oportunidad.descripcion || '',
-      operador: oportunidad.vendedor || ''
+      tipNDP: this.cleanText(this.form.get('tipNDP')?.value).toUpperCase(),
+      serieNDP: this.cleanText(this.form.get('serieNDP')?.value),
+      numNDP: this.cleanText(this.form.get('numNDP')?.value)
     };
   }
 
-  private mapCotizacionOption(item: OrdenPedidoListadoItem): CotizacionOption {
-    return {
-      ...item,
-      id: [item.tipOrden, item.serie, item.numero].filter(Boolean).join('|'),
-      label: `${item.tipOrden} ${item.serie} - ${item.numero} - ${item.cliente || 'Cliente'} - CRC ${this.formatAmount(item.total)}`
-    };
-  }
-
-  private mergeCotizaciones(items: CotizacionOption[]): CotizacionOption[] {
-    const mapById = new Map<string, CotizacionOption>();
-
-    for (const item of [this.selectedCotizacion, ...items].filter((value): value is CotizacionOption => !!value)) {
-      mapById.set(item.id, item);
+  private resolveClienteCode(): string {
+    const formCode = this.cleanText(this.form.get('codCliente')?.value);
+    if (formCode) {
+      return formCode;
     }
 
-    return Array.from(mapById.values());
+    const fromSearch = this.extractClienteCode(this.clienteSearchTerm);
+    return this.cleanText(fromSearch);
   }
 
-  private getClienteSearchName(): string {
-    const selected = this.selectedClienteLabel;
-    return selected.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  private extractClienteCode(value: string): string {
+    const text = this.cleanText(value);
+    if (!text) {
+      return '';
+    }
+
+    const match = text.match(/\(([^)]+)\)\s*$/);
+    if (match?.[1]) {
+      return this.cleanText(match[1]);
+    }
+
+    return text;
+  }
+
+  private extractClienteNombre(value: string, codigo: string): string {
+    const text = this.cleanText(value);
+    if (!text) {
+      return '';
+    }
+
+    const code = this.cleanText(codigo);
+    if (!code) {
+      return text;
+    }
+
+    const suffix = new RegExp(`\\s*\\(${this.escapeRegex(code)}\\)\\s*$`, 'i');
+    return text.replace(suffix, '').trim();
+  }
+
+  private escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private cleanText(value: unknown): string {
+    return String(value ?? '').trim();
   }
 
   private getTodayForApi(): string {
@@ -567,10 +765,4 @@ export class OportunidadFormComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  formatAmount(value: number): string {
-    return new Intl.NumberFormat('es-CR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(value || 0);
-  }
 }

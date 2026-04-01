@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 
 import { SharedModule } from 'src/app/theme/shared/shared.module';
@@ -92,7 +92,15 @@ export class OrdenPedidoListComponent implements OnInit {
   }
 
   nuevaOrden(): void {
-    void this.router.navigate(['/demo/ordenes-pedido/nuevo']);
+    void this.router.navigate(['/demo/ordenes-pedido/nuevo'], {
+      queryParams: {
+        origin: 'orden-pedido-list'
+      },
+      state: {
+        origin: 'orden-pedido-list',
+        returnUrl: this.buildReturnUrl()
+      }
+    });
   }
 
   toggleExpanded(item: OrdenPedidoListadoItem): void {
@@ -184,11 +192,15 @@ export class OrdenPedidoListComponent implements OnInit {
 
   private applyRouteFilters(): void {
     const tipOrden = (this.route.snapshot.queryParamMap.get('tipOrden') ?? '').trim();
+    const fechaDesde = (this.route.snapshot.queryParamMap.get('fechaDesde') ?? '').trim();
+    const fechaHasta = (this.route.snapshot.queryParamMap.get('fechaHasta') ?? '').trim();
     const nomCliente = (this.route.snapshot.queryParamMap.get('nomCliente') ?? '').trim();
     const serie = (this.route.snapshot.queryParamMap.get('serie') ?? '').trim();
     const numero = (this.route.snapshot.queryParamMap.get('numero') ?? '').trim();
+    const pageNumber = Number(this.route.snapshot.queryParamMap.get('pageNumber') ?? 0);
+    const pageSize = Number(this.route.snapshot.queryParamMap.get('pageSize') ?? 0);
 
-    if (!tipOrden && !nomCliente && !serie && !numero) {
+    if (!tipOrden && !fechaDesde && !fechaHasta && !nomCliente && !serie && !numero && pageNumber <= 0 && pageSize <= 0) {
       return;
     }
 
@@ -199,9 +211,37 @@ export class OrdenPedidoListComponent implements OnInit {
     this.filtrosForm.patchValue(
       {
         tipOrden: tipOrden ? tipOrden.toUpperCase() : this.filtrosForm.controls.tipOrden.value,
+        fechaDesde: fechaDesde || this.filtrosForm.controls.fechaDesde.value,
+        fechaHasta: fechaHasta || this.filtrosForm.controls.fechaHasta.value,
         nomCliente
       },
       { emitEvent: false }
+    );
+
+    if (pageNumber > 0) {
+      this.pageNumber = pageNumber;
+    }
+
+    if (pageSize > 0) {
+      this.pageSize = pageSize;
+    }
+  }
+
+  private buildReturnUrl(): string {
+    const filtros = this.filtrosForm.getRawValue();
+    const queryParams: Params = {
+      tipOrden: (filtros.tipOrden || '').toString().trim(),
+      fechaDesde: (filtros.fechaDesde || '').toString().trim(),
+      fechaHasta: (filtros.fechaHasta || '').toString().trim(),
+      nomCliente: (filtros.nomCliente || '').toString().trim(),
+      pageNumber: this.pageNumber,
+      pageSize: this.pageSize
+    };
+
+    return this.router.serializeUrl(
+      this.router.createUrlTree(['/demo/ordenes-pedido'], {
+        queryParams
+      })
     );
   }
 

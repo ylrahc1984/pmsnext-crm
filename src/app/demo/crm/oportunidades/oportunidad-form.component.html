@@ -57,6 +57,15 @@
                   >
                   <button
                     type="button"
+                    class="btn btn-outline-secondary crm-opportunity-cliente-picker__clear"
+                    [disabled]="clienteFieldLocked || (!clienteSearchTerm && !form.get('codCliente')?.value)"
+                    (click)="clearClienteSearch()"
+                  >
+                    <i class="feather icon-x-circle"></i>
+                    <span>Limpiar</span>
+                  </button>
+                  <button
+                    type="button"
                     class="btn btn-outline-primary crm-opportunity-cliente-picker__create"
                     [disabled]="clienteFieldLocked"
                     (click)="openNuevoCliente()"
@@ -67,6 +76,10 @@
                 </div>
 
                 <div class="crm-opportunity-cliente-picker__dropdown" *ngIf="clienteDropdownOpen && !clienteFieldLocked">
+                  <div class="crm-opportunity-cliente-picker__empty" *ngIf="clienteSearchLoading">
+                    <span>Buscando clientes...</span>
+                  </div>
+
                   <button
                     type="button"
                     class="crm-opportunity-cliente-picker__option"
@@ -126,7 +139,7 @@
                 <span>Monto estimado</span>
               </label>
               <input id="montoEstimado" type="number" min="0" class="form-control" formControlName="montoEstimado">
-              <small class="crm-opportunity-field__hint" *ngIf="selectedCotizacion">Monto tomado desde la cotización seleccionada.</small>
+              <small class="crm-opportunity-field__hint" *ngIf="hasCotizacionAsociada">Monto tomado desde la cotización vinculada.</small>
             </div>
 
             <div class="crm-opportunity-field">
@@ -155,37 +168,49 @@
             </div>
             <div>
               <h5>Cotización asociada</h5>
-              <p>Relaciona una cotización existente o crea una nueva desde el flujo comercial.</p>
+              <p>Capture el tipo, serie y número de la cotización vinculada a esta oportunidad.</p>
             </div>
           </div>
 
-          <div class="crm-opportunity-quote-toggle">
-            <div>
-              <strong>¿Desea asociar una cotización?</strong>
-              <p>Si eliges una cotización, se precargan monto y contexto comercial.</p>
-            </div>
-            <label class="crm-opportunity-switch">
-              <input type="checkbox" formControlName="usarCotizacion">
-              <span class="crm-opportunity-switch__slider"></span>
-            </label>
-          </div>
+          <div class="crm-opportunity-quote-panel">
+            <div class="crm-opportunity-form-grid crm-opportunity-form-grid--quote">
+              <div class="crm-opportunity-field">
+                <label for="tipNDP">
+                  <i class="feather icon-tag"></i>
+                  <span>Tipo</span>
+                </label>
+                <input id="tipNDP" type="text" class="form-control" formControlName="tipNDP" placeholder="COT">
+                <small class="text-danger" *ngIf="form.get('tipNDP')?.invalid && form.get('tipNDP')?.touched">
+                  El tipo es obligatorio cuando se captura una cotización.
+                </small>
+              </div>
 
-          <div class="crm-opportunity-quote-panel" *ngIf="cotizacionActiva">
-            <div class="crm-opportunity-field crm-opportunity-field--full">
-              <label for="cotizacionId">
+              <div class="crm-opportunity-field">
+                <label for="serieNDP">
                 <i class="feather icon-link"></i>
-                <span>Seleccionar cotización existente</span>
-              </label>
-              <select id="cotizacionId" class="form-select" formControlName="cotizacionId" (change)="onCotizacionSelected($any($event.target).value)">
-                <option value="">Seleccione una cotización</option>
-                <option *ngFor="let cotizacion of cotizacionesOptions" [value]="cotizacion.id">{{ cotizacion.label }}</option>
-              </select>
-              <small class="crm-opportunity-field__hint" *ngIf="cotizacionesLoading">Cargando cotizaciones del cliente...</small>
-              <small class="text-danger" *ngIf="cotizacionesError">{{ cotizacionesError }}</small>
-              <small class="text-danger" *ngIf="form.get('cotizacionId')?.invalid && form.get('cotizacionId')?.touched">
-                Seleccione una cotización para continuar.
-              </small>
+                  <span>Serie</span>
+                </label>
+                <input id="serieNDP" type="text" class="form-control" formControlName="serieNDP" placeholder="A001">
+                <small class="text-danger" *ngIf="form.get('serieNDP')?.invalid && form.get('serieNDP')?.touched">
+                  La serie es obligatoria cuando se captura una cotización.
+                </small>
+              </div>
+
+              <div class="crm-opportunity-field">
+                <label for="numNDP">
+                  <i class="feather icon-hash"></i>
+                  <span>Número</span>
+                </label>
+                <input id="numNDP" type="text" class="form-control" formControlName="numNDP" placeholder="00001234">
+                <small class="text-danger" *ngIf="form.get('numNDP')?.invalid && form.get('numNDP')?.touched">
+                  El número es obligatorio cuando se captura una cotización.
+                </small>
+              </div>
             </div>
+
+            <small class="crm-opportunity-field__hint">
+              Esta oportunidad queda vinculada a una única cotización mediante tipo, serie y número.
+            </small>
 
             <div class="crm-opportunity-quote-panel__actions">
               <button type="button" class="btn btn-outline-primary" (click)="openNuevaCotizacion()">
@@ -202,7 +227,7 @@
       <section class="crm-opportunity-form-card crm-opportunity-form-card--sidebar">
         <div class="crm-opportunity-form-card__title-row">
           <h5>Resumen comercial</h5>
-          <span class="crm-opportunity-summary-badge" [class.crm-opportunity-summary-badge--quote]="selectedCotizacion">
+          <span class="crm-opportunity-summary-badge" [class.crm-opportunity-summary-badge--quote]="hasCotizacionVinculada">
             Origen: {{ origenLabel }}
           </span>
         </div>
@@ -225,12 +250,12 @@
             <strong>{{ (form.get('montoEstimado')?.value || 0) | number:'1.0-2' }}</strong>
           </div>
           <div>
-            <span>Cotización seleccionada</span>
+            <span>Cotización vinculada</span>
             <strong>{{ cotizacionSeleccionadaLabel }}</strong>
           </div>
           <div>
             <span>Estado de vínculo</span>
-            <strong class="crm-opportunity-summary-status" [class.crm-opportunity-summary-status--ready]="selectedCotizacion">
+            <strong class="crm-opportunity-summary-status" [class.crm-opportunity-summary-status--ready]="hasCotizacionVinculada">
               {{ cotizacionEstadoLabel }}
             </strong>
           </div>

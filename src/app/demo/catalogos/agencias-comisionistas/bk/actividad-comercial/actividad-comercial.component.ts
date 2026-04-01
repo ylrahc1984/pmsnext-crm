@@ -17,7 +17,6 @@ import { ActividadDto, ActividadPost } from './actividad-comercial.models';
 export class ActividadComercialComponent implements OnChanges {
   @Input() cedula = '';
   @Output() principalChange = new EventEmitter<ActividadDto>();
-  @Output() actividadesCountChange = new EventEmitter<number>();
 
   form: FormGroup;
   actividades: ActividadDto[] = [];
@@ -38,7 +37,6 @@ export class ActividadComercialComponent implements OnChanges {
         this.loadActividades(value);
       } else {
         this.actividades = [];
-        this.emitActividadesCount();
       }
     }
   }
@@ -46,7 +44,6 @@ export class ActividadComercialComponent implements OnChanges {
   loadActividades(cedula: string): void {
     if (!cedula) {
       this.actividades = [];
-      this.emitActividadesCount();
       return;
     }
 
@@ -57,12 +54,10 @@ export class ActividadComercialComponent implements OnChanges {
       .subscribe({
         next: (data) => {
           this.actividades = data ?? [];
-          this.emitActividadesCount();
         },
         error: (error) => {
           console.error('Error al cargar actividades comerciales:', error);
           this.actividades = [];
-          this.emitActividadesCount();
         }
       });
   }
@@ -199,10 +194,6 @@ export class ActividadComercialComponent implements OnChanges {
         if (principal) {
           this.principalChange.emit({ ...principal, MPV32_Principal: 1 });
         }
-    });
-  }
-
-  private emitActividadesCount(): void {
-    this.actividadesCountChange.emit(this.actividades.length);
+      });
   }
 }

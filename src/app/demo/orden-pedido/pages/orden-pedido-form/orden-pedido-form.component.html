@@ -92,9 +92,9 @@
                 <label class="form-label op-label">Vendedor</label>
                 <input class="form-control" formControlName="codVendedor" placeholder="Código vendedor">
               </div>
-              <div class="col-lg-6 col-md-6">
-                <label class="form-label op-label">Plan Tarifario</label>
-                <select class="form-control" formControlName="planTarifario" [disabled]="isSubmitting || planesTarifariosLoading">
+                <div class="col-lg-6 col-md-6" hidden>
+                  <label class="form-label op-label">Plan Tarifario</label>
+                  <select class="form-control" formControlName="planTarifario" [disabled]="isSubmitting || planesTarifariosLoading">
                   <option value="" *ngIf="planesTarifariosCatalogo.length === 0">
                     {{ planesTarifariosLoading ? 'Cargando planes tarifarios...' : 'Sin planes tarifarios' }}
                   </option>
@@ -129,11 +129,37 @@
           <div class="row g-3">
             <div class="col-lg-4 col-md-6">
               <label class="form-label op-label">Código Cliente</label>
-              <div class="input-group">
-                <input class="form-control" formControlName="codCliente" placeholder="Código cliente" [readonly]="modoReserva || modoOportunidad">
-                <button class="btn btn-outline-primary" type="button" (click)="abrirModalClientes()" [disabled]="isSubmitting || modoReserva || modoOportunidad">
-                  <i class="feather icon-search"></i>
-                </button>
+              <div class="cliente-search">
+                <div class="d-flex gap-2 align-items-stretch">
+                  <input
+                    class="form-control flex-grow-1"
+                    formControlName="codCliente"
+                    placeholder="Código cliente"
+                    [readonly]="modoReserva || modoOportunidad"
+                  >
+                  <button
+                    class="btn btn-outline-primary"
+                    type="button"
+                    (click)="abrirModalClientes()"
+                    [disabled]="isSubmitting || modoReserva || modoOportunidad"
+                  >
+                    <i class="feather icon-search"></i>
+                  </button>
+                </div>
+                <div class="list-group cliente-suggestions mt-1" *ngIf="clienteSuggestions.length && !modoReserva && !modoOportunidad">
+                  <button
+                    type="button"
+                    class="list-group-item list-group-item-action"
+                    *ngFor="let cliente of clienteSuggestions"
+                    (click)="selectClienteSuggestion(cliente)"
+                  >
+                    <div class="fw-bold">{{ cliente.codigo }}</div>
+                    <small class="text-muted">{{ cliente.nombre }}</small>
+                  </button>
+                </div>
+                <div class="cliente-suggestions__loading text-muted small mt-1" *ngIf="clienteBusquedaLoading">
+                  Buscando clientes...
+                </div>
               </div>
               <div class="op-client-selected" *ngIf="selectedCliente">
                 {{ selectedCliente.codigo }} - {{ selectedCliente.nombre }}
@@ -175,47 +201,16 @@
               <h6 class="op-section-title mb-0">Detalle</h6>
             </div>
             <div class="d-flex align-items-center flex-wrap gap-2 op-reserva-actions">
-              <span class="badge op-reserva-badge" *ngIf="modoReserva">
-                Documento desde Reserva: {{ reservaActual || '-' }}
-              </span>
-              <button
-                class="btn btn-sm btn-outline-danger op-outline-btn"
-                type="button"
-                *ngIf="modoReserva"
-                (click)="quitarReserva()"
-                [disabled]="reservaLoading || isSubmitting"
-              >
-                <span *ngIf="reservaLoading" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                <i class="feather icon-x" *ngIf="!reservaLoading"></i>
-                Quitar Reserva
-              </button>
               <button
                 class="btn btn-sm btn-outline-primary op-outline-btn"
                 type="button"
-                *ngIf="!modoReserva && !modoOportunidad"
-                (click)="abrirModalReserva()"
-                [disabled]="isSubmitting || reservaLoading"
-              >
-                <span *ngIf="reservaLoading" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                <i class="feather icon-clipboard me-1" *ngIf="!reservaLoading"></i>
-                Cargar desde Reserva
-              </button>
-              <button
-                class="btn btn-sm btn-outline-primary op-outline-btn"
-                type="button"
-                *ngIf="!modoReserva"
                 (click)="abrirModalServicios()"
                 [disabled]="isSubmitting"
               >
                 <i class="feather icon-plus me-1"></i>
-                Agregar servicio
+                Agregar Producto
               </button>
             </div>
-          </div>
-
-          <div class="alert alert-warning py-2 mb-3" *ngIf="reservaErrorMessage">
-            <i class="feather icon-alert-circle me-1"></i>
-            {{ reservaErrorMessage }}
           </div>
 
           <div class="table-responsive">
@@ -449,10 +444,3 @@
   (close)="cerrarModalServicios()"
   (servicioSelected)="onServicioSelected($event)"
 ></app-selector-servicios-modal>
-
-<app-reserva-pendiente-modal
-  *ngIf="showReservaModal"
-  [open]="showReservaModal"
-  (close)="cerrarModalReserva()"
-  (reservaSeleccionada)="onReservaSeleccionada($event)"
-></app-reserva-pendiente-modal>

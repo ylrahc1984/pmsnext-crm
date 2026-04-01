@@ -114,6 +114,11 @@
       role="button"
       (click)="openContactoDetalle(contacto)"
       (keydown)="handleCardKeydown($event, contacto)">
+      <button type="button" class="crm-contact-card__quick-action" (click)="$event.stopPropagation(); crearOportunidad(contacto)">
+        <i class="feather icon-plus-circle"></i>
+        <span>Oportunidad</span>
+      </button>
+
       <div class="crm-contact-card__top">
         <div class="crm-contact-card__avatar crm-contact-card__avatar--large" [ngStyle]="getAvatarStyle(contacto)">
           {{ getListadoInitials(contacto) }}
@@ -191,15 +196,9 @@
           <span class="crm-contact-card__operator" *ngIf="contacto.operador">Operador {{ contacto.operador }}</span>
         </div>
 
-        <div class="crm-contact-card__footer-actions" (click)="$event.stopPropagation()">
-          <button type="button" class="crm-contact-card__quick-action" (click)="crearOportunidad(contacto)">
-            <i class="feather icon-plus-circle"></i>
-            <span>Oportunidad</span>
-          </button>
-          <div class="crm-contact-card__footer-link">
-            <span>Explorar perfil</span>
-            <i class="feather icon-arrow-right"></i>
-          </div>
+        <div class="crm-contact-card__footer-link">
+          <span>Explorar perfil</span>
+          <i class="feather icon-arrow-right"></i>
         </div>
       </div>
     </article>

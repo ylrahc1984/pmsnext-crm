@@ -312,21 +312,24 @@ export class UsuarioService {
     };
   }
 
-  private mapPuntoVentaFromApi(apiData: PuntoVenta): PuntoVentaUI {
-    return {
-      codigo: apiData.MPV07_CodPntVenta,
-      descripcion: apiData.MPV07_NomPntVenta,
-      codComanda: apiData.MPV07_CodComanda,
-      codDocumento: apiData.MPV07_CodDocumento,
-      codLstPrecio: apiData.MPV07_CodLstPrecio,
-      numMesas: apiData.MPV07_NumMesas,
-      pntTouch: apiData.MPV07_PntTouch,
-      orden: apiData.MPV07_Orden,
-      operador: apiData.MPV07_Operador,
-      impresoraA: apiData.MPV07_ImpresoraA,
-      impresoraB: apiData.MPV07_ImpresoraB
-    };
-  }
+  private mapPuntoVentaFromApi(apiData: PuntoVenta | PuntoVentaUI): PuntoVentaUI {
+      const raw = apiData as PuntoVenta & Partial<PuntoVentaUI>;
+      const fallback = <T>(...values: (T | undefined)[]): T | undefined => values.find((value) => value !== undefined);
+
+      return {
+        codigo: fallback(raw.MPV07_CodPntVenta, raw.codigo) ?? '',
+        descripcion: fallback(raw.MPV07_NomPntVenta, raw.descripcion) ?? '',
+        codComanda: fallback(raw.MPV07_CodComanda, raw.codComanda) ?? '',
+        codDocumento: fallback(raw.MPV07_CodDocumento, raw.codDocumento),
+        codLstPrecio: fallback(raw.MPV07_CodLstPrecio, raw.codLstPrecio),
+        numMesas: fallback(raw.MPV07_NumMesas, raw.numMesas) ?? 0,
+        pntTouch: fallback(raw.MPV07_PntTouch, raw.pntTouch) ?? 0,
+        orden: fallback(raw.MPV07_Orden, raw.orden) ?? 0,
+        operador: fallback(raw.MPV07_Operador, raw.operador) ?? '',
+        impresoraA: fallback(raw.MPV07_ImpresoraA, raw.impresoraA),
+        impresoraB: fallback(raw.MPV07_ImpresoraB, raw.impresoraB)
+      };
+    }
 
   private parseTextResponse(response: string): UsuarioResponse {
     if (!response) {

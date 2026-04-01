@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { finalize } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OPORTUNIDAD_ETAPAS, OportunidadEtapa, OportunidadUI } from './oportunidad.models';
 import { OportunidadService } from './oportunidad.service';
 
@@ -17,6 +19,9 @@ import { OportunidadService } from './oportunidad.service';
 export class OportunidadesComponent implements OnInit {
   private oportunidadService = inject(OportunidadService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+  private loadRequestId = 0;
+  private wasOnOportunidadesList = false;
 
   readonly etapas = OPORTUNIDAD_ETAPAS;
   readonly skeletonRows = Array.from({ length: 5 }, (_, index) => index);
@@ -34,7 +39,31 @@ export class OportunidadesComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    this.wasOnOportunidadesList = this.isOportunidadesListUrl(this.router.url);
+    this.setupNavigationRefresh();
     this.loadOportunidades();
+  }
+
+  private setupNavigationRefresh(): void {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((event) => {
+        const isNowOnList = this.isOportunidadesListUrl(event.urlAfterRedirects);
+        const shouldReload = isNowOnList && !this.wasOnOportunidadesList;
+        this.wasOnOportunidadesList = isNowOnList;
+
+        if (shouldReload) {
+          this.loadOportunidades();
+        }
+      });
+  }
+
+  private isOportunidadesListUrl(url: string): boolean {
+    const cleanUrl = (url || '').split('?')[0].replace(/\/+$/, '');
+    return cleanUrl === '/crm/oportunidades';
   }
 
   get totalOportunidades(): number {
@@ -56,28 +85,64 @@ export class OportunidadesComponent implements OnInit {
   }
 
   loadOportunidades(): void {
+    const requestId = ++this.loadRequestId;
+    const filtrosSnapshot = {
+      busqueda: this.filtros.busqueda.trim(),
+      etapa: this.filtros.etapa,
+      estado: this.filtros.estado,
+      vendedor: this.filtros.vendedor.trim(),
+      conCotizacion: this.filtros.conCotizacion
+    };
+
     this.isLoading = true;
     this.loadError = '';
 
     this.oportunidadService
       .getPipelineDetalle({
-        busqueda: this.filtros.busqueda.trim() || undefined,
-        etapa: this.filtros.etapa || undefined,
-        estado: this.filtros.estado || undefined,
-        vendedor: this.filtros.vendedor.trim() || undefined,
-        conCotizacion: this.filtros.conCotizacion === '' ? undefined : this.filtros.conCotizacion === 'true'
+        busqueda: filtrosSnapshot.busqueda || undefined,
+        etapa: filtrosSnapshot.etapa || undefined,
+        estado: filtrosSnapshot.estado || undefined,
+        vendedor: filtrosSnapshot.vendedor || undefined,
+        conCotizacion: filtrosSnapshot.conCotizacion === '' ? undefined : filtrosSnapshot.conCotizacion === 'true'
       })
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        finalize(() => {
+          if (requestId === this.loadRequestId) {
+            this.isLoading = false;
+          }
+        })
+      )
       .subscribe({
         next: (items) => {
-          this.oportunidades = items;
+          if (requestId !== this.loadRequestId) {
+            return;
+          }
+          this.oportunidades = (items ?? []).filter((item) => this.isRenderableOportunidad(item));
         },
         error: (error) => {
+          if (requestId !== this.loadRequestId) {
+            return;
+          }
           console.error('Error al cargar oportunidades CRM:', error);
           this.oportunidades = [];
           this.loadError = 'No se pudo cargar el listado de oportunidades. Verifique la conexión con el API.';
         }
       });
+  }
+
+  private isRenderableOportunidad(item: OportunidadUI | null | undefined): item is OportunidadUI {
+    if (!item) {
+      return false;
+    }
+
+    const id = Number(item.id ?? 0);
+    const titulo = String(item.titulo ?? '').trim();
+    const clienteNombre = String(item.clienteNombre ?? '').trim();
+    const codCliente = String(item.codCliente ?? '').trim();
+    const monto = Number(item.montoEstimado ?? 0);
+
+    // Evita tarjetas fantasma cuando el API devuelve filas vacías o incompletas.
+    return id > 0 || !!titulo || !!clienteNombre || !!codCliente || monto > 0;
   }
 
   clearFilters(): void {

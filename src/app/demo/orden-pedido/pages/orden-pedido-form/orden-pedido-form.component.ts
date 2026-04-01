@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormArray, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, of } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
@@ -21,11 +21,8 @@ import { UsuarioService } from 'src/app/demo/administracion/usuarios/usuario.ser
 import { AuthService } from 'src/app/core/services/auth.service';
 import { EmpresaContextService } from 'src/app/core/services/empresa-context.service';
 import { NuevaFacturaClienteModalComponent } from 'src/app/finanzas/pages-factura/nueva-factura/nueva-factura-cliente-modal/nueva-factura-cliente-modal.component';
-import { ReservaPendienteModalComponent } from 'src/app/finanzas/pages-factura/nueva-factura/reserva-pendiente-modal/reserva-pendiente-modal.component';
 import { SelectorServiciosModalComponent } from 'src/app/finanzas/pages-factura/nueva-factura/selector-servicios-modal/selector-servicios-modal.component';
 import { ModoPrecio, ServicioListaPrecioItem } from 'src/app/finanzas/services/servicios-lista-precio.service';
-import { ReservaPendienteDetalle, ReservasFacturacionService } from 'src/app/finanzas/services/reservas-facturacion.service';
-import { ReservasService } from 'src/app/core/services/reservas.service';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import {
   OrdenPedidoCreateResponse,
@@ -34,22 +31,30 @@ import {
   OrdenPedidoExoneracion,
   OrdenPedidoPagoItem
 } from '../../interfaces/orden-pedido.interface';
+import { OrdenPedidoReturnInfo } from '../../interfaces/orden-pedido-return.interface';
 import { OrdenPedidoService } from '../../services/orden-pedido.service';
 import { OportunidadService } from 'src/app/demo/crm/oportunidades/oportunidad.service';
 
 type OportunidadCotizacionContext = {
-  oportunidadId: number;
-  codCliente: string;
-  clienteNombre: string;
-  codVendedor: string;
-  titulo: string;
-  descripcion: string;
-  etapaActual: string;
+  oportunidadId     : number;
+  codCliente        : string;
+  clienteNombre     : string;
+  codVendedor       : string;
+  titulo            : string;
+  descripcion       : string;
+  etapaActual       : string;
 };
 
 type OportunidadPostCreateResult = {
   partial: boolean;
   message: string;
+};
+
+type OrdenPedidoNavigationState = {
+  origin?: 'oportunidad-form' | 'orden-pedido-list' | string;
+  cliente?: ClienteUI;
+  returnUrl?: string;
+  oportunidadDraft?: unknown;
 };
 
 @Component({
@@ -61,8 +66,7 @@ type OportunidadPostCreateResult = {
     RouterModule,
     SharedModule,
     NuevaFacturaClienteModalComponent,
-    SelectorServiciosModalComponent,
-    ReservaPendienteModalComponent
+    SelectorServiciosModalComponent
   ],
   templateUrl: './orden-pedido-form.component.html',
   styleUrls: ['./orden-pedido-form.component.scss']
@@ -83,8 +87,6 @@ export class OrdenPedidoFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly ordenPedidoService = inject(OrdenPedidoService);
   private readonly oportunidadService = inject(OportunidadService);
-  private readonly reservasFacturacionService = inject(ReservasFacturacionService);
-  private readonly reservasService = inject(ReservasService);
 
   readonly empresa = this.empresaContext.empresa;
   readonly tiposDocumento = [
@@ -137,21 +139,39 @@ export class OrdenPedidoFormComponent implements OnInit {
   showClienteModal = false;
   selectedCliente: ClienteUI | null = null;
   showServicioModal = false;
-  showReservaModal = false;
   modoReserva = false;
   modoOportunidad = false;
-  reservaActual: string | null = null;
+  clienteSuggestions: ClienteUI[] = [];
+  clienteBusquedaLoading = false;
   oportunidadContexto: OportunidadCotizacionContext | null = null;
-  reservaLoading = false;
-  reservaErrorMessage = '';
   clienteCorreo = '';
   clienteCodigoActividad = '';
   clienteActividadLoading = false;
   private clienteActividadCedula = '';
   private previousListaPrecio = '';
   private suppressListaPrecioChange = false;
+  private navigationState: OrdenPedidoNavigationState | null = null;
+  private originComponent: string | null = null;
+  private returnUrl = '';
+  private shouldReturnToOpportunity = false;
+  private opportunityContextKey = '';
 
   ngOnInit(): void {
+    const navigationState = (this.router.getCurrentNavigation()?.extras.state ?? null) as OrdenPedidoNavigationState | null;
+    const historyState =
+      typeof window !== 'undefined' ? (window.history.state as (OrdenPedidoNavigationState & Record<string, unknown>) | null) : null;
+    this.navigationState = navigationState ?? historyState;
+    const queryOrigin = this.cleanText(this.route.snapshot.queryParamMap.get('origin')).toLowerCase();
+    const navOrigin = this.cleanText(navigationState?.origin).toLowerCase();
+    const historyOrigin = this.cleanText(historyState?.origin).toLowerCase();
+    const resolvedOrigin = navOrigin || historyOrigin || queryOrigin;
+    this.originComponent =
+      resolvedOrigin === 'oportunidad-form' ? 'oportunidad-form' : resolvedOrigin === 'orden-pedido-list' ? 'orden-pedido-list' : null;
+    this.shouldReturnToOpportunity = resolvedOrigin === 'oportunidad-form';
+    const queryReturnUrl = this.cleanText(this.route.snapshot.queryParamMap.get('returnUrl'));
+    const stateReturnUrl = this.cleanText(navigationState?.returnUrl || historyState?.returnUrl);
+    this.returnUrl = this.normalizeReturnUrl(stateReturnUrl || queryReturnUrl);
+
     const currentUser = this.authService.getCurrentUser();
     if (currentUser?.usuario) {
       this.form.controls.codVendedor.setValue(currentUser.usuario);
@@ -170,6 +190,29 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.form.controls.fecNDP.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.syncPagosFormaPago();
     });
+    this.form.controls.codCliente.valueChanges
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        map((value) => String(value ?? '').trim()),
+        distinctUntilChanged(),
+        switchMap((term) => {
+          if (!term || this.modoReserva || this.modoOportunidad) {
+            this.clienteSuggestions = [];
+            return of<ClienteUI[]>([]);
+          }
+          this.clienteBusquedaLoading = true;
+          return this.clienteService.getClientes(1, 10, term).pipe(
+            map((result) => result.data ?? []),
+            catchError(() => of<ClienteUI[]>([])),
+            finalize(() => {
+              this.clienteBusquedaLoading = false;
+            })
+          );
+        })
+      )
+      .subscribe((clientes) => {
+        this.clienteSuggestions = clientes;
+      });
     this.form.controls.listaPrecio.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((listaPrecio) => {
@@ -202,7 +245,6 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.loadListasPrecio();
     this.initOportunidadFromQuery();
     this.initClienteFromQuery();
-    this.initReservaFromQuery();
     this.recalculateTotals();
   }
 
@@ -222,18 +264,18 @@ export class OrdenPedidoFormComponent implements OnInit {
   addPago(): void {
     this.pagosArray.push(
       this.fb.group({
-        orden: this.fb.control(this.pagosArray.length + 1),
-        frmPago: this.fb.control(this.formasPagoCatalogo[0]?.codigo ?? ''),
-        tipo: this.fb.control(''),
-        numTarjeta: this.fb.control(''),
-        referencia: this.fb.control(''),
-        moneda: this.fb.control(this.form.controls.moneda.value || ''),
-        monto: this.fb.control(0),
-        montoOri: this.fb.control(0),
-        tCambio: this.fb.control(1),
-        vencimiento: this.fb.control(this.formatDateForApi(this.form.controls.fecNDP.value)),
-        caja: this.fb.control(''),
-        turno: this.fb.control('')
+        orden           : this.fb.control(this.pagosArray.length + 1),
+        frmPago         : this.fb.control(this.formasPagoCatalogo[0]?.codigo ?? ''),
+        tipo            : this.fb.control(''),
+        numTarjeta      : this.fb.control(''),
+        referencia      : this.fb.control(''),
+        moneda          : this.fb.control(this.form.controls.moneda.value || ''),
+        monto           : this.fb.control(0),
+        montoOri        : this.fb.control(0),
+        tCambio         : this.fb.control(1),
+        vencimiento     : this.fb.control(this.formatDateForApi(this.form.controls.fecNDP.value)),
+        caja            : this.fb.control(''),
+        turno           : this.fb.control('')
       })
     );
     this.syncPagosFormaPago();
@@ -249,7 +291,42 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   volverListado(): void {
-    void this.router.navigate(this.getBackRoute());
+    void this.navigateBack();
+  }
+
+  private navigateBack(orderResult?: OrdenPedidoReturnInfo): void {
+    if (this.returnUrl && this.originComponent) {
+      if (this.shouldReturnToOpportunity) {
+        const state: Record<string, unknown> = { from: 'orden-pedido-form' };
+        if (orderResult) {
+          state['orderResult'] = orderResult;
+        }
+        if (this.navigationState?.oportunidadDraft) {
+          state['oportunidadDraft'] = this.navigationState.oportunidadDraft;
+        }
+        void this.router.navigateByUrl(this.returnUrl, {
+          state
+        });
+        return;
+      }
+
+      void this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+
+    if (this.shouldReturnToOpportunity) {
+      const state: Record<string, unknown> = { from: 'orden-pedido-form' };
+      if (orderResult) {
+        state['orderResult'] = orderResult;
+      }
+      if (this.navigationState?.oportunidadDraft) {
+        state['oportunidadDraft'] = this.navigationState.oportunidadDraft;
+      }
+      void this.router.navigate(['/crm/oportunidades'], { state });
+      return;
+    }
+
+    void this.router.navigate(['/demo/ordenes-pedido']);
   }
 
   abrirModalClientes(): void {
@@ -275,41 +352,11 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.showServicioModal = false;
   }
 
-  abrirModalReserva(): void {
-    if (this.isSubmitting || this.modoReserva || this.modoOportunidad) {
-      return;
-    }
-    this.showReservaModal = true;
-    this.reservaErrorMessage = '';
-  }
-
-  cerrarModalReserva(): void {
-    this.showReservaModal = false;
-  }
-
-  onReservaSeleccionada(selection: { codReserva: string; codAgencia: string }): void {
-    this.showReservaModal = false;
-    if (this.isSubmitting) {
-      return;
-    }
-    this.cargarReservaDesdeSeleccion(selection);
-  }
-
-  quitarReserva(): void {
-    if (this.isSubmitting || this.reservaLoading) {
-      return;
-    }
-    this.reservaActual = null;
-    this.reservaErrorMessage = '';
-    this.setModoReserva(false);
-    this.clearDetalle();
-  }
-
   onClienteSelected(cliente: ClienteUI): void {
     if (this.modoReserva || this.modoOportunidad) {
       return;
     }
-    this.applySelectedCliente(cliente);
+    this.hydrateClienteByCodigo(cliente?.codigo, cliente);
     this.showClienteModal = false;
   }
 
@@ -354,6 +401,45 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.loadClienteActividad(cliente.ruc);
   }
 
+  selectClienteSuggestion(cliente: ClienteUI): void {
+    if (this.modoReserva || this.modoOportunidad) {
+      return;
+    }
+    this.hydrateClienteByCodigo(cliente?.codigo, cliente);
+    this.clienteSuggestions = [];
+  }
+
+  private hydrateClienteByCodigo(codigo: string, fallback?: ClienteUI | null): void {
+    const cleanCodigo = this.cleanText(codigo);
+    if (!cleanCodigo) {
+      if (fallback) {
+        this.applySelectedCliente(fallback);
+      }
+      return;
+    }
+
+    this.clienteService
+      .getClienteByCodigo(cleanCodigo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cliente) => {
+          if (cliente) {
+            this.applySelectedCliente(cliente);
+            return;
+          }
+
+          if (fallback) {
+            this.applySelectedCliente(fallback);
+          }
+        },
+        error: () => {
+          if (fallback) {
+            this.applySelectedCliente(fallback);
+          }
+        }
+      });
+  }
+
   async guardar(): Promise<void> {
     this.errorMessage = '';
     this.successMessage = '';
@@ -386,6 +472,7 @@ export class OrdenPedidoFormComponent implements OnInit {
     const payload = this.buildPayload();
     this.isSubmitting = true;
 
+    console.log('Orden pedido payload', payload);
     this.ordenPedidoService
       .crearOrden(payload)
       .pipe(
@@ -400,6 +487,7 @@ export class OrdenPedidoFormComponent implements OnInit {
       )
       .subscribe({
         next: ({ response, opportunityResult }) => {
+          const orderResult = this.buildOrderReturnInfo(response, payload);
           const successMessage = this.buildCreateSuccessMessage(response, opportunityResult?.message);
           if (this.cleanText(response?.respuesta).toUpperCase() === 'OK') {
             void Swal.fire({
@@ -408,7 +496,7 @@ export class OrdenPedidoFormComponent implements OnInit {
               icon: opportunityResult?.partial ? 'warning' : 'success',
               confirmButtonText: 'Aceptar'
             }).then(() => {
-              void this.router.navigate(this.getPostSaveRoute(opportunityResult));
+              void this.navigateBack(orderResult);
             });
             return;
           }
@@ -454,17 +542,6 @@ export class OrdenPedidoFormComponent implements OnInit {
   get opportunityDocumentLabel(): string {
     const titulo = this.cleanText(this.oportunidadContexto?.titulo);
     return titulo ? `Oportunidad: ${titulo}` : 'Cotizacion generada desde CRM';
-  }
-
-  private getBackRoute(): string[] {
-    return this.modoOportunidad ? ['/crm/oportunidades'] : ['/demo/ordenes-pedido'];
-  }
-
-  private getPostSaveRoute(opportunityResult: OportunidadPostCreateResult | null): string[] {
-    if (this.modoOportunidad && !opportunityResult?.partial) {
-      return ['/crm/oportunidades'];
-    }
-    return ['/demo/ordenes-pedido'];
   }
 
   private recalculateTotals(): void {
@@ -544,7 +621,7 @@ export class OrdenPedidoFormComponent implements OnInit {
       {
         codProdu: (servicio.codigoServicio || '').toString(),
         producto: (servicio.nombreServicio || '').toString(),
-        area: 'TOURS',
+        area: (servicio.area || 'TOURS').toString(),
         uMedida: 'Unid',
         lstPrecio: this.form.controls.listaPrecio.value,
         planTarifa: this.form.controls.planTarifario.value,
@@ -618,27 +695,24 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   private loadPuntosVenta(): void {
-    const currentUser = this.authService.getCurrentUser()?.usuario ?? '';
-    if (!currentUser) {
-      this.loadPuntosVentaCatalogo();
-      return;
-    }
-
     this.puntosVentaLoading = true;
     this.usuarioService
-      .getPuntosVentaUsuario(currentUser)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .getPuntosVenta()
+      .pipe(
+        finalize(() => {
+          this.puntosVentaLoading = false;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (response) => {
           const puntosVenta = (response ?? []).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
-          if (puntosVenta.length > 0) {
-            this.applyPuntosVentaCatalogo(puntosVenta);
-            this.puntosVentaLoading = false;
-            return;
-          }
-          this.loadPuntosVentaCatalogo();
+          this.applyPuntosVentaCatalogo(puntosVenta);
         },
-        error: () => this.loadPuntosVentaCatalogo()
+        error: (error) => {
+          console.error('Error al cargar puntos de venta:', error);
+          this.puntosVentaCatalogo = [];
+        }
       });
   }
 
@@ -680,27 +754,6 @@ export class OrdenPedidoFormComponent implements OnInit {
       }
 
     });
-  }
-
-  private loadPuntosVentaCatalogo(): void {
-    this.puntosVentaLoading = true;
-    this.usuarioService
-      .getPuntosVenta()
-      .pipe(
-        finalize(() => {
-          this.puntosVentaLoading = false;
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (response) => {
-          const puntosVenta = (response ?? []).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
-          this.applyPuntosVentaCatalogo(puntosVenta);
-        },
-        error: () => {
-          this.puntosVentaCatalogo = [];
-        }
-      });
   }
 
   private loadPlanesTarifarios(): void {
@@ -803,61 +856,30 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.recalculateTotals();
   }
 
-  private cargarReservaDesdeSeleccion(selection: { codReserva: string; codAgencia: string }): void {
-    const codReserva = (selection?.codReserva ?? '').toString().trim();
-    const codAgencia = (selection?.codAgencia ?? '').toString().trim();
-
-    if (!codReserva) {
-      return;
-    }
-
-    this.reservaLoading = true;
-    this.reservaErrorMessage = '';
-
-    forkJoin({
-      detalle: this.reservasFacturacionService.getDetalle(codReserva),
-      cliente: codAgencia
-        ? this.clienteService.getClienteByCodigo(codAgencia).pipe(catchError(() => of(null)))
-        : of(null)
-    })
-      .pipe(
-        finalize(() => {
-          this.reservaLoading = false;
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: ({ detalle, cliente }) => {
-          this.reservaActual = codReserva;
-          this.aplicarClienteReserva(cliente, codAgencia);
-          this.aplicarCatalogosReserva(detalle ?? []);
-          this.setModoReserva(true);
-          this.aplicarDetalleReserva(detalle ?? []);
-        },
-        error: (error: unknown) => {
-          this.reservaErrorMessage = error instanceof Error ? error.message : 'No se pudo cargar la reserva seleccionada.';
-        }
-      });
-  }
-
   private initOportunidadFromQuery(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const routeOportunidadId = Number(this.route.snapshot.paramMap.get('id') ?? 0);
       const queryOportunidadId = Number(params.get('oportunidadId') ?? 0);
       const oportunidadId = queryOportunidadId > 0 ? queryOportunidadId : routeOportunidadId;
-
-      if (!oportunidadId || this.isSubmitting) {
+      const isFromOpportunityForm = this.originComponent === 'oportunidad-form';
+      if (!isFromOpportunityForm && !oportunidadId) {
+        return;
+      }
+      if (this.isSubmitting) {
         return;
       }
 
-      if (this.modoOportunidad && this.oportunidadContexto?.oportunidadId === oportunidadId) {
+      const contextKey = isFromOpportunityForm ? 'oportunidad-form' : `oportunidad-${oportunidadId}`;
+      if (this.opportunityContextKey === contextKey) {
         return;
       }
+      this.opportunityContextKey = contextKey;
 
+      const navigationCliente = this.navigationState?.cliente;
       const contexto: OportunidadCotizacionContext = {
         oportunidadId,
-        codCliente: this.cleanText(params.get('codCliente')),
-        clienteNombre: this.cleanText(params.get('clienteNombre')),
+        codCliente: this.cleanText(navigationCliente?.codigo ?? params.get('codCliente')),
+        clienteNombre: this.cleanText(navigationCliente?.nombre ?? params.get('clienteNombre')),
         codVendedor: this.cleanText(params.get('codVendedor')),
         titulo: this.cleanText(params.get('titulo')),
         descripcion: this.cleanText(params.get('descripcion')),
@@ -876,6 +898,24 @@ export class OrdenPedidoFormComponent implements OnInit {
 
       if (!this.cleanText(this.form.controls.observaciones.value)) {
         this.form.controls.observaciones.setValue(this.buildOpportunityObservation(contexto), { emitEvent: false });
+      }
+
+      if (navigationCliente?.codigo) {
+        this.loadOpportunityCliente(
+          {
+            ...contexto,
+            codCliente: this.cleanText(navigationCliente.codigo),
+            clienteNombre: this.cleanText(navigationCliente.nombre) || contexto.clienteNombre
+          },
+          oportunidadId
+        );
+        return;
+      }
+
+      if (navigationCliente) {
+        this.applySelectedCliente(navigationCliente);
+        this.setClienteEditable(false);
+        return;
       }
 
       if (contexto.codCliente) {
@@ -919,6 +959,10 @@ export class OrdenPedidoFormComponent implements OnInit {
   private initClienteFromQuery(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       if (this.modoOportunidad || this.modoReserva || this.isSubmitting) {
+        return;
+      }
+
+      if (this.originComponent === 'oportunidad-form') {
         return;
       }
 
@@ -1025,132 +1069,6 @@ export class OrdenPedidoFormComponent implements OnInit {
       });
   }
 
-  private initReservaFromQuery(): void {
-    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const codReserva = (params.get('codReserva') ?? '').toString().trim();
-      const codAgencia = (params.get('codAgencia') ?? '').toString().trim();
-
-      if (!codReserva || this.isSubmitting || this.modoOportunidad) {
-        return;
-      }
-
-      if (this.modoReserva && this.reservaActual === codReserva) {
-        return;
-      }
-
-      if (codAgencia) {
-        this.cargarReservaDesdeSeleccion({ codReserva, codAgencia });
-        return;
-      }
-
-      this.reservaLoading = true;
-      this.reservaErrorMessage = '';
-
-      this.reservasService
-        .getReservaByCod(codReserva)
-        .pipe(
-          finalize(() => {
-            this.reservaLoading = false;
-          }),
-          takeUntilDestroyed(this.destroyRef)
-        )
-        .subscribe({
-          next: (reserva) => {
-            const agencia = (reserva?.PRV01_CodAgencia ?? '').toString().trim();
-            if (!agencia) {
-              this.reservaErrorMessage = 'No se pudo determinar el código de agencia para cargar la reserva.';
-              return;
-            }
-            this.cargarReservaDesdeSeleccion({ codReserva, codAgencia: agencia });
-          },
-          error: (error: unknown) => {
-            this.reservaErrorMessage = error instanceof Error ? error.message : 'No se pudo cargar la reserva seleccionada.';
-          }
-        });
-    });
-  }
-
-  private aplicarClienteReserva(cliente: ClienteUI | null, codAgencia: string): void {
-    if (cliente) {
-      this.selectedCliente = cliente;
-      this.clienteCorreo = cliente.emailPrincipal || cliente.email || '';
-      this.form.patchValue(
-        {
-          codCliente: cliente.codigo,
-          nomCliente: cliente.nombre,
-          rucCliente: cliente.ruc
-        },
-        { emitEvent: false }
-      );
-      this.loadClienteActividad(cliente.ruc);
-    } else {
-      this.selectedCliente = null;
-      this.clienteCorreo = '';
-      this.clienteCodigoActividad = '';
-      this.form.patchValue(
-        {
-          codCliente: codAgencia,
-          nomCliente: '',
-          rucCliente: ''
-        },
-        { emitEvent: false }
-      );
-    }
-
-    this.setClienteEditable(false);
-  }
-
-  private aplicarDetalleReserva(detalles: ReservaPendienteDetalle[]): void {
-    this.detalleArray.clear();
-
-    detalles
-      .filter((item) => this.toNumber(item.saldoPendiente) > 0)
-      .forEach((item) => {
-        const saldo = this.toNumber(item.saldoPendiente);
-        const totalPax = this.toNumber(item.totalPax);
-        const neto = this.toNumber(item.neto);
-        const impuestoMonto = this.toNumber(item.impuesto);
-        const porImp = neto > 0 ? (impuestoMonto / neto) * 100 : 0;
-        const precioUnit = totalPax > 0 ? neto / totalPax : 0;
-
-        const group = this.createDetalleGroup();
-        group.patchValue(
-          {
-            codProdu: (item.codServicio || '').toString(),
-            producto: (item.nomServicio || '').toString(),
-            area: (item.codGrupo || 'TOURS').toString(),
-            uMedida: (item.uMedida || 'Unid').toString(),
-            lstPrecio: (item.codLstPrecio || this.form.controls.listaPrecio.value || '').toString(),
-            planTarifa: (item.planTarifario || this.form.controls.planTarifario.value || '').toString(),
-            canProdu: saldo,
-            saldoPendiente: saldo,
-            pUndLst: this.round(precioUnit),
-            porDescu: this.toNumber(item.porDescuento),
-            porImpu: this.round(porImp)
-          },
-          { emitEvent: false }
-        );
-
-        const validators = [Validators.required, Validators.min(0.01)];
-        if (saldo > 0) {
-          validators.push(Validators.max(saldo));
-        }
-        group.controls['canProdu'].setValidators(validators);
-        group.controls['canProdu'].updateValueAndValidity({ emitEvent: false });
-
-        this.detalleArray.push(group);
-      });
-
-    this.recalculateTotals();
-  }
-
-  private setModoReserva(active: boolean): void {
-    this.modoReserva = active;
-    this.setClienteEditable(!active);
-    this.setPlanTarifarioEditable(!active);
-    this.setListaPrecioEditable(!active);
-  }
-
   private setClienteEditable(enabled: boolean): void {
     const controls = [this.form.controls.codCliente, this.form.controls.nomCliente];
 
@@ -1237,25 +1155,6 @@ export class OrdenPedidoFormComponent implements OnInit {
     });
   }
 
-  private aplicarCatalogosReserva(detalles: ReservaPendienteDetalle[]): void {
-    const primerDetalle = detalles.find((item) => (item.codLstPrecio || item.planTarifario || '').toString().trim());
-    if (!primerDetalle) {
-      return;
-    }
-
-    const lstPrecio = (primerDetalle.codLstPrecio || '').toString().trim();
-    const planTarifario = (primerDetalle.planTarifario || '').toString().trim();
-
-    if (lstPrecio) {
-      this.form.controls.listaPrecio.setValue(lstPrecio, { emitEvent: false });
-      this.previousListaPrecio = lstPrecio;
-    }
-
-    if (planTarifario) {
-      this.form.controls.planTarifario.setValue(planTarifario, { emitEvent: false });
-    }
-  }
-
   private loadClienteActividad(cedula: string): void {
     const cedulaNormalizada = String(cedula ?? '').trim();
     this.clienteActividadCedula = cedulaNormalizada;
@@ -1301,9 +1200,7 @@ export class OrdenPedidoFormComponent implements OnInit {
     const formasPago = this.pagosArray.getRawValue().map((item, index) => this.mapPago(item as Record<string, unknown>, index + 1));
     const exento = this.form.controls.exoneracionActiva.value ? 1 : 0;
     const fecVenc = formasPago[0]?.vencimiento || this.formatDateForApi(this.form.controls.fecNDP.value);
-    const referencia =
-      formasPago.find((item) => this.cleanText(item.referencia))?.referencia ||
-      this.cleanText(this.form.controls.observaciones.value);
+    const referencia ='';
 
     return {
       proceso: 1,
@@ -1458,6 +1355,14 @@ export class OrdenPedidoFormComponent implements OnInit {
     return String(value ?? '').trim();
   }
 
+  private normalizeReturnUrl(value: string): string {
+    const url = this.cleanText(value);
+    if (!url) {
+      return '';
+    }
+    return url.startsWith('/') ? url : '';
+  }
+
   private syncPagosMoneda(moneda: string): void {
     const selectedMoneda = String(moneda ?? '').trim();
     if (!selectedMoneda) {
@@ -1606,6 +1511,22 @@ export class OrdenPedidoFormComponent implements OnInit {
     const finalMessage = extraMessage ? `${baseMessage}\n${extraMessage}` : baseMessage;
 
     return identificador ? `${finalMessage}\nDocumento: ${identificador}` : finalMessage;
+  }
+
+  private buildOrderReturnInfo(
+    response: { datos?: Array<{ TipNDP?: string; Serie?: string; NumNDP?: string }> } | null,
+    payload: OrdenPedidoCreatePayload
+  ): OrdenPedidoReturnInfo {
+    const data = response?.datos?.[0];
+    const tipOrden = this.cleanText(data?.TipNDP) || this.cleanText(payload.tipNDP);
+    const serie = this.cleanText(data?.Serie);
+    const numero = this.cleanText(data?.NumNDP);
+    return {
+      total: this.toNumber(payload.totDocu),
+      tipOrden,
+      serie,
+      numero
+    };
   }
 
   private formatDateForApi(value: string): string {

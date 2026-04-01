@@ -150,9 +150,9 @@ export class OportunidadService {
       probabilidad: Number(item.PPV04_Probabilidad ?? 0),
       etapa: this.normalizeStage(item.PPV04_Etapa),
       estado: this.normalizeText(item.PPV04_Estado || 'A') || 'A',
-      fechaCreacion: item.PPV04_FechaCreacion ?? '',
-      fechaCierreEstimada: item.PPV04_FechaCierreEstimada ?? null,
-      fechaCierreReal: item.PPV04_FechaCierreReal ?? null,
+      fechaCreacion: this.normalizeDateString(item.PPV04_FechaCreacion),
+      fechaCierreEstimada: this.normalizeNullableDate(item.PPV04_FechaCierreEstimada),
+      fechaCierreReal: this.normalizeNullableDate(item.PPV04_FechaCierreReal),
       vendedor: this.normalizeText(item.PPV04_Vendedor),
       tipNDP,
       serieNDP,
@@ -168,7 +168,25 @@ export class OportunidadService {
     if (value === null || value === undefined) {
       return '';
     }
+
+    if (typeof value === 'object') {
+      return '';
+    }
+
     return String(value).trim();
+  }
+
+  private normalizeDateString(value: unknown): string {
+    if (!value || typeof value === 'object') {
+      return '';
+    }
+
+    return String(value).trim();
+  }
+
+  private normalizeNullableDate(value: unknown): string | null {
+    const normalized = this.normalizeDateString(value);
+    return normalized || null;
   }
 
   private normalizeStage(value: string | number | null | undefined): OportunidadEtapa {

@@ -51,7 +51,7 @@ export class SelectorServiciosModalComponent implements OnChanges, OnDestroy, Af
   serviciosError = '';
 
   pageNumber = 1;
-  pageSize = 20;
+  pageSize = 10;
   pageHasNext = false;
   pageItemsCount = 0;
 
@@ -185,7 +185,7 @@ export class SelectorServiciosModalComponent implements OnChanges, OnDestroy, Af
       .subscribe({
         next: (items) => {
           if (currentRequest !== this.requestId) return;
-          const mapped = this.serviciosService.mapServicios(items, this.modoPrecio);
+          const mapped = this.serviciosService.mapServicios(items);
           this.servicios = mapped;
           this.pageItemsCount = mapped.length;
           this.pageHasNext = (items ?? []).length === this.pageSize;

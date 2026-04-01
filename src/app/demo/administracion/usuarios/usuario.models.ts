@@ -107,50 +107,50 @@ export interface PrivilegioCatalogo {
 }
 
 export interface PrivilegioCatalogoUI {
-  id: string;
-  descripcion: string;
-  modulo: string;
-  valor: string;
-  orden: number;
-  tipo: string;
+  id            : string;
+  descripcion   : string;
+  modulo        : string;
+  valor         : string;
+  orden         : number;
+  tipo          : string;
 }
 
 export interface PuntoVenta {
-  MPV07_CodPntVenta: string;
-  MPV07_NomPntVenta: string;
-  MPV07_CodComanda: string;
-  MPV07_CodDocumento: unknown;
-  MPV07_CodLstPrecio: unknown;
-  MPV07_NumMesas: number;
-  MPV07_PntTouch: number;
-  MPV07_Orden: number;
-  MPV07_Operador: string;
-  MPV07_ImpresoraA: unknown;
-  MPV07_ImpresoraB: unknown;
+  MPV07_CodPntVenta     : string;
+  MPV07_NomPntVenta     : string;
+  MPV07_CodComanda      : string;
+  MPV07_CodDocumento    : unknown;
+  MPV07_CodLstPrecio    : unknown;
+  MPV07_NumMesas        : number;
+  MPV07_PntTouch        : number;
+  MPV07_Orden           : number;
+  MPV07_Operador        : string;
+  MPV07_ImpresoraA      : unknown;
+  MPV07_ImpresoraB      : unknown;
 }
 
 export interface PuntoVentaUI {
-  codigo: string;
-  descripcion: string;
-  codComanda: string;
-  codDocumento: unknown;
-  codLstPrecio: unknown;
-  numMesas: number;
-  pntTouch: number;
-  orden: number;
-  operador: string;
-  impresoraA: unknown;
-  impresoraB: unknown;
+  codigo          : string;
+  descripcion     : string;
+  codComanda      : string;
+  codDocumento    : unknown;
+  codLstPrecio    : unknown;
+  numMesas        : number;
+  pntTouch        : number;
+  orden           : number;
+  operador        : string;
+  impresoraA      : unknown;
+  impresoraB      : unknown;
 }
 
 export interface DescuentoNivel {
-  id: number;
-  descripcion: string;
-  porcentaje: number;
+  id              : number;
+  descripcion     : string;
+  porcentaje      : number;
 }
 
 export interface DescuentoUsuario {
-  id: number;
-  puntoVenta: string;
-  nivelId: number;
+  id              : number;
+  puntoVenta      : string;
+  nivelId         : number;
 }

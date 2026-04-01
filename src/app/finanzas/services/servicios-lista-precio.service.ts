@@ -6,24 +6,19 @@ import { environment } from 'src/environments/environment';
 
 export type ModoPrecio = 'R' | 'N';
 
-export interface ServicioListaPrecioApiItem {
-  ReglaPrecioID: number;
-  CodServicio: string;
-  NomServicio: string;
-  Moneda?: string;
-  Precios: Array<{
-    tipoPax?: string | null;
-    descripcion?: string | null;
-    precio?: number | null;
-    montoComision?: number | null;
-    comision?: number | null;
-    // Compatibilidad con variantes anteriores.
-    tipo?: string | null;
-  }>;
+export interface DetalleListaPrecioCrmItem {
+  MPV05_CodLstPrecio: string;
+  MPV05_CodProducto: string;
+  MPV05_DesProducto: string;
+  MPV05_PrecioTotal: number;
+  MPV05_Moneda: string;
+  MPV05_Orden?: number;
+  MPV01_CodGrupo?: string;
 }
 
-export interface ServicioListaPrecioApiResponse {
-  datos?: ServicioListaPrecioApiItem[];
+export interface DetalleListaPrecioCrmResponse {
+  datos?: DetalleListaPrecioCrmItem[];
+  paginacion?: { totalRecords?: number };
 }
 
 export interface ServicioListaPrecioItem {
@@ -32,11 +27,12 @@ export interface ServicioListaPrecioItem {
   nombreServicio: string;
   precioUnitario: number;
   moneda: string;
+  area: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ServiciosListaPrecioService {
-  private readonly apiUrl = `${environment.apiUrl}/detalle-lista-precio`;
+  private readonly apiUrl = `${environment.apiUrl}/detalle-lista-precio-crm`;
 
   constructor(private http: HttpClient) {}
 
@@ -45,7 +41,7 @@ export class ServiciosListaPrecioService {
     pageNumber: number,
     pageSize: number,
     searchTerm?: string
-  ): Observable<ServicioListaPrecioApiItem[]> {
+  ): Observable<DetalleListaPrecioCrmItem[]> {
     const codLstPrecio = (codLista || '').trim();
     if (!codLstPrecio) {
       return of([]);
@@ -58,60 +54,38 @@ export class ServiciosListaPrecioService {
 
     const term = (searchTerm || '').trim();
     if (term) {
-      if (this.isLikelyCode(term)) {
-        params = params.set('codServicio', term);
-      } else {
-        params = params.set('nombreServicio', term);
-      }
+      params = params.set('desProducto', term);
     }
 
     return this.http
-      .get<ServicioListaPrecioApiResponse>(`${this.apiUrl}/servicios/detalle-precios`, { params })
+      .get<DetalleListaPrecioCrmResponse>(this.apiUrl, { params })
       .pipe(map((res) => res?.datos ?? []));
   }
 
-  mapServicios(items: ServicioListaPrecioApiItem[], modoPrecio: ModoPrecio): ServicioListaPrecioItem[] {
+  mapServicios(items: DetalleListaPrecioCrmItem[]): ServicioListaPrecioItem[] {
     return (items ?? [])
-      .map((item) => this.mapServicio(item, modoPrecio))
+      .map((item) => this.mapServicio(item))
       .filter((item): item is ServicioListaPrecioItem => !!item);
   }
 
-  private mapServicio(item: ServicioListaPrecioApiItem, modoPrecio: ModoPrecio): ServicioListaPrecioItem | null {
+  private mapServicio(item: DetalleListaPrecioCrmItem): ServicioListaPrecioItem | null {
     if (!item) return null;
 
-    const paxRow = (item.Precios ?? []).find((precio) => this.normalizeTipoPax(precio?.tipoPax || precio?.tipo) === 'PAX');
-    const precioUnitario =
-      modoPrecio === 'N'
-        ? this.toNumber(paxRow?.montoComision ?? paxRow?.comision)
-        : this.toNumber(paxRow?.precio);
+    const codigo = (item.MPV05_CodProducto || '').toString().trim();
+    if (!codigo) return null;
 
     return {
-      reglaPrecioId: Number(item.ReglaPrecioID ?? 0) || 0,
-      codigoServicio: (item.CodServicio || '').toString().trim(),
-      nombreServicio: (item.NomServicio || item.CodServicio || '').toString().trim(),
-      precioUnitario,
-      moneda: (item.Moneda || '').toString().trim().toUpperCase()
+      reglaPrecioId: Number(item.MPV05_Orden ?? 0) || 0,
+      codigoServicio: codigo,
+      nombreServicio: (item.MPV05_DesProducto || codigo).toString().trim(),
+      precioUnitario: this.toNumber(item.MPV05_PrecioTotal),
+      moneda: (item.MPV05_Moneda || '').toString().trim().toUpperCase(),
+      area: (item.MPV01_CodGrupo || 'TOURS').toString().trim()
     };
-  }
-
-  private normalizeTipoPax(value?: string | null): string {
-    return (value || '')
-      .toString()
-      .trim()
-      .toUpperCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private toNumber(value?: number | string | null): number {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  private isLikelyCode(term: string): boolean {
-    if (!term) return false;
-    if (term.includes(' ')) return false;
-    if (/\d/.test(term)) return true;
-    return term.length <= 6;
   }
 }
