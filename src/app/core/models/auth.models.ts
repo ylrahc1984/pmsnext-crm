@@ -8,19 +8,36 @@ export interface LoginRequest {
   respuesta?: string;
 }
 
-export interface UsuarioInfo {
+export interface AuthUser {
   usuario: string;
-  claveSecreta: string;
   nombre: string;
   modulo: string;
+  nombreUsu?: string;
+  Usuario?: string;
+  USR01_Usuario?: string;
+  username?: string;
+  user?: string;
 }
 
 export interface LoginResponse {
   token: string;
-  usuario: UsuarioInfo[];
+  refreshToken: string;
+  expiresIn: number;
+  usuario: AuthUser[];
 }
 
-export interface AuthToken {
-  token: string;
-  expiresAt?: number;
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface LogoutResponse {
+  success: boolean;
+  message: string;
+  tokensRevocados: number;
+}
+
+export interface RevokeAllSessionsResponse {
+  success: boolean;
+  message: string;
+  tokensRevocados: number;
 }

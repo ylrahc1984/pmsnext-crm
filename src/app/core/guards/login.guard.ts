@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
@@ -11,15 +11,9 @@ export class LoginGuard {
   private router = inject(Router);
 
   canActivate(): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    const token = this.authService.getToken();
-    
-    // Si hay token y no está expirado, redirigir al dashboard
-    if (token && !this.authService.isTokenExpired(token)) {
-      return this.router.createUrlTree(['/dashboard']);
-    }
-
-    // Si no hay token o está expirado, permitir acceso a login
-    return true;
+    return this.authService.getValidAccessToken().pipe(
+      map((token) => (token ? this.router.createUrlTree(['/dashboard']) : true))
+    );
   }
 
   canActivateChild(): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {

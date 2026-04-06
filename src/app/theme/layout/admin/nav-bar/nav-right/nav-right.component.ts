@@ -29,7 +29,6 @@ export class NavRightComponent {
   }
 
   onLogout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    this.authService.logout().subscribe();
   }
 }
