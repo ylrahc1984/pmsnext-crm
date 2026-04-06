@@ -70,7 +70,7 @@
 
             <div class="oportunidad-detalle-hero__meta">
               <span class="oportunidad-detalle-badge" [ngClass]="getStageClass()">{{ current.etapa }}</span>
-              <span class="oportunidad-detalle-badge oportunidad-detalle-badge--neutral">{{ current.estado === 'I' ? 'Inactiva' : 'Activa' }}</span>
+              <span class="oportunidad-detalle-badge" [ngClass]="getEstadoClass()">{{ getEstadoLabel() }}</span>
               <span class="oportunidad-detalle-hero__meta-item">ID {{ current.id }}</span>
               <span class="oportunidad-detalle-hero__meta-item">{{ current.codCliente || 'Sin cliente' }}</span>
             </div>
@@ -78,69 +78,129 @@
         </div>
 
         <div class="oportunidad-detalle-hero__actions">
-          <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
-            <i class="feather icon-arrow-left"></i>
-            <span>Volver</span>
-          </button>
-          <button type="button" class="btn btn-outline-primary" (click)="openCotizacion()">
-            <i class="feather icon-file-text"></i>
-            <span>{{ current.tieneCotizacion ? 'Ver cotización' : 'Crear cotización' }}</span>
-          </button>
-          <button type="button" class="btn btn-primary" (click)="openEdit()">
-            <i class="feather icon-edit-2"></i>
-            <span>Editar</span>
-          </button>
+          <div class="oportunidad-detalle-hero__actions-top">
+            <button type="button" class="btn btn-outline-secondary oportunidad-detalle-action" (click)="goBack()">
+              <i class="feather icon-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+          </div>
+
+          <div class="oportunidad-detalle-hero__actions-desktop">
+            <button type="button" class="btn oportunidad-detalle-action oportunidad-detalle-action--quote" (click)="openCotizacion()">
+              <i class="feather icon-file-text"></i>
+              <span>{{ current.tieneCotizacion ? 'Ver cotización' : 'Crear cotización' }}</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary oportunidad-detalle-action" (click)="openEdit()">
+              <i class="feather icon-edit-2"></i>
+              <span>Editar</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-success oportunidad-detalle-action"
+              (click)="cerrarOportunidad('Ganada')"
+              [disabled]="isClosingOpportunity || getEstadoLabel() !== 'Activa'"
+            >
+              <span class="spinner-border spinner-border-sm me-2" *ngIf="isClosingOpportunity"></span>
+              <i class="feather icon-check-circle" *ngIf="!isClosingOpportunity"></i>
+              <span>Ganada</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-danger oportunidad-detalle-action"
+              (click)="cerrarOportunidad('Perdida')"
+              [disabled]="isClosingOpportunity || getEstadoLabel() !== 'Activa'"
+            >
+              <span class="spinner-border spinner-border-sm me-2" *ngIf="isClosingOpportunity"></span>
+              <i class="feather icon-x-circle" *ngIf="!isClosingOpportunity"></i>
+              <span>Perdida</span>
+            </button>
+          </div>
+
+          <details class="oportunidad-detalle-hero__actions-mobile">
+            <summary class="btn btn-outline-secondary oportunidad-detalle-action oportunidad-detalle-action--menu" aria-label="Abrir acciones">
+              <i class="feather icon-more-vertical"></i>
+            </summary>
+            <div class="oportunidad-detalle-hero__actions-mobile-menu">
+              <button type="button" class="btn oportunidad-detalle-action oportunidad-detalle-action--quote" (click)="openCotizacion()">
+                <i class="feather icon-file-text"></i>
+                <span>{{ current.tieneCotizacion ? 'Ver cotización' : 'Crear cotización' }}</span>
+              </button>
+              <button type="button" class="btn btn-outline-primary oportunidad-detalle-action" (click)="openEdit()">
+                <i class="feather icon-edit-2"></i>
+                <span>Editar</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-success oportunidad-detalle-action"
+                (click)="cerrarOportunidad('Ganada')"
+                [disabled]="isClosingOpportunity || getEstadoLabel() !== 'Activa'"
+              >
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isClosingOpportunity"></span>
+                <i class="feather icon-check-circle" *ngIf="!isClosingOpportunity"></i>
+                <span>Ganada</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-danger oportunidad-detalle-action"
+                (click)="cerrarOportunidad('Perdida')"
+                [disabled]="isClosingOpportunity || getEstadoLabel() !== 'Activa'"
+              >
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isClosingOpportunity"></span>
+                <i class="feather icon-x-circle" *ngIf="!isClosingOpportunity"></i>
+                <span>Perdida</span>
+              </button>
+            </div>
+          </details>
         </div>
       </header>
 
       <div class="oportunidad-detalle-layout">
         <main class="oportunidad-detalle-main">
-          <section class="oportunidad-detalle-card">
+          <section class="oportunidad-detalle-card oportunidad-detalle-card--general-soft">
             <div class="oportunidad-detalle-card__header">
               <div class="oportunidad-detalle-card__icon"><i class="feather icon-briefcase"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Información General</h2>
-                <p class="oportunidad-detalle-card__caption">Resumen comercial y operativo de la oportunidad.</p>
-              </div>
+              <h2 class="oportunidad-detalle-card__title">Información General</h2>
             </div>
 
-            <div class="oportunidad-detalle-grid">
-              <div class="oportunidad-detalle-field">
+            <div class="oportunidad-detalle-grid oportunidad-detalle-grid--general">
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
                 <span class="oportunidad-detalle-field__label">Cliente</span>
                 <strong>{{ current.clienteNombre || 'Sin dato' }}</strong>
               </div>
-              <div class="oportunidad-detalle-field">
-                <span class="oportunidad-detalle-field__label">Monto estimado</span>
-                <strong>{{ formatAmount(current.montoEstimado) }}</strong>
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
+                <span class="oportunidad-detalle-field__label">Monto</span>
+                <strong class="oportunidad-detalle-value--key">{{ formatAmount(current.montoEstimado) }}</strong>
               </div>
-              <div class="oportunidad-detalle-field">
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
                 <span class="oportunidad-detalle-field__label">Probabilidad</span>
-                <strong>{{ current.probabilidad }}%</strong>
+                <strong class="oportunidad-detalle-value--key">{{ current.probabilidad }}%</strong>
               </div>
-              <div class="oportunidad-detalle-field">
+
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
                 <span class="oportunidad-detalle-field__label">Vendedor</span>
                 <strong>{{ current.vendedor || 'Sin asignar' }}</strong>
               </div>
-              <div class="oportunidad-detalle-field">
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
                 <span class="oportunidad-detalle-field__label">Origen</span>
                 <strong>{{ current.origen || 'No definido' }}</strong>
               </div>
-              <div class="oportunidad-detalle-field">
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
                 <span class="oportunidad-detalle-field__label">Prioridad</span>
                 <strong>
-                  <span class="oportunidad-detalle-badge" [ngClass]="getPriorityClass()">{{ current.prioridad || 'Sin prioridad' }}</span>
+                  <span class="oportunidad-detalle-priority-chip" [ngClass]="getPriorityClass()">{{ current.prioridad || 'Sin prioridad' }}</span>
                 </strong>
               </div>
-              <div class="oportunidad-detalle-field">
+
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
                 <span class="oportunidad-detalle-field__label">Tipo cliente</span>
                 <strong>{{ getTipoClienteLabel() }}</strong>
               </div>
-              <div class="oportunidad-detalle-field">
-                <span class="oportunidad-detalle-field__label">Fecha creación</span>
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
+                <span class="oportunidad-detalle-field__label">Fecha</span>
                 <strong>{{ current.fechaCreacion ? (current.fechaCreacion | date:'dd/MM/yyyy') : 'Sin fecha' }}</strong>
               </div>
-              <div class="oportunidad-detalle-field">
-                <span class="oportunidad-detalle-field__label">Cierre estimado</span>
+              <div class="oportunidad-detalle-field oportunidad-detalle-field--general">
+                <span class="oportunidad-detalle-field__label">Cierre</span>
                 <strong>{{ current.fechaCierreEstimada ? (current.fechaCierreEstimada | date:'dd/MM/yyyy') : 'Sin fecha' }}</strong>
               </div>
             </div>
@@ -149,48 +209,39 @@
           <section class="oportunidad-detalle-card">
             <div class="oportunidad-detalle-card__header">
               <div class="oportunidad-detalle-card__icon"><i class="feather icon-align-left"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Descripción</h2>
-                <p class="oportunidad-detalle-card__caption">Contexto y objetivo comercial capturado para esta oportunidad.</p>
-              </div>
+              <h2 class="oportunidad-detalle-card__title">Descripción</h2>
             </div>
 
-            <div class="oportunidad-detalle-description">
-              {{ current.descripcion || 'No hay descripción registrada para esta oportunidad.' }}
+            <div class="oportunidad-detalle-description" *ngIf="(current.descripcion || '').trim(); else addDescriptionHint">
+              {{ current.descripcion }}
             </div>
+            <ng-template #addDescriptionHint>
+              <button type="button" class="btn btn-link oportunidad-detalle-add-description" (click)="openEdit()">
+                <i class="feather icon-plus"></i>
+                <span>Agregar descripción</span>
+              </button>
+            </ng-template>
           </section>
 
           <section class="oportunidad-detalle-card">
             <div class="oportunidad-detalle-card__header">
               <div class="oportunidad-detalle-card__icon"><i class="feather icon-users"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Contactos del Cliente</h2>
-                <p class="oportunidad-detalle-card__caption">Contactos disponibles para gestionar esta oportunidad.</p>
-              </div>
+              <h2 class="oportunidad-detalle-card__title">Contactos del Cliente</h2>
             </div>
 
-            <div class="oportunidad-detalle-contact-list" *ngIf="contactos.length; else noContacts">
-              <article class="oportunidad-detalle-contact-card" *ngFor="let contacto of contactos; trackBy: trackByContacto">
-                <div class="oportunidad-detalle-contact-card__top">
-                  <div>
-                    <h3 class="oportunidad-detalle-contact-card__name">{{ contacto.nomContacto || 'Contacto sin nombre' }}</h3>
-                    <p class="oportunidad-detalle-contact-card__role">{{ contacto.cargo || 'Sin cargo' }}</p>
-                  </div>
-                  <span class="oportunidad-detalle-badge oportunidad-detalle-badge--principal" *ngIf="contacto.principal">Principal</span>
+            <ul class="oportunidad-detalle-contact-list oportunidad-detalle-contact-list--compact" *ngIf="contactos.length; else noContacts">
+              <li class="oportunidad-detalle-contact-item" *ngFor="let contacto of contactos; trackBy: trackByContacto">
+                <div class="oportunidad-detalle-contact-item__main">
+                  <strong>{{ contacto.nomContacto || 'Contacto sin nombre' }}</strong>
+                  <span>{{ contacto.cargo || 'Sin cargo' }}</span>
                 </div>
-
-                <div class="oportunidad-detalle-contact-card__rows">
-                  <div class="oportunidad-detalle-contact-card__row">
-                    <i class="feather icon-mail"></i>
-                    <span>{{ contacto.email || 'Sin correo' }}</span>
-                  </div>
-                  <div class="oportunidad-detalle-contact-card__row">
-                    <i class="feather icon-phone"></i>
-                    <span>{{ contacto.telefono1 || contacto.movil || contacto.telefono2 || 'Sin teléfono' }}</span>
-                  </div>
+                <div class="oportunidad-detalle-contact-item__meta">
+                  <span><i class="feather icon-mail"></i>{{ contacto.email || 'Sin correo' }}</span>
+                  <span><i class="feather icon-phone"></i>{{ contacto.telefono1 || contacto.movil || contacto.telefono2 || 'Sin teléfono' }}</span>
                 </div>
-              </article>
-            </div>
+                <span class="oportunidad-detalle-badge oportunidad-detalle-badge--principal" *ngIf="contacto.principal">Principal</span>
+              </li>
+            </ul>
 
             <ng-template #noContacts>
               <div class="oportunidad-detalle-empty">
@@ -205,18 +256,13 @@
           <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
             <div class="oportunidad-detalle-card__header">
               <div class="oportunidad-detalle-card__icon"><i class="feather icon-git-branch"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Pipeline</h2>
-              </div>
+              <h2 class="oportunidad-detalle-card__title">Pipeline</h2>
             </div>
 
-            <div class="oportunidad-detalle-stack">
-              <div class="oportunidad-detalle-field">
-                <span class="oportunidad-detalle-field__label">Etapa actual</span>
-                <strong>
-                  <span class="oportunidad-detalle-badge" [ngClass]="getStageClass()">{{ current.etapa }}</span>
-                </strong>
-              </div>
+            <div class="oportunidad-detalle-pipeline-line">
+              <span class="oportunidad-detalle-badge" [ngClass]="getStageClass()">{{ current.etapa }}</span>
+              <span class="oportunidad-detalle-pipeline-line__arrow">&rarr;</span>
+              <span class="oportunidad-detalle-pipeline-line__text">Cambiar</span>
             </div>
 
             <div class="oportunidad-detalle-link-form oportunidad-detalle-link-form--stage">
@@ -225,76 +271,65 @@
                 <span>Cambiar etapa</span>
               </div>
 
-              <p class="oportunidad-detalle-link-form__caption">
-                Actualice la etapa comercial sin salir del detalle de la oportunidad.
-              </p>
-
               <div class="alert alert-danger py-2 mb-3" *ngIf="stageError">{{ stageError }}</div>
               <div class="alert alert-success py-2 mb-3" *ngIf="stageSuccess">{{ stageSuccess }}</div>
 
-              <div>
+              <div class="oportunidad-detalle-inline-control">
                 <label class="oportunidad-detalle-field__label" for="oportunidadEtapa">Nueva etapa</label>
-                <select
-                  id="oportunidadEtapa"
-                  class="form-control oportunidad-detalle-input"
-                  [(ngModel)]="selectedStage"
-                  [disabled]="isUpdatingStage"
-                >
-                  <option *ngFor="let etapa of etapas" [value]="etapa">{{ etapa }}</option>
-                </select>
+                <div class="oportunidad-detalle-inline-control__row">
+                  <select
+                    id="oportunidadEtapa"
+                    class="form-control oportunidad-detalle-input"
+                    [(ngModel)]="selectedStage"
+                    [disabled]="isUpdatingStage"
+                  >
+                    <option *ngFor="let etapa of etapas" [value]="etapa">{{ etapa }}</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    (click)="updateStage()"
+                    [disabled]="isUpdatingStage"
+                  >
+                    <span class="spinner-border spinner-border-sm me-2" *ngIf="isUpdatingStage"></span>
+                    <i class="feather icon-save" *ngIf="!isUpdatingStage"></i>
+                    <span>Guardar</span>
+                  </button>
+                </div>
               </div>
-
-              <button
-                type="button"
-                class="btn btn-primary w-100 mt-3"
-                (click)="updateStage()"
-                [disabled]="isUpdatingStage"
-              >
-                <span class="spinner-border spinner-border-sm me-2" *ngIf="isUpdatingStage"></span>
-                <i class="feather icon-save" *ngIf="!isUpdatingStage"></i>
-                <span>Guardar etapa</span>
-              </button>
             </div>
           </section>
 
           <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
             <div class="oportunidad-detalle-card__header">
               <div class="oportunidad-detalle-card__icon"><i class="feather icon-file-text"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Cotización</h2>
-              </div>
+              <h2 class="oportunidad-detalle-card__title">Cotización</h2>
             </div>
 
-            <div class="oportunidad-detalle-stack">
-              <div class="oportunidad-detalle-field">
-                <span class="oportunidad-detalle-field__label">Estado</span>
-                <strong>{{ current.tieneCotizacion ? 'Vinculada' : 'Pendiente' }}</strong>
-              </div>
-              <div class="oportunidad-detalle-field">
-                <span class="oportunidad-detalle-field__label">Documento</span>
-                <strong>{{ cotizacionDocumento }}</strong>
-              </div>
+            <div class="oportunidad-detalle-quote-line" [class.oportunidad-detalle-quote-line--pending]="!current.tieneCotizacion">
+              <strong>{{ cotizacionDocumento }}</strong>
+              <span class="oportunidad-detalle-quote-line__sep">|</span>
+              <span class="oportunidad-detalle-badge" [ngClass]="current.tieneCotizacion ? 'oportunidad-detalle-badge--active' : 'oportunidad-detalle-badge--neutral'">
+                {{ current.tieneCotizacion ? 'Vinculada' : 'Pendiente' }}
+              </span>
             </div>
 
-            <button type="button" class="btn btn-outline-primary w-100 mt-3" (click)="openCotizacion()">
-              <i class="feather icon-external-link"></i>
-              <span>{{ current.tieneCotizacion ? 'Ver documento' : 'Crear cotización' }}</span>
-            </button>
+            <div class="oportunidad-detalle-inline-actions">
+              <button type="button" class="btn btn-outline-primary" (click)="openCotizacion()">
+                <i class="feather icon-external-link"></i>
+                <span>{{ current.tieneCotizacion ? 'Ver documento' : 'Crear cotización' }}</span>
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="openCotizacionSearchModal()">
+                <i class="feather icon-search"></i>
+                <span>Buscar existente</span>
+              </button>
+            </div>
 
             <div class="oportunidad-detalle-link-form">
               <div class="oportunidad-detalle-link-form__title">
                 <i class="feather icon-link-2"></i>
                 <span>Vincular cotización existente</span>
               </div>
-
-              <p class="oportunidad-detalle-link-form__caption">
-                Use este bloque cuando la cotización ya existe en el sistema y solo falta asociarla a la oportunidad.
-              </p>
-
-              <button type="button" class="btn btn-outline-secondary w-100 mb-3" (click)="openCotizacionSearchModal()">
-                <i class="feather icon-search"></i>
-                <span>Buscar cotización existente</span>
-              </button>
 
               <div class="alert alert-danger py-2 mb-3" *ngIf="linkError">{{ linkError }}</div>
               <div class="alert alert-success py-2 mb-3" *ngIf="linkSuccess">{{ linkSuccess }}</div>
@@ -340,7 +375,7 @@
 
               <button
                 type="button"
-                class="btn btn-primary w-100 mt-3"
+                class="btn btn-primary"
                 (click)="linkCotizacion()"
                 [disabled]="isLinkingCotizacion"
               >
@@ -354,9 +389,7 @@
           <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
             <div class="oportunidad-detalle-card__header">
               <div class="oportunidad-detalle-card__icon"><i class="feather icon-user"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Cliente Relacionado</h2>
-              </div>
+              <h2 class="oportunidad-detalle-card__title">Cliente Relacionado</h2>
             </div>
 
             <div class="oportunidad-detalle-stack">
@@ -378,31 +411,12 @@
               </div>
             </div>
 
-            <button type="button" class="btn btn-outline-secondary w-100 mt-3" (click)="openCliente()">
+            <button type="button" class="btn btn-outline-secondary" (click)="openCliente()">
               <i class="feather icon-user-check"></i>
               <span>Ver perfil del cliente</span>
             </button>
           </section>
 
-          <section class="oportunidad-detalle-card oportunidad-detalle-card--sidebar">
-            <div class="oportunidad-detalle-card__header">
-              <div class="oportunidad-detalle-card__icon"><i class="feather icon-zap"></i></div>
-              <div>
-                <h2 class="oportunidad-detalle-card__title">Acciones rápidas</h2>
-              </div>
-            </div>
-
-            <div class="oportunidad-detalle-quick-actions">
-              <button type="button" class="btn btn-primary" (click)="openEdit()">
-                <i class="feather icon-edit-2"></i>
-                <span>Editar oportunidad</span>
-              </button>
-              <button type="button" class="btn btn-outline-primary" (click)="openCotizacion()">
-                <i class="feather icon-file-text"></i>
-                <span>{{ current.tieneCotizacion ? 'Ir a cotización' : 'Crear cotización' }}</span>
-              </button>
-            </div>
-          </section>
         </aside>
       </div>
     </ng-container>

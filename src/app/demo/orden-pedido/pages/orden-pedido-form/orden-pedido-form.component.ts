@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormArray, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { catchError, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
@@ -481,19 +481,21 @@ export class OrdenPedidoFormComponent implements OnInit {
             return of({ response, opportunityResult: null as OportunidadPostCreateResult | null });
           }
 
-          return this.syncOportunidadCotizacion(response).pipe(map((opportunityResult) => ({ response, opportunityResult })));
+          return this.syncOportunidadCotizacion(response).pipe(
+            map((opportunityResult) => ({ response, opportunityResult }))
+          );
         }),
         finalize(() => (this.isSubmitting = false))
       )
       .subscribe({
-        next: ({ response, opportunityResult }) => {
-          const orderResult = this.buildOrderReturnInfo(response, payload);
-          const successMessage = this.buildCreateSuccessMessage(response, opportunityResult?.message);
-          if (this.cleanText(response?.respuesta).toUpperCase() === 'OK') {
+        next: (result: { response: OrdenPedidoCreateResponse; opportunityResult: OportunidadPostCreateResult | null }) => {
+          const orderResult = this.buildOrderReturnInfo(result.response, payload);
+          const successMessage = this.buildCreateSuccessMessage(result.response, result.opportunityResult?.message);
+          if (this.cleanText(result.response?.respuesta).toUpperCase() === 'OK') {
             void Swal.fire({
-              title: opportunityResult?.partial ? 'Cotización creada con observaciones' : 'Guardado',
+              title: result.opportunityResult?.partial ? 'Cotización creada con observaciones' : 'Guardado',
               text: successMessage,
-              icon: opportunityResult?.partial ? 'warning' : 'success',
+              icon: result.opportunityResult?.partial ? 'warning' : 'success',
               confirmButtonText: 'Aceptar'
             }).then(() => {
               void this.navigateBack(orderResult);
@@ -1455,7 +1457,7 @@ export class OrdenPedidoFormComponent implements OnInit {
     return lineas.join(' ');
   }
 
-  private syncOportunidadCotizacion(response: OrdenPedidoCreateResponse) {
+  private syncOportunidadCotizacion(response: OrdenPedidoCreateResponse): Observable<OportunidadPostCreateResult | null> {
     if (!this.modoOportunidad || !this.oportunidadContexto) {
       return of(null);
     }
@@ -1514,13 +1516,23 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   private buildOrderReturnInfo(
-    response: { datos?: Array<{ TipNDP?: string; Serie?: string; NumNDP?: string }> } | null,
+    response: { datos?: Array<{ TipNDP?: string; Serie?: string; NumNDP?: string; DocuReferencia?: string }> } | null,
     payload: OrdenPedidoCreatePayload
   ): OrdenPedidoReturnInfo {
     const data = response?.datos?.[0];
-    const tipOrden = this.cleanText(data?.TipNDP) || this.cleanText(payload.tipNDP);
-    const serie = this.cleanText(data?.Serie);
-    const numero = this.cleanText(data?.NumNDP);
+    let tipOrden = this.cleanText(data?.TipNDP) || this.cleanText(payload.tipNDP);
+    let serie = this.cleanText(data?.Serie);
+    let numero = this.cleanText(data?.NumNDP);
+
+    // Si viene un DocuReferencia combinado (ej: "COT 000 002-0000011665"), parsearlo
+    const docuRef = this.cleanText(data?.DocuReferencia);
+    if (docuRef && (!serie || !numero)) {
+      const parsed = this.ordenPedidoService.parseQuotationFormat(docuRef);
+      if (parsed.tipNDP) tipOrden = parsed.tipNDP;
+      if (parsed.serie) serie = parsed.serie;
+      if (parsed.numero) numero = parsed.numero;
+    }
+
     return {
       total: this.toNumber(payload.totDocu),
       tipOrden,

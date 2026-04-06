@@ -431,13 +431,29 @@ export class ClienteDetalleComponent implements OnInit {
   }
 
   private loadCommercialDocuments(cliente: ClienteUI): void {
-    const nomCliente = (cliente.nombre || '').trim();
-    if (!nomCliente) {
+    const nomCliente = '';
+    const codCliente = (cliente.codigo || '').trim();
+
+    if (!codCliente) {
       return;
     }
 
-    const fechaDesde = this.toApiDate(this.documentDateFromInput) || this.getYearStartDate();
-    const fechaHasta = this.toApiDate(this.documentDateToInput) || this.getTodayDate();
+    const fechaDesdeInput = (this.documentDateFromInput || '').trim();
+    const fechaHastaInput = (this.documentDateToInput || '').trim();
+    const fechaDesdeNormalizada = this.toApiDate(fechaDesdeInput);
+    const fechaHastaNormalizada = this.toApiDate(fechaHastaInput);
+
+    if ((fechaDesdeInput && !fechaDesdeNormalizada) || (fechaHastaInput && !fechaHastaNormalizada)) {
+      const msg = 'El formato de fecha debe ser dd/MM/yyyy.';
+      this.cotizacionesError = msg;
+      this.pedidosError = msg;
+      this.cotizaciones = [];
+      this.pedidos = [];
+      return;
+    }
+
+    const fechaDesde = fechaDesdeNormalizada || this.getYearStartDate();
+    const fechaHasta = fechaHastaNormalizada || this.getTodayDate();
 
     this.isLoadingCotizaciones = true;
     this.isLoadingPedidos = true;
@@ -446,25 +462,27 @@ export class ClienteDetalleComponent implements OnInit {
 
     forkJoin({
       cotizaciones: this.ordenPedidoService
-        .getOrdenes({
+        .getOrdenesAllPages({
           tipOrden: 'COT',
           fechaDesde,
           fechaHasta,
+          codCliente,
           nomCliente,
           pageNumber: 1,
-          pageSize: 25
+          pageSize: 100
         })
-        .pipe(catchError((error) => of({ datos: [], paginacion: { totalRegistros: 0, paginaActual: 1, pageSize: 25, totalPaginas: 1 }, error }))),
+        .pipe(catchError((error) => of({ datos: [], paginacion: { totalRegistros: 0, paginaActual: 1, pageSize: 100, totalPaginas: 1 }, error }))),
       pedidos: this.ordenPedidoService
-        .getOrdenes({
+        .getOrdenesAllPages({
           tipOrden: 'NDP',
           fechaDesde,
           fechaHasta,
+          codCliente,
           nomCliente,
           pageNumber: 1,
-          pageSize: 25
+          pageSize: 100
         })
-        .pipe(catchError((error) => of({ datos: [], paginacion: { totalRegistros: 0, paginaActual: 1, pageSize: 25, totalPaginas: 1 }, error })))
+        .pipe(catchError((error) => of({ datos: [], paginacion: { totalRegistros: 0, paginaActual: 1, pageSize: 100, totalPaginas: 1 }, error })))
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ cotizaciones, pedidos }) => {
@@ -529,14 +547,36 @@ export class ClienteDetalleComponent implements OnInit {
     }
 
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
-      return raw;
+      return this.isValidApiDate(raw) ? raw : '';
     }
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
       const [year, month, day] = raw.split('-');
-      return `${day}/${month}/${year}`;
+      const formatted = `${day}/${month}/${year}`;
+      return this.isValidApiDate(formatted) ? formatted : '';
     }
 
-    return raw;
+    return '';
+  }
+
+  private isValidApiDate(value: string): boolean {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+    if (!match) {
+      return false;
+    }
+
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+
+    return (
+      Number.isFinite(day) &&
+      Number.isFinite(month) &&
+      Number.isFinite(year) &&
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    );
   }
 }

@@ -1,6 +1,12 @@
 export const OPORTUNIDAD_ETAPAS = ['PROSPECTO', 'COTIZACION', 'NEGOCIACION', 'GANADO', 'PERDIDO'] as const;
+export const OPORTUNIDAD_PRIORIDADES = ['Alta', 'Media', 'Baja'] as const;
+export const OPORTUNIDAD_ORIGENES = ['Web', 'Telefono', 'Email', 'Referido', 'Evento', 'Redes Sociales'] as const;
+export const OPORTUNIDAD_TIPOS_CLIENTE = ['Nuevo', 'Recurrente', 'VIP', 'Corporativo'] as const;
 
 export type OportunidadEtapa = (typeof OPORTUNIDAD_ETAPAS)[number];
+export type OportunidadPrioridad = (typeof OPORTUNIDAD_PRIORIDADES)[number];
+export type OportunidadOrigen = (typeof OPORTUNIDAD_ORIGENES)[number];
+export type OportunidadTipoCliente = (typeof OPORTUNIDAD_TIPOS_CLIENTE)[number];
 
 export interface OportunidadApiDto {
   PPV04_IdOportunidad?: number | string | null;
@@ -60,6 +66,8 @@ export interface OportunidadFiltros {
 }
 
 export interface OportunidadFormValue {
+  proceso: number;
+  idOportunidad: number;
   codCliente: string;
   titulo: string;
   descripcion: string;
@@ -67,7 +75,14 @@ export interface OportunidadFormValue {
   probabilidad: number;
   etapa: OportunidadEtapa;
   vendedor: string;
-  cotizacionId?: string;
+  fechaCierreEstimada: string | null;
+  origen: string;
+  prioridad: string;
+  tipoCliente: string;
+  tipNDP: string;
+  serieNDP: string;
+  numNDP: string;
+  respuesta: string;
 }
 
 export interface OportunidadResumenPipeline {

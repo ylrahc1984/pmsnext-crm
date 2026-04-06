@@ -27,11 +27,20 @@ export class OrdenPedidoListComponent implements OnInit {
     { value: '', label: 'Todos' }
   ];
 
+  readonly estadosOrden = [
+    { value: '', label: 'Todos' },
+    { value: 'ABI', label: 'Abierto' },
+    { value: 'FAC', label: 'Facturado' },
+    { value: 'ANU', label: 'Anulado' }
+  ];
+
   readonly filtrosForm = this.fb.group({
-    tipOrden: this.fb.control(this.tiposOrden[0].value),
-    fechaDesde: this.fb.control(this.getFirstDayOfYear()),
-    fechaHasta: this.fb.control(this.getTodayIsoDate()),
-    nomCliente: this.fb.control('')
+    tipOrden    : this.fb.control(this.tiposOrden[0].value),
+    estadoNDP   : this.fb.control(this.estadosOrden[0].value),
+    fechaDesde  : this.fb.control(this.getFirstDayOfYear()),
+    fechaHasta  : this.fb.control(this.getTodayIsoDate()),
+    codCliente  : this.fb.control(''),
+    nomCliente  : this.fb.control('')
   });
 
   readonly pageSizeOptions = [10, 20, 50];
@@ -64,8 +73,10 @@ export class OrdenPedidoListComponent implements OnInit {
   resetFilters(): void {
     this.filtrosForm.reset({
       tipOrden: this.tiposOrden[0].value,
+      estadoNDP: this.estadosOrden[0].value,
       fechaDesde: this.getFirstDayOfYear(),
       fechaHasta: this.getTodayIsoDate(),
+      codCliente: '',
       nomCliente: ''
     });
     this.pageNumber = 1;
@@ -194,13 +205,26 @@ export class OrdenPedidoListComponent implements OnInit {
     const tipOrden = (this.route.snapshot.queryParamMap.get('tipOrden') ?? '').trim();
     const fechaDesde = (this.route.snapshot.queryParamMap.get('fechaDesde') ?? '').trim();
     const fechaHasta = (this.route.snapshot.queryParamMap.get('fechaHasta') ?? '').trim();
+    const estadoNDP = (this.route.snapshot.queryParamMap.get('estadoNDP') ?? '').trim().toUpperCase();
+    const codCliente = (this.route.snapshot.queryParamMap.get('codCliente') ?? '').trim();
     const nomCliente = (this.route.snapshot.queryParamMap.get('nomCliente') ?? '').trim();
     const serie = (this.route.snapshot.queryParamMap.get('serie') ?? '').trim();
     const numero = (this.route.snapshot.queryParamMap.get('numero') ?? '').trim();
     const pageNumber = Number(this.route.snapshot.queryParamMap.get('pageNumber') ?? 0);
     const pageSize = Number(this.route.snapshot.queryParamMap.get('pageSize') ?? 0);
 
-    if (!tipOrden && !fechaDesde && !fechaHasta && !nomCliente && !serie && !numero && pageNumber <= 0 && pageSize <= 0) {
+    if (
+      !tipOrden &&
+      !fechaDesde &&
+      !fechaHasta &&
+      !estadoNDP &&
+      !codCliente &&
+      !nomCliente &&
+      !serie &&
+      !numero &&
+      pageNumber <= 0 &&
+      pageSize <= 0
+    ) {
       return;
     }
 
@@ -211,8 +235,10 @@ export class OrdenPedidoListComponent implements OnInit {
     this.filtrosForm.patchValue(
       {
         tipOrden: tipOrden ? tipOrden.toUpperCase() : this.filtrosForm.controls.tipOrden.value,
+        estadoNDP: this.normalizeEstadoNDP(estadoNDP),
         fechaDesde: fechaDesde || this.filtrosForm.controls.fechaDesde.value,
         fechaHasta: fechaHasta || this.filtrosForm.controls.fechaHasta.value,
+        codCliente,
         nomCliente
       },
       { emitEvent: false }
@@ -231,6 +257,7 @@ export class OrdenPedidoListComponent implements OnInit {
     const filtros = this.filtrosForm.getRawValue();
     const queryParams: Params = {
       tipOrden: (filtros.tipOrden || '').toString().trim(),
+      estadoNDP: this.normalizeEstadoNDP(filtros.estadoNDP),
       fechaDesde: (filtros.fechaDesde || '').toString().trim(),
       fechaHasta: (filtros.fechaHasta || '').toString().trim(),
       nomCliente: (filtros.nomCliente || '').toString().trim(),
@@ -273,5 +300,13 @@ export class OrdenPedidoListComponent implements OnInit {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), 0, 1);
     return new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+
+  private normalizeEstadoNDP(value: unknown): string {
+    const normalized = (value ?? '').toString().trim().toUpperCase();
+    if (normalized === 'ABI' || normalized === 'FAC' || normalized === 'ANU') {
+      return normalized;
+    }
+    return '';
   }
 }

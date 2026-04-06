@@ -135,35 +135,97 @@
       (click)="openDetail(oportunidad)"
     >
       <div class="crm-opportunity-card__main">
-        <div class="crm-opportunity-card__identity">
-          <div class="crm-opportunity-card__badges">
-            <span class="crm-opportunity-card__stage">{{ oportunidad.etapa }}</span>
-            <span class="crm-opportunity-card__status" [class.crm-opportunity-card__status--inactive]="oportunidad.estado === 'I'">
-              {{ oportunidad.estado === 'I' ? 'Inactiva' : 'Activa' }}
-            </span>
-            <span class="crm-opportunity-card__date-badge" *ngIf="oportunidad.fechaCierreEstimada">
-              <i class="feather icon-clock"></i>
-              <span>Cierre: {{ oportunidad.fechaCierreEstimada | date:'dd MMM' }}</span>
-            </span>
+        <div class="crm-opportunity-card__top-row" (click)="$event.stopPropagation()">
+          <div class="crm-opportunity-card__headline">
+            <h5 class="crm-opportunity-card__title">{{ oportunidad.titulo || 'Oportunidad sin título' }}</h5>
+            <div class="crm-opportunity-card__client">{{ oportunidad.clienteNombre || 'Cliente sin nombre' }}</div>
           </div>
 
-          <h5 class="crm-opportunity-card__title">{{ oportunidad.titulo || 'Oportunidad sin título' }}</h5>
-          <div class="crm-opportunity-card__client">{{ oportunidad.clienteNombre || 'Cliente sin nombre' }}</div>
+          <div class="crm-opportunity-card__actions">
+            <button type="button" class="btn btn-primary btn-sm" (click)="openDetail(oportunidad)">
+              <i class="feather icon-eye"></i>
+              <span>Detalle</span>
+            </button>
 
-          <p class="crm-opportunity-card__description" *ngIf="oportunidad.descripcion">
-            {{ oportunidad.descripcion }}
-          </p>
+            <details class="crm-opportunity-card__menu">
+              <summary class="crm-opportunity-card__menu-trigger" (click)="$event.stopPropagation()">
+                <i class="feather icon-more-vertical"></i>
+              </summary>
+              <div class="crm-opportunity-card__menu-panel" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  class="crm-opportunity-card__menu-item"
+                  [class.crm-opportunity-card__action-disabled]="!canOpenCotizacion(oportunidad)"
+                  [disabled]="!canOpenCotizacion(oportunidad)"
+                  (click)="openCotizacion(oportunidad)"
+                >
+                  <i class="feather icon-file-text"></i>
+                  <span>{{ getCotizacionActionLabel(oportunidad) }}</span>
+                </button>
+                <button type="button" class="crm-opportunity-card__menu-item" (click)="openEdit(oportunidad)">
+                  <i class="feather icon-edit-2"></i>
+                  <span>Editar</span>
+                </button>
+                <button
+                  type="button"
+                  class="crm-opportunity-card__menu-item"
+                  [disabled]="processingOpportunityId === oportunidad.id"
+                  (click)="cambiarPrioridad(oportunidad, 'Alta')"
+                >
+                  <i class="feather icon-zap"></i>
+                  <span>Marcar Alta prioridad</span>
+                </button>
+                <button
+                  type="button"
+                  class="crm-opportunity-card__menu-item"
+                  [disabled]="!canCloseOpportunity(oportunidad) || processingOpportunityId === oportunidad.id"
+                  (click)="cerrarOportunidad(oportunidad, 'Ganada')"
+                >
+                  <i class="feather icon-check-circle"></i>
+                  <span>Cerrar como Ganada</span>
+                </button>
+                <button
+                  type="button"
+                  class="crm-opportunity-card__menu-item"
+                  [disabled]="!canCloseOpportunity(oportunidad) || processingOpportunityId === oportunidad.id"
+                  (click)="cerrarOportunidad(oportunidad, 'Perdida')"
+                >
+                  <i class="feather icon-x-circle"></i>
+                  <span>Cerrar como Perdida</span>
+                </button>
+                <button
+                  type="button"
+                  class="crm-opportunity-card__menu-item crm-opportunity-card__menu-item--danger"
+                  [disabled]="oportunidad.estado === 'I'"
+                  (click)="archive(oportunidad)"
+                >
+                  <i class="feather icon-archive"></i>
+                  <span>Archivar</span>
+                </button>
+              </div>
+            </details>
+          </div>
         </div>
 
-        <div class="crm-opportunity-card__metrics">
-          <div class="crm-opportunity-card__metric crm-opportunity-card__metric--amount">
+        <div class="crm-opportunity-card__badges">
+          <span class="crm-opportunity-card__status" [ngClass]="getEstadoBadgeClass(oportunidad.estado)">
+            {{ getEstadoLabel(oportunidad.estado) }}
+          </span>
+          <span class="crm-opportunity-card__stage">{{ oportunidad.etapa }}</span>
+          <span class="crm-opportunity-card__priority" [ngClass]="getPrioridadClass(oportunidad.prioridad)">
+            Prioridad: {{ oportunidad.prioridad || 'Media' }}
+          </span>
+        </div>
+
+        <div class="crm-opportunity-card__kpi-row">
+          <div class="crm-opportunity-card__kpi-amount">
             <span>Monto estimado</span>
             <strong>CRC {{ formatAmount(oportunidad.montoEstimado) }}</strong>
           </div>
 
-          <div class="crm-opportunity-card__metric">
+          <div class="crm-opportunity-card__kpi-prob" [ngClass]="getProbabilityClass(oportunidad.probabilidad)">
             <span>Probabilidad</span>
-            <div class="crm-opportunity-card__probability" [ngClass]="getProbabilityClass(oportunidad.probabilidad)">
+            <div class="crm-opportunity-card__probability">
               <div class="crm-opportunity-card__probability-track">
                 <div class="crm-opportunity-card__probability-fill" [style.width.%]="oportunidad.probabilidad"></div>
               </div>
@@ -171,56 +233,13 @@
             </div>
           </div>
 
-          <div class="crm-opportunity-card__metric">
-            <span>Vendedor</span>
-            <strong class="crm-opportunity-card__seller">{{ oportunidad.vendedor || 'Sin asignar' }}</strong>
-          </div>
-
-          <div class="crm-opportunity-card__metric">
-            <span>Cotización</span>
-            <strong class="crm-opportunity-card__quote">
-              {{ oportunidad.tieneCotizacion ? (oportunidad.tipNDP + ' ' + oportunidad.serieNDP + '-' + oportunidad.numNDP) : 'No vinculada' }}
-            </strong>
-          </div>
         </div>
 
-        <div class="crm-opportunity-card__actions" (click)="$event.stopPropagation()">
-          <button type="button" class="btn btn-primary btn-sm" (click)="openDetail(oportunidad)">
-            <i class="feather icon-eye"></i>
-            <span>Detalle</span>
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-primary btn-sm"
-            [class.btn-outline-secondary]="!canOpenCotizacion(oportunidad)"
-            [class.crm-opportunity-card__action-disabled]="!canOpenCotizacion(oportunidad)"
-            [disabled]="!canOpenCotizacion(oportunidad)"
-            (click)="openCotizacion(oportunidad)"
-          >
-            <i class="feather icon-file-text"></i>
-            <span>{{ getCotizacionActionLabel(oportunidad) }}</span>
-          </button>
-
-          <details class="crm-opportunity-card__menu">
-            <summary class="crm-opportunity-card__menu-trigger" (click)="$event.stopPropagation()">
-              <i class="feather icon-more-vertical"></i>
-            </summary>
-            <div class="crm-opportunity-card__menu-panel" (click)="$event.stopPropagation()">
-              <button type="button" class="crm-opportunity-card__menu-item" (click)="openEdit(oportunidad)">
-                <i class="feather icon-edit-2"></i>
-                <span>Editar</span>
-              </button>
-              <button
-                type="button"
-                class="crm-opportunity-card__menu-item crm-opportunity-card__menu-item--danger"
-                [disabled]="oportunidad.estado === 'I'"
-                (click)="archive(oportunidad)"
-              >
-                <i class="feather icon-archive"></i>
-                <span>Archivar</span>
-              </button>
-            </div>
-          </details>
+        <div class="crm-opportunity-card__meta-line">
+          <span class="crm-opportunity-card__meta-item"><i class="feather icon-user"></i> {{ oportunidad.vendedor || 'Sin asignar' }}</span>
+          <span class="crm-opportunity-card__meta-item"><i class="feather icon-file-text"></i>
+            {{ oportunidad.tieneCotizacion ? (oportunidad.tipNDP + ' ' + oportunidad.serieNDP + '-' + oportunidad.numNDP) : 'No vinculada' }}
+          </span>
         </div>
       </div>
 

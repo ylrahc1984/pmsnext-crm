@@ -28,6 +28,7 @@ export class OportunidadesComponent implements OnInit {
 
   isLoading = false;
   loadError = '';
+  processingOpportunityId: number | null = null;
   oportunidades: OportunidadUI[] = [];
 
   filtros = {
@@ -168,6 +169,78 @@ export class OportunidadesComponent implements OnInit {
     this.router.navigate(['/crm/oportunidades', oportunidad.id]);
   }
 
+  cambiarPrioridad(oportunidad: OportunidadUI, prioridad: 'Alta' | 'Media' | 'Baja'): void {
+    if (!oportunidad?.id || this.processingOpportunityId === oportunidad.id) {
+      return;
+    }
+
+    this.processingOpportunityId = oportunidad.id;
+    this.oportunidadService.actualizarPrioridad(oportunidad.id, prioridad).pipe(finalize(() => {
+      this.processingOpportunityId = null;
+    })).subscribe({
+      next: (response) => {
+        this.oportunidades = this.oportunidades.map((item) =>
+          item.id === oportunidad.id ? { ...item, prioridad } : item
+        );
+        void Swal.fire({
+          title: 'Prioridad actualizada',
+          text: response?.mensaje || `Prioridad actualizada a ${prioridad}.`,
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      },
+      error: (error) => {
+        console.error('Error al actualizar prioridad:', error);
+        void Swal.fire({
+          title: 'Error',
+          text: 'No se pudo actualizar la prioridad.',
+          icon: 'error'
+        });
+      }
+    });
+  }
+
+  cerrarOportunidad(oportunidad: OportunidadUI, etapa: 'Ganada' | 'Perdida'): void {
+    if (!oportunidad?.id || this.processingOpportunityId === oportunidad.id) {
+      return;
+    }
+
+    const etapaLabel = etapa === 'Ganada' ? 'Ganada' : 'Perdida';
+    this.processingOpportunityId = oportunidad.id;
+    this.oportunidadService.cerrarOportunidad(oportunidad.id, etapa).pipe(finalize(() => {
+      this.processingOpportunityId = null;
+    })).subscribe({
+      next: (response) => {
+        this.oportunidades = this.oportunidades.map((item) =>
+          item.id === oportunidad.id
+            ? {
+                ...item,
+                etapa: etapa === 'Ganada' ? 'GANADO' : 'PERDIDO',
+                estado: etapa === 'Ganada' ? 'G' : 'P',
+                fechaCierreReal: new Date().toISOString()
+              }
+            : item
+        );
+        void Swal.fire({
+          title: 'Oportunidad cerrada',
+          text: response?.mensaje || `Oportunidad cerrada como ${etapaLabel}.`,
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      },
+      error: (error) => {
+        console.error('Error al cerrar oportunidad:', error);
+        void Swal.fire({
+          title: 'Error',
+          text: 'No se pudo cerrar la oportunidad.',
+          icon: 'error'
+        });
+      }
+    });
+  }
+
   crearCotizacion(oportunidad: OportunidadUI): void {
     if (oportunidad.tieneCotizacion || oportunidad.estado === 'I') {
       return;
@@ -245,6 +318,35 @@ export class OportunidadesComponent implements OnInit {
 
   getStageClass(stage: OportunidadEtapa): string {
     return `crm-opportunity-card__stage--${stage.toLowerCase()}`;
+  }
+
+  getEstadoBadgeClass(estado: string): string {
+    const normalized = (estado || '').trim().toUpperCase();
+    if (normalized === 'G') return 'crm-opportunity-card__status--ganada';
+    if (normalized === 'P') return 'crm-opportunity-card__status--perdida';
+    if (normalized === 'I') return 'crm-opportunity-card__status--inactive';
+    return 'crm-opportunity-card__status--activa';
+  }
+
+  getEstadoLabel(estado: string): string {
+    const normalized = (estado || '').trim().toUpperCase();
+    if (normalized === 'G') return 'Ganada';
+    if (normalized === 'P') return 'Perdida';
+    if (normalized === 'I') return 'Inactiva';
+    return 'Activa';
+  }
+
+  getPrioridadClass(prioridad: string): string {
+    const normalized = (prioridad || '').trim().toUpperCase();
+    if (normalized === 'ALTA') return 'crm-opportunity-card__priority--alta';
+    if (normalized === 'MEDIA') return 'crm-opportunity-card__priority--media';
+    if (normalized === 'BAJA') return 'crm-opportunity-card__priority--baja';
+    return 'crm-opportunity-card__priority--default';
+  }
+
+  canCloseOpportunity(oportunidad: OportunidadUI): boolean {
+    const estado = (oportunidad.estado || '').trim().toUpperCase();
+    return estado !== 'G' && estado !== 'P' && estado !== 'I';
   }
 
   getProbabilityClass(value: number): string {

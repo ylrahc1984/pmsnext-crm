@@ -29,35 +29,38 @@ export class OportunidadDetalleComponent implements OnInit {
   private readonly avatarStyleCache = new Map<string, Record<string, string>>();
   readonly etapas = OPORTUNIDAD_ETAPAS;
 
-  isLoading = false;
-  isLinkingCotizacion = false;
-  isUpdatingStage = false;
-  isCotizacionModalOpen = false;
-  isSearchingCotizaciones = false;
-  loadError = '';
-  linkError = '';
-  linkSuccess = '';
-  stageError = '';
-  stageSuccess = '';
-  cotizacionSearchError = '';
-  currentId = 0;
-  oportunidad: OportunidadUI | null = null;
-  cliente: ClienteUI | null = null;
-  cotizacionResults: OrdenPedidoListadoItem[] = [];
-  cotizacionSearchPageNumber = 1;
-  cotizacionSearchPageSize = 10;
-  cotizacionSearchTotalPages = 1;
-  cotizacionSearchTotalRecords = 0;
+  isLoading                           = false;
+  isLinkingCotizacion                 = false;
+  isUpdatingStage                     = false;
+  isUpdatingPriority                  = false;
+  isClosingOpportunity                = false;
+  isCotizacionModalOpen               = false;
+  isSearchingCotizaciones             = false;
+  loadError                           = '';
+  linkError                           = '';
+  linkSuccess                         = '';
+  stageError                          = '';
+  stageSuccess                         = '';
+  cotizacionSearchError                = '';
+  currentId                            = 0;
+  oportunidad                          : OportunidadUI | null = null;
+  cliente                              : ClienteUI | null = null;
+  cotizacionResults                    : OrdenPedidoListadoItem[] = [];
+  cotizacionSearchPageNumber           = 1;
+  cotizacionSearchPageSize             = 10;
+  cotizacionSearchTotalPages           = 1;
+  cotizacionSearchTotalRecords         = 0;
   cotizacionForm = {
-    tipNDP: 'COT',
-    serieNDP: '',
-    numNDP: ''
+    tipNDP      : 'COT',
+    serieNDP    : '',
+    numNDP      : ''
   };
   selectedStage: OportunidadEtapa = 'PROSPECTO';
   cotizacionSearch = {
     tipOrden: 'COT',
     fechaDesde: this.getFirstDayOfYear(),
     fechaHasta: this.getTodayIsoDate(),
+    codCliente: '',
     nomCliente: ''
   };
 
@@ -134,6 +137,7 @@ export class OportunidadDetalleComponent implements OnInit {
             tipOrden: oportunidad?.tipNDP || 'COT',
             fechaDesde: this.getFirstDayOfYear(),
             fechaHasta: this.getTodayIsoDate(),
+            codCliente: oportunidad?.codCliente || '',
             nomCliente: oportunidad?.clienteNombre || ''
           };
           this.loadError = oportunidad ? '' : 'No se encontró información para la oportunidad solicitada.';
@@ -245,6 +249,78 @@ export class OportunidadDetalleComponent implements OnInit {
     });
   }
 
+  actualizarPrioridad(prioridad: 'Alta' | 'Media' | 'Baja'): void {
+    if (!this.oportunidad?.id) {
+      return;
+    }
+
+    this.isUpdatingPriority = true;
+    this.stageError = '';
+    this.stageSuccess = '';
+
+    this.oportunidadService
+      .actualizarPrioridad(this.oportunidad.id, prioridad)
+      .pipe(
+        finalize(() => {
+          this.isUpdatingPriority = false;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          if (this.oportunidad) {
+            this.oportunidad = {
+              ...this.oportunidad,
+              prioridad
+            };
+          }
+          this.stageSuccess = response?.mensaje || `Prioridad actualizada a ${prioridad}.`;
+        },
+        error: (error) => {
+          console.error('Error al actualizar prioridad desde detalle:', error);
+          this.stageError = 'No se pudo actualizar la prioridad de la oportunidad.';
+        }
+      });
+  }
+
+  cerrarOportunidad(etapa: 'Ganada' | 'Perdida'): void {
+    if (!this.oportunidad?.id) {
+      return;
+    }
+
+    this.isClosingOpportunity = true;
+    this.stageError = '';
+    this.stageSuccess = '';
+
+    this.oportunidadService
+      .cerrarOportunidad(this.oportunidad.id, etapa)
+      .pipe(
+        finalize(() => {
+          this.isClosingOpportunity = false;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          if (this.oportunidad) {
+            this.oportunidad = {
+              ...this.oportunidad,
+              etapa: etapa === 'Ganada' ? 'GANADO' : 'PERDIDO',
+              estado: etapa === 'Ganada' ? 'G' : 'P',
+              fechaCierreReal: new Date().toISOString()
+            };
+            this.selectedStage = this.oportunidad.etapa;
+          }
+
+          this.stageSuccess = response?.mensaje || `Oportunidad cerrada como ${etapa}.`;
+        },
+        error: (error) => {
+          console.error('Error al cerrar oportunidad desde detalle:', error);
+          this.stageError = 'No se pudo cerrar la oportunidad.';
+        }
+      });
+  }
+
   linkCotizacion(): void {
     if (!this.oportunidad?.id) {
       return;
@@ -322,6 +398,7 @@ export class OportunidadDetalleComponent implements OnInit {
         fechaDesde: this.cotizacionSearch.fechaDesde,
         fechaHasta: this.cotizacionSearch.fechaHasta,
         nomCliente: this.cotizacionSearch.nomCliente,
+        codCliente: this.cotizacionSearch.codCliente,
         pageNumber: this.cotizacionSearchPageNumber,
         pageSize: this.cotizacionSearchPageSize
       })
@@ -411,6 +488,22 @@ export class OportunidadDetalleComponent implements OnInit {
     if (priority === 'MEDIA') return 'oportunidad-detalle-badge--medium';
     if (priority === 'BAJA') return 'oportunidad-detalle-badge--low';
     return 'oportunidad-detalle-badge--neutral';
+  }
+
+  getEstadoClass(): string {
+    const estado = (this.oportunidad?.estado || '').trim().toUpperCase();
+    if (estado === 'G') return 'oportunidad-detalle-badge--closed-win';
+    if (estado === 'P') return 'oportunidad-detalle-badge--closed-lost';
+    if (estado === 'I') return 'oportunidad-detalle-badge--neutral';
+    return 'oportunidad-detalle-badge--active';
+  }
+
+  getEstadoLabel(): string {
+    const estado = (this.oportunidad?.estado || '').trim().toUpperCase();
+    if (estado === 'G') return 'Ganada';
+    if (estado === 'P') return 'Perdida';
+    if (estado === 'I') return 'Inactiva';
+    return 'Activa';
   }
 
   getTipoClienteLabel(): string {

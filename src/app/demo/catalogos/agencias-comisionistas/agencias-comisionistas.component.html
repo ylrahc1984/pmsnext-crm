@@ -62,6 +62,37 @@
     </div>
   </div>
 
+  <div class="crm-contactos-pagination" *ngIf="!isLoading && !contactosLoadError && totalContactosListado > 0">
+    <div class="crm-contactos-pagination__summary">
+      Página {{ contactosCurrentPage }} de {{ contactosTotalPages }} · {{ totalContactosListado }} registro(s)
+    </div>
+
+    <div class="crm-contactos-pagination__actions">
+      <label class="crm-contactos-pagination__size">
+        <span>Mostrar</span>
+        <select class="form-select form-select-sm" [(ngModel)]="contactosPageSize" (change)="onPageSizeChange()" [disabled]="isLoading">
+          <option *ngFor="let size of contactosPageSizeOptions" [ngValue]="size">{{ size }}</option>
+        </select>
+      </label>
+
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        (click)="goToPageRelative(-1)"
+        [disabled]="contactosCurrentPage <= 1 || isLoading">
+        Anterior
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        (click)="goToPageRelative(1)"
+        [disabled]="contactosCurrentPage >= contactosTotalPages || isLoading">
+        Siguiente
+      </button>
+    </div>
+  </div>
+
   <div class="crm-contactos-loading" *ngIf="isLoading">
     <div class="crm-contactos-skeleton-card" *ngFor="let skeleton of skeletonCards; trackBy: trackByIndex">
       <div class="crm-contactos-skeleton-card__top">
@@ -205,34 +236,4 @@
     </article>
   </div>
 
-  <div class="crm-contactos-pagination" *ngIf="!isLoading && !contactosLoadError && totalContactosListado > 0">
-    <div class="crm-contactos-pagination__summary">
-      Página {{ contactosCurrentPage }} de {{ contactosTotalPages }} · {{ totalContactosListado }} registro(s)
-    </div>
-
-    <div class="crm-contactos-pagination__actions">
-      <label class="crm-contactos-pagination__size">
-        <span>Mostrar</span>
-        <select class="form-select form-select-sm" [(ngModel)]="contactosPageSize" (change)="onPageSizeChange()" [disabled]="isLoading">
-          <option *ngFor="let size of contactosPageSizeOptions" [ngValue]="size">{{ size }}</option>
-        </select>
-      </label>
-
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        (click)="goToPageRelative(-1)"
-        [disabled]="contactosCurrentPage <= 1 || isLoading">
-        Anterior
-      </button>
-
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        (click)="goToPageRelative(1)"
-        [disabled]="contactosCurrentPage >= contactosTotalPages || isLoading">
-        Siguiente
-      </button>
-    </div>
-  </div>
 </div>

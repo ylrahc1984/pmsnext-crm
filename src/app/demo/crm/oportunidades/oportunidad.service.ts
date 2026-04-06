@@ -82,6 +82,8 @@ export class OportunidadService {
 
   create(payload: OportunidadFormValue): Observable<{ mensaje?: string }> {
     return this.http.post<{ mensaje?: string }>(this.apiUrl, {
+      proceso: Number(payload.proceso || 0),
+      PPV04_IdOportunidad: Number(payload.idOportunidad || 0),
       PPV04_CodClien: payload.codCliente,
       PPV04_Titulo: payload.titulo,
       PPV04_Descripcion: payload.descripcion,
@@ -89,18 +91,52 @@ export class OportunidadService {
       PPV04_Probabilidad: Number(payload.probabilidad || 0),
       PPV04_Etapa: this.normalizeStage(payload.etapa),
       PPV04_Vendedor: payload.vendedor?.trim() || '',
-      PPV04_Operador: this.getOperador()
+      PPV04_FechaCierreEstimada: this.normalizeIsoDateTime(payload.fechaCierreEstimada),
+      PPV04_Origen: this.normalizeText(payload.origen),
+      PPV04_Prioridad: this.normalizeText(payload.prioridad),
+      PPV04_TipoCliente: this.normalizeText(payload.tipoCliente),
+      PPV04_TipNDP: this.normalizeText(payload.tipNDP),
+      PPV04_SerieNDP: this.normalizeText(payload.serieNDP),
+      PPV04_NumNDP: this.normalizeText(payload.numNDP),
+      PPV04_Operador: this.getOperador(),
+      respuesta: this.normalizeText(payload.respuesta)
     });
   }
 
   update(id: number, payload: OportunidadFormValue): Observable<{ mensaje?: string }> {
     return this.http.put<{ mensaje?: string }>(this.apiUrl, {
+      proceso: Number(payload.proceso || 1),
       PPV04_IdOportunidad: id,
+      PPV04_CodClien: payload.codCliente,
       PPV04_Titulo: payload.titulo,
       PPV04_Descripcion: payload.descripcion,
       PPV04_MontoEstimado: Number(payload.montoEstimado || 0),
       PPV04_Probabilidad: Number(payload.probabilidad || 0),
-      PPV04_Vendedor: payload.vendedor?.trim() || ''
+      PPV04_Etapa: this.normalizeStage(payload.etapa),
+      PPV04_Vendedor: payload.vendedor?.trim() || '',
+      PPV04_FechaCierreEstimada: this.normalizeIsoDateTime(payload.fechaCierreEstimada),
+      PPV04_Origen: this.normalizeText(payload.origen),
+      PPV04_Prioridad: this.normalizeText(payload.prioridad),
+      PPV04_TipoCliente: this.normalizeText(payload.tipoCliente),
+      PPV04_TipNDP: this.normalizeText(payload.tipNDP),
+      PPV04_SerieNDP: this.normalizeText(payload.serieNDP),
+      PPV04_NumNDP: this.normalizeText(payload.numNDP),
+      PPV04_Operador: this.getOperador(),
+      respuesta: this.normalizeText(payload.respuesta)
+    });
+  }
+
+  cerrarOportunidad(id: number | string, etapa: 'Ganada' | 'Perdida'): Observable<{ mensaje?: string }> {
+    return this.http.patch<{ mensaje?: string }>(`${this.apiUrl}/${id}/cerrar`, {
+      etapa,
+      operador: this.getOperador()
+    });
+  }
+
+  actualizarPrioridad(id: number | string, prioridad: string): Observable<{ mensaje?: string }> {
+    return this.http.patch<{ mensaje?: string }>(`${this.apiUrl}/${id}/prioridad`, {
+      prioridad: this.normalizeText(prioridad),
+      operador: this.getOperador()
     });
   }
 
@@ -189,12 +225,95 @@ export class OportunidadService {
     return normalized || null;
   }
 
+  private normalizeIsoDateTime(value: string | null | undefined): string | null {
+    const raw = this.normalizeText(value);
+    if (!raw) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return `${raw}T00:00:00.000Z`;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return parsed.toISOString();
+  }
+
   private normalizeStage(value: string | number | null | undefined): OportunidadEtapa {
     const normalized = (value ?? '').toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
     if (OPORTUNIDAD_ETAPAS.includes(normalized as OportunidadEtapa)) {
       return normalized as OportunidadEtapa;
     }
     return 'PROSPECTO';
+  }
+
+  /**
+   * Parsea los componentes de una cotización que pueden venir en formato combinado.
+   * Soporta formato: "COT 000 002-0000011665" → { tipNDP: "COT", serie: "002", numero: "0000011665" }
+   * @param tipOrden - Tipo de orden (ej: "COT", "COT 000 002-0000011665")
+   * @param serie - Serie (ej: "002", o vacío si viene en tipOrden)
+   * @param numero - Número (ej: "0000011665", o vacío si viene en tipOrden)
+   */
+  parseQuotationNumber(
+    tipOrden: string | null | undefined,
+    serie: string | null | undefined,
+    numero: string | null | undefined
+  ): { tipNDP: string; serie: string; numero: string } {
+    const result = { tipNDP: '', serie: '', numero: '' };
+
+    // Si ya vienen separados, usarlos directamente
+    if (tipOrden && serie && numero) {
+      result.tipNDP = String(tipOrden).trim().toUpperCase();
+      result.serie = String(serie).trim();
+      result.numero = String(numero).trim();
+      return result;
+    }
+
+    // Si tipOrden contiene todo el formato combinado
+    const fullFormat = String(tipOrden ?? '').trim();
+    if (!fullFormat) {
+      return result;
+    }
+
+    // Patrón: TIPO [ESPACIOS/CODIGO] SERIE GUION NUMERO
+    // Ejemplo: "COT 000 002-0000011665"
+    const pattern = /^(\w+)\s+\d+\s+(\d+)-(\d+)$/;
+    const match = pattern.exec(fullFormat);
+
+    if (match) {
+      result.tipNDP = match[1].toUpperCase();
+      result.serie = match[2];
+      result.numero = match[3];
+      return result;
+    }
+
+    // Fallback: intenta separar por espacios y guiones
+    const parts = fullFormat.split(/\s+|-/);
+    if (parts.length >= 2) {
+      result.tipNDP = parts[0].toUpperCase();
+      if (parts.length >= 4) {
+        // Formato: tipo código serie numero
+        result.serie = parts[parts.length - 2];
+        result.numero = parts[parts.length - 1];
+      } else if (parts.length === 3) {
+        // Formato: tipo [código+serie-numero] o tipo serie numero
+        const lastPart = parts[2];
+        if (lastPart.includes('-')) {
+          const [s, n] = lastPart.split('-');
+          result.serie = s;
+          result.numero = n;
+        } else {
+          result.serie = parts[1];
+          result.numero = parts[2];
+        }
+      }
+    }
+
+    return result;
   }
 
   private getOperador(): string {

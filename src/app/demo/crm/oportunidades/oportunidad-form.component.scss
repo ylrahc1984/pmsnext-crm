@@ -77,6 +77,16 @@
   gap: 0.85rem;
 }
 
+.crm-opportunity-form-section__header-action {
+  margin-left: auto;
+  min-height: 2.35rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .crm-opportunity-form-section__header h5 {
   margin: 0;
   font-size: 1rem;
@@ -163,6 +173,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0.65rem;
+}
+
+.crm-opportunity-form-grid--basic .crm-opportunity-cliente-picker__input-wrap {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .crm-opportunity-cliente-picker__icon {
@@ -441,3 +455,810 @@
     align-items: flex-start;
   }
 }
+
+  /* ══════════════════════════════════════════════════════════
+     COMPACT DENSITY — global spacing reduction
+  ══════════════════════════════════════════════════════════ */
+
+  .crm-opportunity-form-page   { gap: 0.45rem; }
+  .crm-opportunity-form-layout { gap: 0.5rem; }
+  .crm-opportunity-form-sidebar { gap: 0.5rem; }
+
+  .crm-opportunity-form-hero {
+    padding: 0.55rem 1rem;
+  }
+
+  .crm-opportunity-form-hero__title {
+    font-size: 1.25rem;
+    margin-top: 0.05rem;
+  }
+
+  .crm-opportunity-form-card {
+    padding: 0.65rem 0.8rem;
+  }
+
+  .crm-opportunity-form-stack {
+    gap: 0.5rem;
+  }
+
+  .crm-opportunity-form-section {
+    padding: 0.6rem 0.75rem;
+    gap: 0.55rem;
+  }
+
+  .crm-opportunity-form-section__header {
+    gap: 0.5rem;
+    align-items: center;
+    padding-bottom: 0.1rem;
+  }
+
+  .crm-opportunity-form-section__header-action {
+    margin-left: auto;
+    min-height: 2.2rem;
+    font-size: 0.78rem;
+    padding: 0.28rem 0.65rem;
+  }
+
+  .crm-opportunity-form-section__header h5 {
+    font-size: 0.88rem;
+  }
+
+  .crm-opportunity-form-section__header p {
+    display: none;
+  }
+
+  .crm-opportunity-form-section__icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+  }
+
+  .crm-opportunity-form-grid        { gap: 0.55rem; }
+  .crm-opportunity-form-grid--3     { gap: 0.55rem; }
+
+  /* 2-col grid for basic section (client | title) */
+  .crm-opportunity-form-grid--basic {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 0.55rem;
+  }
+
+  .crm-opportunity-field          { gap: 0.22rem; }
+
+  .crm-opportunity-field label {
+    font-size: 0.74rem;
+    gap: 0.28rem;
+  }
+
+  .crm-opportunity-field .form-control,
+  .crm-opportunity-field .form-select {
+    min-height: 2.3rem;
+    font-size: 0.84rem;
+    padding-top: 0.28rem;
+    padding-bottom: 0.28rem;
+    border-radius: 10px;
+  }
+
+  .crm-opportunity-field textarea.form-control {
+    min-height: 3.5rem;
+  }
+
+  .crm-opportunity-field__hint { font-size: 0.7rem; }
+  .crm-opp-required             { font-size: 0.8em; }
+
+  /* Client picker compact */
+  .crm-opportunity-cliente-picker__create,
+  .crm-opportunity-cliente-picker__clear {
+    min-height: 2.3rem;
+    border-radius: 10px;
+    padding-inline: 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* Prob bar tighter */
+  .crm-opp-prob-bar { margin-top: 0.18rem; }
+
+  /* ══════════════════════════════════════════════════════════
+     DETAILS / COLLAPSIBLE
+  ══════════════════════════════════════════════════════════ */
+
+  .crm-opp-details {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.18s ease;
+  }
+
+  .crm-opp-details[open] {
+    border-color: #93c5fd;
+  }
+
+  .crm-opp-details--secondary {
+    border-style: dashed;
+    background: transparent;
+  }
+
+  .crm-opp-details__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.38rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    list-style: none;
+    user-select: none;
+    transition: background 0.15s ease;
+  }
+
+  .crm-opp-details__summary::-webkit-details-marker { display: none; }
+
+  .crm-opp-details__summary::before {
+    content: '\25B6';
+    font-size: 0.55em;
+    color: #94a3b8;
+    transition: transform 0.18s ease;
+  }
+
+  details[open] > .crm-opp-details__summary::before {
+    transform: rotate(90deg);
+  }
+
+  .crm-opp-details__summary:hover {
+    background: #f8fafc;
+  }
+
+  .crm-opp-details__summary--secondary {
+    color: #64748b;
+    background: #f8fafc;
+  }
+
+  details[open] > .crm-opp-details__summary--secondary {
+    background: #f1f5f9;
+  }
+
+  .crm-opp-details__content {
+    padding: 0.45rem 0.6rem 0.55rem;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     COTIZACIÓN — COMPACT BAR
+  ══════════════════════════════════════════════════════════ */
+
+  .crm-opp-quote-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+    animation: crm-opportunity-fade-in 0.18s ease;
+  }
+
+  .crm-opp-quote-bar--empty {
+    background: #f8fafc;
+    border: 1.5px dashed #cbd5e1;
+  }
+
+  .crm-opp-quote-bar--linked {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+  }
+
+  .crm-opp-quote-bar__icon {
+    color: #94a3b8;
+    font-size: 0.95rem;
+  }
+
+  .crm-opp-quote-bar__icon--linked { color: #16a34a; }
+
+  .crm-opp-quote-bar__text {
+    font-size: 0.8rem;
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .crm-opp-quote-bar__ref {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.03em;
+  }
+
+  .crm-opp-quote-bar__chips {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .crm-opp-quote-bar__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: #fff;
+    border: 1px solid #d1fae5;
+    color: #0d4c2e;
+    font-family: 'Courier New', monospace;
+  }
+
+  .crm-opp-quote-bar__btn {
+    border-radius: 8px;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SIDEBAR — COMPACT MERGED CARD
+  ══════════════════════════════════════════════════════════ */
+
+  .crm-opp-sidebar-compact {
+    padding: 0.6rem 0.7rem !important;
+  }
+
+  .crm-opp-sidebar-compact__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .crm-opp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 0.45rem 0.65rem;
+  }
+
+  .crm-opp-stat {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  /* Full-width row (client) */
+  .crm-opp-stat--wide {
+    grid-column: 1 / -1;
+  }
+
+  .crm-opp-stat span {
+    display: flex;
+    align-items: center;
+    gap: 0.18rem;
+    font-size: 0.66rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .crm-opp-stat strong {
+    font-size: 0.79rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Edit-mode summary card compact */
+  .crm-opportunity-form-card__title-row { margin-bottom: 0.5rem; }
+  .crm-opportunity-summary              { gap: 0.45rem; }
+  .crm-opp-sum-row                      { gap: 0.45rem; }
+
+  .crm-opp-sum-row__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+  }
+
+  .crm-opp-sum-row__body span   { font-size: 0.66rem; }
+  .crm-opp-sum-row__body strong { font-size: 0.78rem; }
+
+  /* ══════════════════════════════════════════════════════════
+     RESPONSIVE — compact additions
+  ══════════════════════════════════════════════════════════ */
+
+  @media (max-width: 991.98px) {
+    .crm-opportunity-form-grid--basic {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .crm-opp-quote-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .crm-opp-quote-bar__chips { margin-left: 0; }
+  }
+
+/* ══════════════════════════════════════════════════════════
+   HEADER ENHANCEMENTS
+══════════════════════════════════════════════════════════ */
+
+.crm-opportunity-form-hero__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.crm-opportunity-form-hero__eyebrow-sep {
+  opacity: 0.4;
+  margin-inline: 0.2rem;
+}
+
+.crm-opportunity-form-hero__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0.1rem 0 0;
+}
+
+.crm-opportunity-form-hero__title-row .crm-opportunity-form-hero__title {
+  margin: 0;
+}
+
+.crm-opportunity-form-hero__badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BADGES
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.crm-opp-badge--stage {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+.crm-opp-badge--linked {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.crm-opp-badge--unlinked {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fef08a;
+}
+
+.crm-opp-badge--active {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.crm-opp-badge--inactive {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SAVE BUTTON LOADING SPIN
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-spin {
+  animation: crm-opp-rotate 0.9s linear infinite;
+  display: inline-block;
+}
+
+@keyframes crm-opp-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FIELD HELPERS
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-required {
+  color: #ef4444;
+  font-size: 0.88em;
+  margin-left: 0.15rem;
+  font-weight: 700;
+}
+
+.crm-opp-optional {
+  font-size: 0.78em;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 0.3rem;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION ICON COLOR VARIANTS
+══════════════════════════════════════════════════════════ */
+
+.crm-opportunity-form-section__icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.crm-opportunity-form-section__icon--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.crm-opportunity-form-section__icon--violet {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+/* ══════════════════════════════════════════════════════════
+   3-COLUMN GRID
+══════════════════════════════════════════════════════════ */
+
+.crm-opportunity-form-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ══════════════════════════════════════════════════════════
+   COMMERCIAL INFO SUB-SECTIONS
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-subsection {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.crm-opp-subsection__label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MONTO INPUT WITH $ PREFIX
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-input-adornment {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.crm-opp-input-adornment__prefix {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.crm-opp-input-adornment__input {
+  padding-left: 1.85rem !important;
+  flex: 1;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROBABILITY BAR
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-prob-bar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+
+.crm-opp-prob-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.45s ease, background-color 0.45s ease;
+}
+
+.crm-opp-prob-bar__fill--low  { background: #f97316; }
+.crm-opp-prob-bar__fill--mid  { background: #eab308; }
+.crm-opp-prob-bar__fill--high { background: #22c55e; }
+
+/* ══════════════════════════════════════════════════════════
+   HIDDEN FORM INPUTS (mantienen binding reactivo)
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-hidden-inputs {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   COTIZACIÓN — ESTADO VACÍO
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-quote-empty {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  animation: crm-opportunity-fade-in 0.22s ease;
+}
+
+.crm-opp-quote-empty__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.crm-opp-quote-empty__text {
+  flex: 1;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.crm-opp-quote-empty__text strong {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.crm-opp-quote-empty__text span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.crm-opp-quote-empty__btn {
+  flex-shrink: 0;
+  border-radius: 12px;
+  padding-inline: 1.1rem;
+  min-height: 2.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════
+   COTIZACIÓN — CARD CON DATOS
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-quote-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  animation: crm-opportunity-fade-in 0.22s ease;
+}
+
+.crm-opp-quote-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.crm-opp-quote-card__icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.crm-opp-quote-card__title-block {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.crm-opp-quote-card__ref {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.04em;
+}
+
+.crm-opp-quote-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.71rem;
+  font-weight: 700;
+}
+
+.crm-opp-quote-card__badge--complete {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.crm-opp-quote-card__badge--partial {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.crm-opp-quote-card__change-btn {
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.crm-opp-quote-fields {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #d1fae5;
+}
+
+.crm-opp-quote-field {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.crm-opp-quote-field__label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.crm-opp-quote-field__value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0d4c2e;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR — SUMMARY ROWS
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-sum-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.crm-opp-sum-row__icon {
+  width: 1.85rem;
+  height: 1.85rem;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.crm-opp-sum-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.crm-opp-sum-row__body span {
+  display: block;
+  font-size: 0.71rem;
+  color: #64748b;
+  margin-bottom: 0.1rem;
+  font-weight: 500;
+}
+
+.crm-opp-sum-row__body strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR — TITLE
+══════════════════════════════════════════════════════════ */
+
+.crm-opp-sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #64748b;
+}
+
+.crm-opp-sidebar-title h5 {
+  margin: 0 !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.crm-opp-info-card {
+  border-left: 3px solid #818cf8;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — NEW ADDITIONS
+══════════════════════════════════════════════════════════ */
+
+@media (max-width: 991.98px) {
+  .crm-opportunity-form-grid--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crm-opp-quote-empty {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .crm-opportunity-form-grid--3 {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-opp-quote-empty {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .crm-opp-quote-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .crm-opp-quote-fields {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+}
+

@@ -32,21 +32,27 @@
           <div class="card-body">
             <form [formGroup]="filtrosForm" (ngSubmit)="applyFilters()">
               <div class="row g-3">
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                   <label class="form-label op-label">Tipo</label>
                   <select class="form-control" formControlName="tipOrden">
                     <option *ngFor="let tipo of tiposOrden" [value]="tipo.value">{{ tipo.label }}</option>
                   </select>
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
+                  <label class="form-label op-label">Estado</label>
+                  <select class="form-control" formControlName="estadoNDP">
+                    <option *ngFor="let estado of estadosOrden" [value]="estado.value">{{ estado.label }}</option>
+                  </select>
+                </div>
+                <div class="col-lg-2 col-md-6">
                   <label class="form-label op-label">Fecha desde</label>
                   <input type="date" class="form-control" formControlName="fechaDesde">
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                   <label class="form-label op-label">Fecha hasta</label>
                   <input type="date" class="form-control" formControlName="fechaHasta">
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-4 col-md-12">
                   <label class="form-label op-label">Cliente</label>
                   <input class="form-control" formControlName="nomCliente" placeholder="Nombre del cliente">
                 </div>

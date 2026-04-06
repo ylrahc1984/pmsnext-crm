@@ -4,11 +4,18 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, forkJoin, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { ClienteListado, ClienteUI } from 'src/app/demo/catalogos/agencias-comisionistas/cliente.models';
 import { ClienteService } from 'src/app/demo/catalogos/agencias-comisionistas/cliente.service';
-import { OPORTUNIDAD_ETAPAS, OportunidadFormValue, OportunidadUI } from './oportunidad.models';
+import {
+  OPORTUNIDAD_ETAPAS,
+  OPORTUNIDAD_ORIGENES,
+  OPORTUNIDAD_PRIORIDADES,
+  OPORTUNIDAD_TIPOS_CLIENTE,
+  OportunidadFormValue,
+  OportunidadUI
+} from './oportunidad.models';
 import { OportunidadService } from './oportunidad.service';
 import { OrdenPedidoReturnInfo } from 'src/app/demo/orden-pedido/interfaces/orden-pedido-return.interface';
 
@@ -23,6 +30,10 @@ type OportunidadNavigationDraft = {
     probabilidad: number;
     etapa: string;
     vendedor: string;
+    fechaCierreEstimada: string;
+    origen: string;
+    prioridad: string;
+    tipoCliente: string;
     tipNDP: string;
     serieNDP: string;
     numNDP: string;
@@ -46,6 +57,9 @@ export class OportunidadFormComponent implements OnInit {
   private clienteService = inject(ClienteService);
 
   readonly etapas = OPORTUNIDAD_ETAPAS;
+  readonly prioridades = OPORTUNIDAD_PRIORIDADES;
+  readonly origenes = OPORTUNIDAD_ORIGENES;
+  readonly tiposCliente = OPORTUNIDAD_TIPOS_CLIENTE;
 
   isEditing = false;
   isLoading = false;
@@ -70,6 +84,10 @@ export class OportunidadFormComponent implements OnInit {
     probabilidad: [50, [Validators.min(0), Validators.max(100)]],
     etapa: ['PROSPECTO', [Validators.required]],
     vendedor: [''],
+    fechaCierreEstimada: [''],
+    origen: [this.origenes[0] as string],
+    prioridad: [this.prioridades[1] as string],
+    tipoCliente: [this.tiposCliente[0] as string],
     tipNDP: [''],
     serieNDP: [''],
     numNDP: ['']
@@ -138,9 +156,19 @@ export class OportunidadFormComponent implements OnInit {
             probabilidad: oportunidad.probabilidad,
             etapa: oportunidad.etapa,
             vendedor: oportunidad.vendedor,
+            fechaCierreEstimada: this.toInputDate(oportunidad.fechaCierreEstimada),
+            origen: this.resolveOrigenValue(oportunidad.origen),
+            prioridad: this.resolvePrioridadValue(oportunidad.prioridad),
+            tipoCliente: this.resolveTipoClienteValue(oportunidad.tipoCliente),
             tipNDP: oportunidad.tipNDP,
             serieNDP: oportunidad.serieNDP,
             numNDP: oportunidad.numNDP
+          });
+        } else if (!this.isEditing) {
+          // Para nuevas oportunidades, establecer fecha de cierre estimada con tiempo prudencial (30 días)
+          const defaultClosingDate = this.getDefaultClosingDate();
+          this.form.patchValue({
+            fechaCierreEstimada: defaultClosingDate
           });
         }
 
@@ -216,6 +244,10 @@ export class OportunidadFormComponent implements OnInit {
   }
 
   get origenLabel(): string {
+    const selected = this.cleanText(this.form.get('origen')?.value);
+    if (selected) {
+      return selected;
+    }
     return this.hasCotizacionAsociada ? 'Cotización' : 'Manual';
   }
 
@@ -229,13 +261,23 @@ export class OportunidadFormComponent implements OnInit {
     this.isSaving = true;
     const codCliente = this.resolveClienteCode();
     const payload: OportunidadFormValue = {
+      proceso: this.isEditing ? 1 : 0,
+      idOportunidad: this.oportunidadId || 0,
       codCliente,
       titulo: this.form.get('titulo')?.value ?? '',
       descripcion: this.form.get('descripcion')?.value ?? '',
       montoEstimado: Number(this.form.get('montoEstimado')?.value ?? 0),
       probabilidad: Number(this.form.get('probabilidad')?.value ?? 0),
       etapa: (this.form.get('etapa')?.value as OportunidadFormValue['etapa']) ?? 'PROSPECTO',
-      vendedor: this.form.get('vendedor')?.value ?? ''
+      vendedor: this.form.get('vendedor')?.value ?? '',
+      fechaCierreEstimada: this.normalizeDateForApi(this.form.get('fechaCierreEstimada')?.value),
+      origen: this.cleanText(this.form.get('origen')?.value),
+      prioridad: this.cleanText(this.form.get('prioridad')?.value),
+      tipoCliente: this.cleanText(this.form.get('tipoCliente')?.value),
+      tipNDP: this.cleanText(this.form.get('tipNDP')?.value).toUpperCase(),
+      serieNDP: this.cleanText(this.form.get('serieNDP')?.value),
+      numNDP: this.cleanText(this.form.get('numNDP')?.value),
+      respuesta: ''
     };
 
     const request$ =
@@ -243,33 +285,16 @@ export class OportunidadFormComponent implements OnInit {
 
     request$
       .pipe(
-        switchMap((response) => {
-          const shouldSyncStage =
-            !!this.isEditing &&
-            !!this.oportunidadId &&
-            !!this.loadedOportunidad &&
-            this.loadedOportunidad.etapa !== payload.etapa;
-
-          if (!shouldSyncStage || !this.oportunidadId) {
-            return of(response);
-          }
-
-          return this.oportunidadService.changeStage(this.oportunidadId, payload.etapa).pipe(switchMap(() => of(response)));
-        }),
-        switchMap((response) => this.syncCotizacionAfterSave(payload).pipe(map((result) => ({
-          message: result?.message || response?.mensaje || 'La operación se completó correctamente.',
-          partial: result?.partial
-        })))),
         finalize(() => (this.isSaving = false))
       )
       .subscribe({
-        next: async (result: SaveOutcome) => {
+        next: async (response) => {
           await Swal.fire({
-            title: result.partial ? 'Oportunidad guardada con aviso' : this.isEditing ? 'Oportunidad actualizada' : 'Oportunidad creada',
-            text: result.message,
-            icon: result.partial ? 'warning' : 'success',
-            timer: result.partial ? undefined : 1800,
-            showConfirmButton: !!result.partial
+            title: this.isEditing ? 'Oportunidad actualizada' : 'Oportunidad creada',
+            text: response?.mensaje || 'La operación se completó correctamente.',
+            icon: 'success',
+            timer: 1800,
+            showConfirmButton: false
           });
           this.router.navigate(['/crm/oportunidades']);
         },
@@ -556,6 +581,10 @@ export class OportunidadFormComponent implements OnInit {
         probabilidad      : Number(form.probabilidad || 0),
         etapa             : this.cleanText(form.etapa) || 'PROSPECTO',
         vendedor          : this.cleanText(form.vendedor),
+        fechaCierreEstimada: this.cleanText(form.fechaCierreEstimada),
+        origen            : this.resolveOrigenValue(form.origen),
+        prioridad         : this.resolvePrioridadValue(form.prioridad),
+        tipoCliente       : this.resolveTipoClienteValue(form.tipoCliente),
         tipNDP            : this.cleanText(form.tipNDP),
         serieNDP          : this.cleanText(form.serieNDP),
         numNDP            : this.cleanText(form.numNDP)
@@ -579,6 +608,10 @@ export class OportunidadFormComponent implements OnInit {
         probabilidad      : Number(raw.probabilidad || 0),
         etapa             : this.cleanText(raw.etapa),
         vendedor          : this.cleanText(raw.vendedor),
+        fechaCierreEstimada: this.cleanText(raw.fechaCierreEstimada),
+        origen            : this.resolveOrigenValue(raw.origen),
+        prioridad         : this.resolvePrioridadValue(raw.prioridad),
+        tipoCliente       : this.resolveTipoClienteValue(raw.tipoCliente),
         tipNDP            : this.cleanText(raw.tipNDP),
         serieNDP          : this.cleanText(raw.serieNDP),
         numNDP            : this.cleanText(raw.numNDP)
@@ -592,12 +625,19 @@ export class OportunidadFormComponent implements OnInit {
       return;
     }
 
+    // Parsear el número de cotización por si viene en formato combinado
+    const parsed = this.oportunidadService.parseQuotationNumber(
+      orderResult.tipOrden,
+      orderResult.serie,
+      orderResult.numero
+    );
+
     this.form.patchValue(
       {
         montoEstimado   : orderResult.total,
-        tipNDP          : this.cleanText(orderResult.tipOrden).toUpperCase(),
-        serieNDP        : this.cleanText(orderResult.serie),
-        numNDP          : this.cleanText(orderResult.numero)
+        tipNDP          : parsed.tipNDP.toUpperCase(),
+        serieNDP        : parsed.serie,
+        numNDP          : parsed.numero
       },
       { emitEvent: false }
     );
@@ -650,56 +690,6 @@ export class OportunidadFormComponent implements OnInit {
     if (option) {
       this.clienteSearchTerm = option.label;
     }
-  }
-
-  private syncCotizacionAfterSave(payload: OportunidadFormValue): Observable<SaveOutcome | null> {
-    const { tipNDP, serieNDP, numNDP } = this.getCotizacionData();
-    if (!tipNDP || !serieNDP || !numNDP) {
-      return of<SaveOutcome | null>(null);
-    }
-
-    const cotizacionPayload = {
-      tipNDP,
-      serieNDP,
-      numNDP
-    };
-
-    if (this.isEditing && this.oportunidadId) {
-      return this.oportunidadService.vincularCotizacion(this.oportunidadId, cotizacionPayload).pipe(
-        map((response) => ({
-          message: response?.mensaje || 'La oportunidad se actualizó y la cotización quedó asociada.'
-        }))
-      );
-    }
-
-    return this.oportunidadService.getByCliente(payload.codCliente, 'A').pipe(
-      map((items) =>
-        [...items]
-          .filter((item) => item.codCliente === payload.codCliente && item.titulo.trim().toLowerCase() === payload.titulo.trim().toLowerCase())
-          .sort((left, right) => right.id - left.id)[0] || null
-      ),
-      switchMap((created) => {
-        if (!created?.id) {
-          return of<SaveOutcome>({
-            partial: true,
-            message: 'La oportunidad se creó, pero no se pudo identificar automáticamente para asociar la cotización.'
-          });
-        }
-
-        return this.oportunidadService.vincularCotizacion(created.id, cotizacionPayload).pipe(
-          map((response) => ({
-            message: response?.mensaje || 'La oportunidad se creó y la cotización quedó asociada.'
-          })),
-          catchError((error) => {
-            console.error('Error al vincular cotización luego de crear oportunidad:', error);
-            return of<SaveOutcome>({
-              partial: true,
-              message: 'La oportunidad se creó, pero la vinculación de la cotización quedó pendiente.'
-            });
-          })
-        );
-      })
-    );
   }
 
   private getCotizacionData(): { tipNDP: string; serieNDP: string; numNDP: string } {
@@ -755,6 +745,75 @@ export class OportunidadFormComponent implements OnInit {
 
   private cleanText(value: unknown): string {
     return String(value ?? '').trim();
+  }
+
+  private getDefaultClosingDate(): string {
+    /**
+     * Calcula una fecha de cierre estimada prudencial: 30 días desde hoy.
+     * Formato: yyyy-MM-dd (compatible con input type="date")
+     */
+    const today = new Date();
+    const closingDate = new Date(today);
+    closingDate.setDate(closingDate.getDate() + 30);
+
+    const year = closingDate.getFullYear();
+    const month = String(closingDate.getMonth() + 1).padStart(2, '0');
+    const day = String(closingDate.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private normalizeDateForApi(value: unknown): string | null {
+    const raw = this.cleanText(value);
+    if (!raw) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return `${raw}T00:00:00.000Z`;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed.toISOString();
+  }
+
+  private toInputDate(value: string | null | undefined): string {
+    const raw = this.cleanText(value);
+    if (!raw) {
+      return '';
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
+
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  private resolvePrioridadValue(value: unknown): string {
+    const normalized = this.cleanText(value).toUpperCase();
+    const found = this.prioridades.find((item) => item.toUpperCase() === normalized);
+    return found || this.prioridades[1];
+  }
+
+  private resolveOrigenValue(value: unknown): string {
+    const normalized = this.cleanText(value).toUpperCase();
+    const found = this.origenes.find((item) => item.toUpperCase() === normalized);
+    return found || this.origenes[0];
+  }
+
+  private resolveTipoClienteValue(value: unknown): string {
+    const normalized = this.cleanText(value).toUpperCase();
+    const found = this.tiposCliente.find((item) => item.toUpperCase() === normalized);
+    return found || this.tiposCliente[0];
   }
 
   private getTodayForApi(): string {

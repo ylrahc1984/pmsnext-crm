@@ -25,7 +25,7 @@ export class AgenciasComisionistasComponent implements OnInit {
   contactosCurrentPage = 1;
   contactosTotalPages = 1;
   totalContactosListado = 0;
-  contactosPageSize = 10;
+  contactosPageSize = 9;
   readonly contactosPageSizeOptions = [10, 25, 50];
   readonly skeletonCards = Array.from({ length: 6 }, (_, index) => index);
 
