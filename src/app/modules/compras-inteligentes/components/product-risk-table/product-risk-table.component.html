@@ -1,0 +1,56 @@
+<div class="product-risk-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        @if (mode() === 'productos') {
+          <th>Categoria</th>
+        }
+        <th>Proveedor</th>
+        <th class="is-end">Stock</th>
+        @if (mode() === 'productos') {
+          <th class="is-end">Min</th>
+          <th class="is-end">Max</th>
+        }
+        <th>Rotacion vs Credito</th>
+        <th class="is-end">Dias Inventario</th>
+        <th>Estado</th>
+        <th>Accion</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (producto of productos(); track producto.id) {
+        <tr [ngClass]="'row--' + producto.estado">
+          <td>
+            <a class="product-link" [routerLink]="['/compras-inteligentes/producto', producto.id]">{{ producto.nombre }}</a>
+            <small>{{ producto.accionRecomendada }}</small>
+          </td>
+          @if (mode() === 'productos') {
+            <td>{{ producto.categoria }}</td>
+          }
+          <td>{{ producto.proveedor }}</td>
+          <td class="is-end">{{ producto.stockActual }}</td>
+          @if (mode() === 'productos') {
+            <td class="is-end">{{ producto.stockMinimo }}</td>
+            <td class="is-end">{{ producto.stockMaximo }}</td>
+          }
+          <td>
+            <app-rotation-indicator [diasRotacion]="producto.rotacion.diasPromedio" [diasCredito]="producto.creditoProveedorDias" />
+          </td>
+          <td class="is-end">{{ producto.diasInventario }}d</td>
+          <td><app-inventory-status-chip [estado]="producto.estado" /></td>
+          <td>
+            <div class="table-actions">
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/compras-inteligentes/producto', producto.id]">
+                <i class="feather icon-eye"></i>
+              </a>
+              <a class="btn btn-sm btn-primary" routerLink="/compras-inteligentes/generar-pedido">
+                <i class="feather icon-shopping-bag"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

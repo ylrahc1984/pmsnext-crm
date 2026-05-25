@@ -1,0 +1,317 @@
+<section class="ci-page">
+  <header class="ci-header">
+    <div>
+      <span class="ci-header__eyebrow">Inteligencia comercial</span>
+      <h1>Centro Inteligente de Alertas</h1>
+      <p>
+        Centro operacional para detectar productos con excepciones, priorizar atencion y ejecutar acciones inmediatas.
+      </p>
+      <div class="ci-header__meta">
+        <span><i class="feather icon-calendar"></i> {{ periodoAnalisis().diasAnalisis | number: '1.0-0' }} dias</span>
+        <span><i class="feather icon-clock"></i> {{ periodoAnalisis().rango }}</span>
+        <span><i class="feather icon-zap"></i> Score global {{ kpiResumen().scorePromedio | number: '1.0-0' }}/100</span>
+        <span><i class="feather icon-map-pin"></i> Almacen PRINCIP</span>
+      </div>
+    </div>
+  </header>
+
+  @if (kpiResumen(); as item) {
+    <div class="ci-metric-strip">
+      <div class="ci-metric ci-metric--critical">
+        <span><i class="feather icon-alert-triangle"></i> Alertas criticas</span>
+        <strong>{{ item.alertasCriticas | number: '1.0-0' }}</strong>
+        <small>Atencion inmediata</small>
+      </div>
+      <div class="ci-metric ci-metric--high">
+        <span><i class="feather icon-package"></i> Productos agotados</span>
+        <strong>{{ item.productosAgotados | number: '1.0-0' }}</strong>
+        <small>Riesgo operativo</small>
+      </div>
+      <div class="ci-metric ci-metric--finance">
+        <span><i class="feather icon-dollar-sign"></i> Capital en riesgo</span>
+        <strong>₡{{ item.capitalRiesgo | number: '1.0-0' }}</strong>
+        <small>Impacto financiero</small>
+      </div>
+      <div class="ci-metric ci-metric--money">
+        <span><i class="feather icon-shopping-cart"></i> Sobre stock</span>
+        <strong>{{ item.sobreStock | number: '1.0-0' }}</strong>
+        <small>Exceso de inventario</small>
+      </div>
+    </div>
+  }
+
+  <section class="ci-period-panel ci-period-panel--secondary" aria-label="Contexto operacional">
+    <div>
+      <span>Score promedio</span>
+      <strong>{{ kpiResumen().scorePromedio | number: '1.0-0' }}/100</strong>
+    </div>
+    <div>
+      <span>Riesgo operacional</span>
+      <strong>{{ kpiResumen().riesgoOperacional | number: '1.0-0' }}</strong>
+    </div>
+    <div>
+      <span>Distribucion</span>
+      <strong>
+        {{ kpiResumen().alertasAltas | number: '1.0-0' }} altas · {{ kpiResumen().alertasMedias | number: '1.0-0' }} medias ·
+        {{ kpiResumen().alertasBajas | number: '1.0-0' }} bajas
+      </strong>
+    </div>
+    <div>
+      <span>Impacto adicional</span>
+      <strong>
+        {{ kpiResumen().riesgoFinanciero | number: '1.0-0' }} financiero · {{ kpiResumen().riesgoComercial | number: '1.0-0' }}
+        comercial
+      </strong>
+    </div>
+  </section>
+
+  <div class="ci-filter-shell">
+    <div class="ci-filter-shell__heading">
+      <div>
+        <strong>Filtros operacionales</strong>
+        <span>Filtre excepciones para priorizar atencion y accion inmediata.</span>
+      </div>
+    </div>
+
+    <div class="ci-quick-filters">
+      <label [attr.title]="tooltip.prioridad">
+        <span>Prioridad</span>
+        <select class="form-select" [ngModel]="filtroPrioridad()" (ngModelChange)="filtroPrioridad.set($event); pageNumber.set(1)">
+          <option value="">Todas</option>
+          @for (prioridad of prioridadOptions; track prioridad) {
+            <option [value]="prioridad">{{ prioridad }}</option>
+          }
+        </select>
+      </label>
+
+      <label [attr.title]="tooltip.impacto">
+        <span>Impacto</span>
+        <select class="form-select" [ngModel]="filtroNivelImpacto()" (ngModelChange)="filtroNivelImpacto.set($event); pageNumber.set(1)">
+          <option value="">Todos</option>
+          @for (impacto of impactoOptions; track impacto) {
+            <option [value]="impacto">{{ impacto }}</option>
+          }
+        </select>
+      </label>
+
+      <label [attr.title]="tooltip.tipo">
+        <span>Tipo</span>
+        <select class="form-select" [ngModel]="filtroTipoAlerta()" (ngModelChange)="filtroTipoAlerta.set($event); pageNumber.set(1)">
+          <option value="">Todos</option>
+          @for (tipo of tipoAlertaOptions; track tipo) {
+            <option [value]="tipo">{{ tipo }}</option>
+          }
+        </select>
+      </label>
+
+      <label [attr.title]="tooltip.producto">
+        <span>Producto</span>
+        <input
+          class="form-control"
+          type="search"
+          placeholder="Codigo producto"
+          [ngModel]="codigoProducto()"
+          (ngModelChange)="codigoProducto.set($event)"
+        />
+      </label>
+
+      <label class="ci-autocomplete ci-autocomplete--provider" [attr.title]="tooltip.proveedor">
+        <span>Proveedor</span>
+        <div class="ci-autocomplete__control">
+          <input
+            class="form-control"
+            type="search"
+            placeholder="Nombre o codigo"
+            [ngModel]="proveedorSearch()"
+            (ngModelChange)="buscarProveedores($event)"
+          />
+        </div>
+        @if (proveedores().length > 0 || proveedoresLoading()) {
+          <div class="ci-autocomplete__menu">
+            @if (proveedoresLoading()) {
+              <div class="ci-autocomplete__empty">Buscando proveedores...</div>
+            } @else {
+              @for (item of proveedores(); track item.codigo) {
+                <button type="button" (click)="seleccionarProveedor(item)">
+                  <strong>{{ item.descripcion }}</strong>
+                  <span>{{ item.codigo }} / {{ item.ruc || 'Sin RUC' }}</span>
+                </button>
+              }
+            }
+          </div>
+        }
+      </label>
+
+      <div class="ci-filter-actions ci-filter-actions--quick">
+        <button class="btn btn-sm btn-primary" type="button" [disabled]="filtrosBloqueados()" (click)="aplicarFiltros()">
+          {{ filtrosBloqueados() ? 'Espere...' : 'Buscar' }}
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar</button>
+        <button
+          class="btn btn-sm btn-outline-primary"
+          type="button"
+          [disabled]="loading()"
+          [attr.aria-expanded]="mostrarAvanzados()"
+          (click)="alternarFiltrosAvanzados()"
+        >
+          {{ mostrarAvanzados() ? 'Ocultar filtros avanzados' : 'Mostrar filtros avanzados' }}
+        </button>
+        <button
+          class="ci-filter-settings"
+          type="button"
+          aria-label="Configuracion tecnica"
+          [attr.aria-expanded]="mostrarTecnicos()"
+          (click)="alternarConfiguracionTecnica()"
+        >
+          <i class="feather icon-settings"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="ci-collapse" [class.ci-collapse--open]="mostrarAvanzados()">
+      <div class="ci-advanced-grid">
+        <section class="ci-filter-group">
+          <h3>Clasificacion</h3>
+          <div class="ci-filter-grid ci-filter-grid--compact">
+            <label [attr.title]="tooltip.linea">
+              <span>Linea</span>
+              <select class="form-select" [ngModel]="lineaCodigo()" [disabled]="lineasLoading()" (ngModelChange)="seleccionarLinea($event)">
+                <option value="">{{ lineasLoading() ? 'Cargando lineas...' : 'Todas' }}</option>
+                @for (item of lineas(); track item.CAC02_CodLinea) {
+                  <option [value]="item.CAC02_CodLinea">{{ item.CAC02_LineaProdu }}</option>
+                }
+              </select>
+            </label>
+
+            <label [attr.title]="tooltip.categoria">
+              <span>Categoria</span>
+              <select class="form-select" [ngModel]="categoria()" [disabled]="!lineaCodigo() || categoriasLoading()" (ngModelChange)="categoria.set($event); pageNumber.set(1)">
+                <option value="">{{ categoriasLoading() ? 'Cargando categorias...' : 'Todas' }}</option>
+                @for (item of categorias(); track item.CAC03_CodCate) {
+                  <option [value]="item.CAC03_Categoria">{{ item.CAC03_Categoria }}</option>
+                }
+              </select>
+            </label>
+
+            <label [attr.title]="tooltip.severidad">
+              <span>Severidad legacy</span>
+              <input class="form-control" type="search" [ngModel]="severidad()" (ngModelChange)="severidad.set($event)" />
+            </label>
+          </div>
+        </section>
+
+        <section class="ci-filter-group">
+          <h3>Operacion</h3>
+          <div class="ci-filter-grid ci-filter-grid--compact">
+            <label [attr.title]="tooltip.diasSinVenta">
+              <span>Dias sin venta</span>
+              <input class="form-control" type="number" min="0" [ngModel]="diasSinVenta()" (ngModelChange)="diasSinVenta.set($event)" />
+            </label>
+
+            <label [attr.title]="tooltip.diasSobreStock">
+              <span>Dias sobre stock</span>
+              <input class="form-control" type="number" min="0" [ngModel]="diasSobreStock()" (ngModelChange)="diasSobreStock.set($event)" />
+            </label>
+
+            <label [attr.title]="tooltip.diasCritico">
+              <span>Dias critico</span>
+              <input class="form-control" type="number" min="0" [ngModel]="diasCritico()" (ngModelChange)="diasCritico.set($event)" />
+            </label>
+
+            <label [attr.title]="tooltip.diasAnalisis">
+              <span>Dias analisis</span>
+              <input class="form-control" type="number" min="1" [ngModel]="diasAnalisis()" (ngModelChange)="diasAnalisis.set($event)" />
+            </label>
+          </div>
+        </section>
+
+        <section class="ci-filter-group">
+          <h3>Riesgo financiero</h3>
+          <div class="ci-filter-grid ci-filter-grid--compact">
+            <label [attr.title]="tooltip.margenBajo">
+              <span>Margen bajo</span>
+              <input class="form-control" type="number" min="0" step="0.01" [ngModel]="margenBajo()" (ngModelChange)="margenBajo.set($event)" />
+            </label>
+
+            <label [attr.title]="tooltip.capitalAlto">
+              <span>Capital alto</span>
+              <input class="form-control" type="number" min="0" step="0.01" [ngModel]="capitalAlto()" (ngModelChange)="capitalAlto.set($event)" />
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <div class="ci-filter-actions ci-filter-actions--advanced">
+        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar filtros</button>
+        <button class="btn btn-sm btn-primary" type="button" [disabled]="filtrosBloqueados()" (click)="aplicarFiltros()">
+          {{ filtrosBloqueados() ? 'Aplicando...' : 'Aplicar filtros' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="ci-technical-panel" [class.ci-technical-panel--open]="mostrarTecnicos()">
+      <div class="ci-technical-panel__inner">
+        <label [attr.title]="tooltip.pagina">
+          <span>Pagina</span>
+          <input class="form-control" type="number" min="1" [ngModel]="pageNumber()" (ngModelChange)="pageNumber.set($event)" />
+        </label>
+
+        <label [attr.title]="tooltip.registros">
+          <span>Registros</span>
+          <select class="form-select" [ngModel]="pageSize()" (ngModelChange)="pageSize.set($event); pageNumber.set(1)">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+        </label>
+
+        <label class="ci-check" [attr.title]="tooltip.registrarLog">
+          <input type="checkbox" [ngModel]="registrarLog()" (ngModelChange)="registrarLog.set($event)" />
+          <span>Registrar log</span>
+        </label>
+
+        <label class="ci-check" [attr.title]="tooltip.debug">
+          <input type="checkbox" [ngModel]="debug()" (ngModelChange)="debug.set($event)" />
+          <span>Debug</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <app-operational-widget title="Incidentes operativos" subtitle="Producto, problema, urgencia y accion">
+    <div class="ci-priority-legend" widget-actions>
+      <p>Las prioridades combinan riesgo operativo/comercial, impacto en inventario y comportamiento reciente.</p>
+      <div>
+        <span><strong>ALTA</strong> Atender hoy</span>
+        <span><strong>MEDIA</strong> Revisar pronto</span>
+        <span><strong>BAJA</strong> Monitorear</span>
+      </div>
+    </div>
+
+    <div class="ci-toolbar ci-toolbar--inline">
+      <div class="ci-feed-summary">
+        <strong>{{ totalRegistros() | number: '1.0-0' }} alertas</strong>
+        <span>Pagina {{ pageNumber() }} de {{ totalPaginas() }}</span>
+      </div>
+      <div class="ci-header__actions">
+        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="pageNumber() <= 1 || loading()" (click)="cambiarPagina(-1)">Anterior</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="loading() || pageNumber() >= totalPaginas()" (click)="cambiarPagina(1)">Siguiente</button>
+      </div>
+    </div>
+
+    @if (!busquedaEjecutada()) {
+      <div class="ci-empty-state">
+        Configure los filtros y presione Buscar para consultar las alertas del periodo.
+      </div>
+    } @else if (loading()) {
+      <div class="ci-empty-state">Cargando alertas...</div>
+    } @else if (error()) {
+      <div class="ci-empty-state">{{ error() }}</div>
+    } @else if (alertasOrdenadas().length > 0) {
+      <app-inventory-alert-feed [alertas]="alertasOrdenadas()" />
+    } @else {
+      <div class="ci-empty-state">No hay alertas para los filtros seleccionados.</div>
+    }
+  </app-operational-widget>
+</section>

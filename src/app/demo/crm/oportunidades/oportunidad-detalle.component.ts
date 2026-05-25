@@ -225,12 +225,20 @@ export class OportunidadDetalleComponent implements OnInit {
     }
 
     if (this.oportunidad.tieneCotizacion) {
-      void this.router.navigate(['/demo/ordenes-pedido'], {
+      void this.router.navigate(['/crm/oportunidades', this.oportunidad.id, 'cotizacion'], {
         queryParams: {
-          tipOrden: this.oportunidad.tipNDP || 'COT',
+          tipNDP: this.oportunidad.tipNDP || 'COT',
+          serieNDP: this.oportunidad.serieNDP || '',
+          numNDP: this.oportunidad.numNDP || '',
+          mode: 'edit',
+          origin: 'oportunidad-detalle',
+          returnUrl: this.router.url,
+          codCliente: this.oportunidad.codCliente || '',
           nomCliente: this.oportunidad.clienteNombre || '',
-          serie: this.oportunidad.serieNDP || '',
-          numero: this.oportunidad.numNDP || ''
+          codVendedor: this.oportunidad.vendedor || '',
+          titulo: this.oportunidad.titulo || '',
+          descripcion: this.oportunidad.descripcion || '',
+          etapaActual: this.oportunidad.etapa || ''
         }
       });
       return;
@@ -247,6 +255,14 @@ export class OportunidadDetalleComponent implements OnInit {
         etapaActual: this.oportunidad.etapa
       }
     });
+  }
+
+  openCotizacionDocumento(): void {
+    if (!this.oportunidad?.tieneCotizacion) {
+      return;
+    }
+
+    this.openCotizacion();
   }
 
   actualizarPrioridad(prioridad: 'Alta' | 'Media' | 'Baja'): void {

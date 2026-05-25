@@ -1,0 +1,62 @@
+.rotation-indicator {
+  min-width: 160px;
+}
+
+.rotation-indicator__values {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: var(--erp-text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.rotation-indicator strong {
+  color: var(--erp-text, #172033);
+}
+
+.rotation-indicator__bar {
+  position: relative;
+  height: 7px;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.rotation-indicator__bar-rotation {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+}
+
+.rotation-indicator__bar-credit {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 13px;
+  border-radius: 999px;
+  background: #059669;
+}
+
+.rotation-indicator small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.rotation-indicator--risk .rotation-indicator__bar-rotation {
+  background: linear-gradient(90deg, #f59e0b, #dc2626);
+}
+
+.rotation-indicator--risk .rotation-indicator__bar-credit,
+.rotation-indicator--risk small {
+  color: #b91c1c;
+  background: #b91c1c;
+}
+
+.rotation-indicator--risk small {
+  background: transparent;
+}

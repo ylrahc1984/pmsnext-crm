@@ -1,0 +1,20 @@
+<div class="smart-table">
+  <table>
+    <thead>
+      <tr>
+        @for (column of columns(); track column.key) {
+          <th [class]="'is-' + (column.align ?? 'start')">{{ column.label }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row) {
+        <tr>
+          @for (column of columns(); track column.key) {
+            <td [class]="'is-' + (column.align ?? 'start')">{{ row[column.key] }}</td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

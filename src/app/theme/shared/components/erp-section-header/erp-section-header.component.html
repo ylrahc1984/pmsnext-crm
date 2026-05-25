@@ -1,0 +1,14 @@
+<header class="erp-section-header">
+  <div>
+    @if (eyebrow()) {
+      <span class="erp-section-header__eyebrow">{{ eyebrow() }}</span>
+    }
+    <h2>{{ title() }}</h2>
+    @if (description()) {
+      <p>{{ description() }}</p>
+    }
+  </div>
+  <div class="erp-section-header__actions">
+    <ng-content></ng-content>
+  </div>
+</header>

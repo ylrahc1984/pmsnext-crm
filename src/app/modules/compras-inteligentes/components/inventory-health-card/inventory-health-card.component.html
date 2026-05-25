@@ -1,0 +1,14 @@
+<article class="health-card" [ngClass]="'health-card--' + producto().estado">
+  <div class="health-card__top">
+    <div>
+      <span>{{ producto().categoria }}</span>
+      <h3>{{ producto().nombre }}</h3>
+    </div>
+    <app-inventory-status-chip [estado]="producto().estado" />
+  </div>
+  <div class="health-card__metrics">
+    <div><span>Stock</span><strong>{{ producto().stockActual }}</strong></div>
+    <div><span>Rotacion</span><strong>{{ producto().rotacion.diasPromedio }}d</strong></div>
+    <div><span>Dias inv.</span><strong>{{ producto().diasInventario }}d</strong></div>
+  </div>
+</article>

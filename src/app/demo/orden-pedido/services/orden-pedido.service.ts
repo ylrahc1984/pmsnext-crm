@@ -5,6 +5,7 @@ import { catchError, expand, map, reduce } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
 import {
+  OrdenPedidoCompletoResponse,
   OrdenPedidoCreatePayload,
   OrdenPedidoCreateResponse,
   OrdenPedidoFiltro,
@@ -166,6 +167,36 @@ export class OrdenPedidoService {
       map((response) => this.parseCreateResponse(response)),
       catchError((error: HttpErrorResponse) => {
         const message = error.error?.mensaje || error.error?.respuesta || error.message || 'No se pudo crear la orden.';
+        return throwError(() => new Error(message));
+      })
+    );
+  }
+
+  actualizarOrden(tipNDP: string, numeroDocumento: string, payload: OrdenPedidoCreatePayload): Observable<OrdenPedidoCreateResponse> {
+    const tip = encodeURIComponent(this.clean(tipNDP).toUpperCase());
+    const numero = encodeURIComponent(this.clean(numeroDocumento));
+
+    return this.http.put(`${this.apiUrl}/${tip}/${numero}`, payload, { responseType: 'text' }).pipe(
+      map((response) => this.parseCreateResponse(response)),
+      catchError((error: HttpErrorResponse) => {
+        const message = error.error?.mensaje || error.error?.respuesta || error.message || 'No se pudo actualizar la orden.';
+        return throwError(() => new Error(message));
+      })
+    );
+  }
+
+  getOrdenCompleta(tipNDP: string, serieNDP: string, numNDP: string): Observable<OrdenPedidoCompletoResponse> {
+    const tip = encodeURIComponent(this.clean(tipNDP).toUpperCase());
+    const serie = encodeURIComponent(this.clean(serieNDP));
+    const numero = encodeURIComponent(this.clean(numNDP));
+
+    return this.http.get<OrdenPedidoCompletoResponse>(`${this.apiUrl}/${tip}/${serie}/${numero}/completa`).pipe(
+      catchError((error: HttpErrorResponse) => {
+        const message =
+          error.error?.mensaje ||
+          error.error?.respuesta ||
+          error.message ||
+          'No se pudo cargar el documento completo para edición.';
         return throwError(() => new Error(message));
       })
     );

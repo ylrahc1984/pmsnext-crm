@@ -1,0 +1,80 @@
+.recommendation-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.recommendation-card {
+  --accent: #2563eb;
+  padding: 0.8rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--erp-radius-md, 10px);
+  background: #fff;
+}
+
+.recommendation-card--riesgo {
+  --accent: #d97706;
+}
+
+.recommendation-card--critico {
+  --accent: #dc2626;
+}
+
+.recommendation-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.recommendation-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, white);
+  color: var(--accent);
+}
+
+h4 {
+  margin: 0;
+  color: var(--erp-text, #172033);
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+p {
+  margin: 0.35rem 0 0;
+  color: var(--erp-text-muted, #64748b);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.recommendation-card__action {
+  display: grid;
+  gap: 0.15rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.recommendation-card__action strong {
+  color: var(--erp-text, #172033);
+  font-size: 0.78rem;
+}
+
+.recommendation-card__action span,
+a {
+  color: var(--erp-text-muted, #64748b);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+a {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  color: #2563eb;
+}

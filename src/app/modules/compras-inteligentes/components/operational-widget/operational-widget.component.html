@@ -1,0 +1,16 @@
+<section class="operational-widget" [class.operational-widget--compact]="compact()">
+  <header class="operational-widget__header">
+    <div>
+      <h3>{{ title() }}</h3>
+      @if (subtitle()) {
+        <span>{{ subtitle() }}</span>
+      }
+    </div>
+    <div class="operational-widget__actions">
+      <ng-content select="[widget-actions]"></ng-content>
+    </div>
+  </header>
+  <div class="operational-widget__body">
+    <ng-content></ng-content>
+  </div>
+</section>

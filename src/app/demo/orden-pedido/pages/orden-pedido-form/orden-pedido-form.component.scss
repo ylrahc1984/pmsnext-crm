@@ -52,7 +52,22 @@
   background: linear-gradient(180deg, #fbfcfe 0%, #f5f7fb 100%);
   border: 1px solid #edf2f7;
   border-radius: 14px;
-  padding: 16px;
+  padding: 8px 12px 12px;
+}
+
+.op-page-toolbar {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.op-page-toolbar h5 {
+  margin-bottom: 2px !important;
+  line-height: 1.15;
+}
+
+.op-page-toolbar p {
+  line-height: 1.2;
 }
 
 .op-btn-primary {
@@ -72,7 +87,7 @@
   background: var(--op-panel);
   border: 1px solid var(--op-border);
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 10px 12px;
 }
 
 .op-doc-header__eyebrow {
@@ -81,18 +96,18 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .op-doc-header__title {
-  font-size: 1.7rem;
+  font-size: 1.56rem;
   font-weight: 700;
   line-height: 1.15;
   color: #102849;
 }
 
 .op-doc-header__subtitle {
-  margin-top: 6px;
+  margin-top: 2px;
   color: var(--op-muted);
   font-size: 0.95rem;
 }
@@ -104,7 +119,7 @@
 
 .op-doc-header__date-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
   color: var(--op-muted);
   font-size: 0.76rem;
   font-weight: 700;
@@ -115,15 +130,15 @@
 .op-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, #dfe8f2 15%, #dfe8f2 85%, transparent 100%);
-  margin: 18px 0 20px;
+  margin: 8px 0 10px;
 }
 
 .op-opportunity-banner {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  margin-top: 14px;
-  padding: 14px 16px;
+  margin-top: 8px;
+  padding: 10px 12px;
   border: 1px solid #cfe3f7;
   border-radius: 12px;
   background: #f5faff;
@@ -165,8 +180,8 @@
   background: var(--op-panel);
   border: 1px solid var(--op-border);
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
 }
 
 .op-card__header {
@@ -175,7 +190,44 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.op-card--cliente {
+  padding-top: 6px;
+  padding-bottom: 8px;
+}
+
+.op-card--cliente .op-card__header {
+  margin-bottom: 6px;
+}
+
+.op-card--cliente .op-section-subtitle {
+  margin-top: 0 !important;
+  line-height: 1.2;
+}
+
+.op-card--cliente .op-label {
+  margin-bottom: 3px;
+}
+
+.op-card--cliente .form-control,
+.op-card--cliente .form-select {
+  min-height: 38px;
+  padding: 0.45rem 0.72rem;
+  border-radius: 8px;
+}
+
+.op-card--cliente .btn {
+  min-height: 38px;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.op-card--cliente .op-client-selected {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  line-height: 1.15;
 }
 
 .op-context-card {

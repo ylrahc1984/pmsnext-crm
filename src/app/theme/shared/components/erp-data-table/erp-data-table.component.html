@@ -1,0 +1,26 @@
+<div class="erp-data-table">
+  <table>
+    <thead>
+      <tr>
+        @for (column of columns(); track column.key) {
+          <th [class]="'is-' + (column.align ?? 'start')">{{ column.label }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row) {
+        <tr>
+          @for (column of columns(); track column.key) {
+            <td [class]="'is-' + (column.align ?? 'start')">
+              @if (toneFor(row, column.key); as tone) {
+                <app-erp-status-badge [label]="labelFor(row, column.key)" [tone]="tone" />
+              } @else {
+                {{ valueFor(row, column.key) }}
+              }
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

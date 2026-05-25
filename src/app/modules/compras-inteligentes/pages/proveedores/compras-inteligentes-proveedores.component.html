@@ -1,0 +1,264 @@
+<section class="ci-page ci-page--suppliers">
+  <header class="ci-header ci-header--suppliers">
+    <div>
+      <span class="ci-header__eyebrow">Inteligencia comercial</span>
+      <h1>Inteligencia de Proveedores</h1>
+      <p>Analisis estrategico de abastecimiento y riesgo comercial.</p>
+      <div class="ci-header__meta">
+        @for (item of headerResumen(); track item.label) {
+          <span>
+            <i class="feather" [ngClass]="item.icon"></i>
+            {{ item.label }} <strong>{{ item.value }}</strong>
+          </span>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div class="ci-supplier-kpi-grid">
+    @for (kpi of kpiCards(); track kpi.label) {
+      <article class="ci-supplier-kpi" [class.ci-supplier-kpi--featured]="kpi.featured" [ngClass]="'ci-supplier-kpi--' + kpi.tone">
+        <i class="feather" [ngClass]="kpi.icon"></i>
+        <div>
+          <strong>{{ kpi.value }}</strong>
+          <span>{{ kpi.label }}</span>
+          <small>{{ kpi.note }}</small>
+        </div>
+      </article>
+    }
+  </div>
+
+  <section class="ci-risk-map" aria-label="Mapa de Riesgo de Proveedores">
+    <div class="ci-risk-map__head">
+      <div>
+        <strong>Mapa de Riesgo de Proveedores</strong>
+        <span>Monitoreo ejecutivo de abastecimiento, concentracion y operacion.</span>
+      </div>
+      <span class="ci-badge ci-badge--info">{{ diasAnalisis() || 0 | number: '1.0-0' }} dias analizados</span>
+    </div>
+    <div class="ci-risk-map__grid">
+      @for (item of mapaRiesgo(); track item.label) {
+        <article class="ci-risk-item" [ngClass]="'ci-risk-item--' + item.tone">
+          <div class="ci-risk-item__meta">
+            <i class="feather" [ngClass]="item.icon"></i>
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value | number: '1.0-0' }}</strong>
+          </div>
+          <div class="ci-risk-item__bar">
+            <span [style.width]="getRiskWidth(item)"></span>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <div class="ci-filter-shell ci-filter-shell--compact ci-filter-shell--suppliers">
+    <div class="ci-quick-filters">
+      <label>
+        <span>Proveedor</span>
+        <input
+          class="form-control"
+          type="search"
+          placeholder="Nombre o codigo"
+          [ngModel]="busquedaProveedor()"
+          (ngModelChange)="busquedaProveedor.set($event)"
+        />
+      </label>
+
+      <label>
+        <span>Almacen</span>
+        <input class="form-control" type="search" [ngModel]="codigoAlmacen()" (ngModelChange)="codigoAlmacen.set($event)" />
+      </label>
+
+      <label>
+        <span>Dias analisis</span>
+        <input class="form-control" type="number" min="1" [ngModel]="diasAnalisis()" (ngModelChange)="diasAnalisis.set($event)" />
+      </label>
+
+      <label>
+        <span>Fecha corte</span>
+        <input class="form-control" type="date" [ngModel]="fechaCorte()" (ngModelChange)="fechaCorte.set($event)" />
+      </label>
+
+      <label>
+        <span>Semaforo</span>
+        <select class="form-select" [ngModel]="filtroSemaforo()" (ngModelChange)="filtroSemaforo.set($event); pageNumber.set(1)">
+          <option value="">Todos</option>
+          @for (item of semaforoOptions; track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Estado</span>
+        <select class="form-select" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event); pageNumber.set(1)">
+          <option value="">Todos</option>
+          @for (item of estadoOptions; track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="ci-check ci-check--supplier">
+        <input class="form-check-input" type="checkbox" [ngModel]="soloCriticos()" (ngModelChange)="soloCriticos.set($event)" />
+        <span>Solo criticos</span>
+      </label>
+
+      <div class="ci-filter-actions ci-filter-actions--quick">
+        <button class="btn btn-sm btn-primary" type="button" [disabled]="filtrosBloqueados()" (click)="aplicarFiltros()">
+          {{ filtrosBloqueados() ? 'Consultando...' : 'Buscar' }}
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar</button>
+        <button
+          class="ci-filter-settings"
+          type="button"
+          aria-label="Configuracion tecnica"
+          [attr.aria-expanded]="mostrarTecnicos()"
+          (click)="alternarConfiguracionTecnica()"
+        >
+          <i class="feather icon-settings"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="ci-technical-panel" [class.ci-technical-panel--open]="mostrarTecnicos()">
+      <div class="ci-technical-panel__inner">
+        <label>
+          <span>Pagina</span>
+          <input class="form-control" type="number" min="1" [ngModel]="pageNumber()" (ngModelChange)="pageNumber.set($event)" />
+        </label>
+
+        <label>
+          <span>Registros</span>
+          <select class="form-select" [ngModel]="pageSize()" (ngModelChange)="pageSize.set($event); pageNumber.set(1)">
+            <option [ngValue]="12">12</option>
+            <option [ngValue]="24">24</option>
+            <option [ngValue]="48">48</option>
+            <option [ngValue]="96">96</option>
+          </select>
+        </label>
+
+        <label class="ci-check">
+          <input class="form-check-input" type="checkbox" [ngModel]="debug()" (ngModelChange)="debug.set($event)" />
+          <span>Debug API</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <app-operational-widget title="Centro de inteligencia de proveedores" subtitle="Dependencia, riesgo operativo, credito, logistica y segmentacion estrategica" [compact]="true">
+    <div class="ci-feed-summary" widget-actions>
+      <strong>{{ proveedoresFiltrados().length | number: '1.0-0' }} proveedores</strong>
+      <span>Pagina {{ pageNumber() }} de {{ totalPaginas() }}</span>
+    </div>
+
+    <div class="ci-toolbar ci-toolbar--inline">
+      <div class="ci-feed-summary">
+        <strong>Analisis empresarial accionable</strong>
+        <span>Prioridad visual: dependencia comercial, semaforo, estado financiero y capacidad logistica.</span>
+      </div>
+      <div class="ci-header__actions">
+        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="pageNumber() <= 1 || loading()" (click)="cambiarPagina(-1)">Anterior</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="loading() || pageNumber() >= totalPaginas()" (click)="cambiarPagina(1)">Siguiente</button>
+      </div>
+    </div>
+
+    @if (!busquedaEjecutada()) {
+      <div class="ci-empty-state">Configure los filtros y presione Buscar para consultar la inteligencia de proveedores.</div>
+    } @else if (loading()) {
+      <div class="ci-supplier-list">
+        @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+          <article class="ci-supplier-card ci-supplier-card--skeleton">
+            <div class="ci-skeleton ci-skeleton--title"></div>
+            <div class="ci-skeleton ci-skeleton--line"></div>
+            <div class="ci-supplier-card__metrics">
+              <div class="ci-skeleton"></div>
+              <div class="ci-skeleton"></div>
+              <div class="ci-skeleton"></div>
+            </div>
+            <div class="ci-skeleton"></div>
+          </article>
+        }
+      </div>
+    } @else if (error()) {
+      <div class="ci-empty-state">{{ error() }}</div>
+    } @else if (proveedoresFiltrados().length > 0) {
+      <div class="ci-supplier-list">
+        @for (proveedor of proveedoresFiltrados(); track trackByProveedor($index, proveedor)) {
+          @let segmentacion = getSegmentacionProveedor(proveedor);
+          <article class="ci-supplier-card" [ngClass]="'ci-supplier-card--' + getSemaforoClass(proveedor.semaforoProveedor)">
+            <div class="ci-supplier-card__head">
+              <div class="ci-supplier-card__title">
+                <strong>{{ proveedor.nomProveedorPrincipal || 'Proveedor sin nombre' }}</strong>
+                <span>{{ proveedor.codProveedorPrincipal || 'Sin codigo' }}</span>
+              </div>
+              <div class="ci-supplier-card__badges">
+                <span class="ci-badge" [ngClass]="'ci-badge--' + getSemaforoClass(proveedor.semaforoProveedor)">
+                  {{ semaforoLabel(proveedor.semaforoProveedor) }}
+                </span>
+                <span class="ci-badge" [ngClass]="'ci-badge--' + segmentacionClass(segmentacion)">
+                  {{ segmentacion }}
+                </span>
+              </div>
+            </div>
+
+            <section class="ci-supplier-card__focus" title="Participacion de compra: porcentaje del total analizado concentrado en este proveedor.">
+              <div>
+                <strong>{{ proveedor.participacionCompraPorcentaje | number: '1.0-2' }}%</strong>
+                <span>Participacion</span>
+              </div>
+              <span class="ci-badge" [ngClass]="'ci-badge--' + getDependenciaClass(proveedor.nivelDependencia)">
+                Dependencia {{ proveedor.nivelDependencia || 'N/D' }}
+              </span>
+              <div class="ci-supplier-card__bar">
+                <span [style.width]="getParticipacionWidth(proveedor.participacionCompraPorcentaje)"></span>
+              </div>
+            </section>
+
+            <div class="ci-supplier-card__metrics">
+              <div title="Compra neta acumulada en el periodo consultado.">
+                <span>Compra neta</span>
+                <strong>{{ formatCurrency(proveedor.compraNeta) }}</strong>
+              </div>
+              <div title="Ticket promedio por movimiento de compra.">
+                <span>Ticket prom.</span>
+                <strong>{{ formatCurrency(proveedor.ticketPromedioCompra) }}</strong>
+              </div>
+              <div title="Dias de credito promedio otorgados por el proveedor.">
+                <span>Credito</span>
+                <strong>{{ proveedor.diasCreditoPromedio | number: '1.0-1' }}d</strong>
+              </div>
+            </div>
+
+            <div class="ci-supplier-card__ops" title="Capacidad operativa y cobertura logistica del proveedor.">
+              <span><i class="feather icon-package"></i> {{ proveedor.productosComprados | number: '1.0-0' }} productos</span>
+              <span><i class="feather icon-grid"></i> {{ proveedor.categoriasAtendidas | number: '1.0-0' }} categorias</span>
+              <span><i class="feather icon-map-pin"></i> {{ proveedor.almacenesAtendidos | number: '1.0-0' }} almacenes</span>
+              <span><i class="feather icon-repeat"></i> {{ proveedor.totalMovimientosCompra | number: '1.0-0' }} movimientos</span>
+            </div>
+
+            <div class="ci-supplier-card__risk">
+              <span class="ci-badge" [ngClass]="'ci-badge--' + getDiasSinCompraClass(proveedor.diasSinCompra)">
+                {{ proveedor.diasSinCompra | number: '1.0-0' }}d sin compra
+              </span>
+              <span class="ci-badge" [ngClass]="'ci-badge--' + getEstadoClass(proveedor.estadoProveedor)">
+                {{ proveedor.estadoProveedor || 'SIN ESTADO' }}
+              </span>
+              <span class="ci-badge ci-badge--info" title="Lead time promedio: dias estimados entre compra y disponibilidad.">
+                Lead time {{ proveedor.leadTimePromedio | number: '1.0-1' }}d
+              </span>
+            </div>
+
+            <div class="ci-supplier-card__insight">
+              <i class="feather icon-zap"></i>
+              <span>{{ proveedor.mensajeEjecutivo || 'Sin recomendacion ejecutiva disponible para este proveedor.' }}</span>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="ci-empty-state">No se encontraron proveedores para los filtros seleccionados.</div>
+    }
+  </app-operational-widget>
+</section>

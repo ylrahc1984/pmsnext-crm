@@ -1,0 +1,69 @@
+<section class="ci-page">
+  <header class="ci-header">
+    <div>
+      <span class="ci-header__eyebrow">Compras Inteligentes</span>
+      <h1>Centro de Control de Compras</h1>
+      <div class="ci-header__meta">
+        <span><i class="feather icon-zap"></i>{{ data.productosCriticos().length }} productos criticos</span>
+        <span><i class="feather icon-dollar-sign"></i>{{ data.kpis()[1].value }} en riesgo</span>
+        <span><i class="feather icon-pause-circle"></i>{{ data.productosSinRotacion().length }} sin rotacion</span>
+        <span><i class="feather icon-alert-triangle"></i>{{ data.alertas().length }} alertas activas</span>
+      </div>
+    </div>
+    <div class="ci-header__actions">
+      <a class="btn btn-sm btn-outline-light" routerLink="/compras-inteligentes/alertas">Monitorear</a>
+      <a class="btn btn-sm btn-primary" routerLink="/compras-inteligentes/generar-pedido">Generar pedido</a>
+    </div>
+  </header>
+
+  <div class="ci-kpi-grid">
+    @for (kpi of data.kpis(); track kpi.id) {
+      <app-intelligent-kpi-card [kpi]="kpi" />
+    }
+  </div>
+
+  <div class="ci-grid">
+    <main class="ci-main">
+      <app-operational-widget title="Productos criticos" subtitle="Rotacion, credito proveedor y accion inmediata" [compact]="true">
+        <a widget-actions class="btn btn-sm btn-outline-primary" routerLink="/compras-inteligentes/productos">Ver todos</a>
+        <app-product-risk-table [productos]="data.productosEnRiesgo()" />
+      </app-operational-widget>
+
+      <div class="ci-two">
+        <app-operational-widget title="Tendencia de rotacion" subtitle="Dias promedio por categoria">
+          <div class="ci-bars">
+            @for (producto of data.productos().slice(0, 5); track producto.id) {
+              <div class="ci-bar">
+                <span>{{ producto.categoria }}</span>
+                <div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="producto.rotacion.diasPromedio"></span></div>
+                <strong>{{ producto.rotacion.diasPromedio }}d</strong>
+              </div>
+            }
+          </div>
+        </app-operational-widget>
+
+        <app-operational-widget title="Inventario por proveedor" subtitle="Capital en riesgo">
+          <div class="ci-bars">
+            @for (proveedor of data.proveedores(); track proveedor.id) {
+              <div class="ci-bar">
+                <span>{{ proveedor.nombre }}</span>
+                <div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="proveedor.inventarioRiesgo * 8"></span></div>
+                <strong>{{ proveedor.inventarioRiesgo }}</strong>
+              </div>
+            }
+          </div>
+        </app-operational-widget>
+      </div>
+    </main>
+
+    <aside class="ci-side">
+      <app-operational-widget title="Alertas" subtitle="Feed operativo priorizado">
+        <app-inventory-alert-feed [alertas]="data.alertas().slice(0, 4)" />
+      </app-operational-widget>
+
+      <app-operational-widget title="Recomendaciones inteligentes" subtitle="Problema, causa y accion">
+        <app-recommendation-panel [recomendaciones]="data.recomendaciones().slice(0, 3)" />
+      </app-operational-widget>
+    </aside>
+  </div>
+</section>

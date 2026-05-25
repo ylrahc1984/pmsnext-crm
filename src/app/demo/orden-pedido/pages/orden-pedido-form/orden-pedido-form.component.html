@@ -3,9 +3,19 @@
     <app-card [customHeader]="true">
       <div class="app-card-header op-page-toolbar">
         <div>
-          <h5 class="mb-1">{{ form.controls.tipNDP.value === 'COT' ? 'Nueva Proforma' : 'Nueva Orden de Pedido' }}</h5>
+          <h5 class="mb-1">{{ isEditingExistingOrder ? (form.controls.tipNDP.value === 'COT' ? 'Editar Cotización' : 'Editar Orden de Pedido') : (form.controls.tipNDP.value === 'COT' ? 'Nueva Proforma' : 'Nueva Orden de Pedido') }}</h5>
           <p class="mb-0 text-muted">Registro comercial del documento con detalle, pagos y resumen.</p>
+          <div class="mt-2" *ngIf="isEditingExistingOrder && editingDocumentLabel">
+            <span class="badge bg-light text-dark border">
+              Documento: {{ editingDocumentLabel }}
+            </span>
+          </div>
         </div>
+      </div>
+
+      <div *ngIf="isLoadingExistingOrder" class="alert alert-info mb-3">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Cargando documento para edición...
       </div>
 
       <div *ngIf="errorMessage" class="alert alert-danger mb-3">
@@ -23,9 +33,6 @@
           <div>
             <div class="op-doc-header__eyebrow">Documento Comercial</div>
             <div class="op-doc-header__title">{{ tipoDocumentoLabel }}</div>
-            <div class="op-doc-header__subtitle">
-              {{ empresa()?.MA04_Nombre || 'Empresa en desarrollo' }} · RUC {{ empresa()?.MA04_Ruc || '-' }}
-            </div>
           </div>
           <div class="op-doc-header__date">
             <span class="op-doc-header__date-label">Fecha</span>
@@ -46,13 +53,10 @@
             </p>
           </div>
         </section>
-
-        <div class="op-divider"></div>
-
         <section class="op-card op-context-card">
           <div class="op-context-card__company">
-            <h6 class="op-section-title mb-2">Empresa en Desarrollo</h6>
-            <div class="op-company-meta">RUC: {{ empresa()?.MA04_Ruc || '-' }}</div>
+            <h6 class="op-section-title mb-2">{{ empresa()?.MA04_Nombre || 'Empresa en desarrollo' }}</h6>
+            <div class="op-company-meta">Cedula: {{ empresa()?.MA04_Ruc || '-' }}</div>
             <div class="op-company-meta">Punto de venta: {{ form.controls.pntVenta.value || '-' }}</div>
             <div class="op-company-meta">Vendedor: {{ form.controls.codVendedor.value || '-' }}</div>
             <div class="op-company-meta">Moneda: {{ form.controls.moneda.value || '-' }}</div>
@@ -118,7 +122,7 @@
           </div>
         </section>
 
-        <section class="op-card">
+        <section class="op-card op-card--cliente">
           <div class="op-card__header">
             <div>
               <h6 class="op-section-title mb-1">Datos del Cliente</h6>
@@ -126,11 +130,11 @@
             </div>
           </div>
 
-          <div class="row g-3">
+          <div class="row g-2">
             <div class="col-lg-4 col-md-6">
               <label class="form-label op-label">Código Cliente</label>
               <div class="cliente-search">
-                <div class="d-flex gap-2 align-items-stretch">
+                <div class="d-flex gap-1 align-items-stretch">
                   <input
                     class="form-control flex-grow-1"
                     formControlName="codCliente"
@@ -186,10 +190,6 @@
                 placeholder="Código actividad"
                 readonly
               >
-            </div>
-            <div class="col-12">
-              <label class="form-label op-label">Observaciones</label>
-              <input class="form-control" formControlName="observaciones" placeholder="Observaciones generales">
             </div>
           </div>
         </section>
@@ -334,40 +334,21 @@
             <section class="op-card">
               <div class="op-card__header">
                 <div class="d-flex align-items-center gap-2">
-                  <i class="feather icon-shield text-muted"></i>
-                  <h6 class="op-section-title mb-0">Exoneración</h6>
-                </div>
-                <div class="form-check form-switch m-0">
-                  <input class="form-check-input" id="exoneracionActiva" type="checkbox" formControlName="exoneracionActiva">
-                  <label class="form-check-label" for="exoneracionActiva">Aplicar</label>
+                  <i class="feather icon-message-square text-muted"></i>
+                  <h6 class="op-section-title mb-0">Observaciones</h6>
                 </div>
               </div>
 
-              <div class="row g-3" formGroupName="exoneracion" *ngIf="form.controls.exoneracionActiva.value">
-                <div class="col-lg-3 col-md-6">
-                  <label class="form-label op-label">Tipo Documento</label>
-                  <input class="form-control" formControlName="tipoDocumentoEX1" placeholder="Tipo documento">
+              <div class="row g-2">
+                <div class="col-12">
+                  <label class="form-label op-label">Detalle</label>
+                  <textarea
+                    class="form-control"
+                    formControlName="observaciones"
+                    placeholder="Agregue notas internas, acuerdos comerciales o indicaciones para facturación"
+                    rows="3"
+                  ></textarea>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                  <label class="form-label op-label">Número Documento</label>
-                  <input class="form-control" formControlName="numeroDocumento" placeholder="Número documento">
-                </div>
-                <div class="col-lg-4 col-md-6">
-                  <label class="form-label op-label">Institución</label>
-                  <input class="form-control" formControlName="nombreInstitucion" placeholder="Institución">
-                </div>
-                <div class="col-lg-1 col-md-3">
-                  <label class="form-label op-label">Tarifa %</label>
-                  <input type="number" class="form-control text-end" formControlName="tarifaExonerada" min="0" step="0.01">
-                </div>
-                <div class="col-lg-1 col-md-3">
-                  <label class="form-label op-label">Monto</label>
-                  <input type="number" class="form-control text-end" formControlName="montoExoneracion" min="0" step="0.01">
-                </div>
-              </div>
-
-              <div class="op-empty-note" *ngIf="!form.controls.exoneracionActiva.value">
-                La exoneración es opcional. Actívela si el documento requiere descuento tributario.
               </div>
             </section>
           </div>

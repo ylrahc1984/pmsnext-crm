@@ -1,0 +1,299 @@
+<section class="ci-page ci-page--inventory">
+  <header class="ci-header">
+    <div>
+      <span class="ci-header__eyebrow">Inteligencia comercial</span>
+      <h1>Salud Inteligente de Inventario</h1>
+      <p>Rotacion, riesgo financiero, cobertura, sobre stock y productos inmovilizados en una vista ejecutiva.</p>
+      <div class="ci-header__meta">
+        <span><i class="feather icon-calendar"></i> {{ diasAnalisis() || 0 | number: '1.0-0' }} dias</span>
+        <span><i class="feather icon-map-pin"></i> Almacen {{ codigoAlmacen() || 'Todos' }}</span>
+        <span><i class="feather icon-package"></i> {{ totalRegistros() | number: '1.0-0' }} productos</span>
+        <span>
+          <i class="feather icon-credit-card"></i>
+          Margen prom.
+          @if (kpiResumen().promedioMargenFinanciero !== null) {
+            {{ kpiResumen().promedioMargenFinanciero | number: '1.0-1' }}d
+          } @else {
+            N/D
+          }
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <div class="ci-metric-strip">
+    <div class="ci-metric ci-metric--money">
+      <span><i class="feather icon-check-circle"></i> Saludables</span>
+      <strong>{{ kpiResumen().saludables | number: '1.0-0' }}</strong>
+      <small>{{ kpiResumen().normal | number: '1.0-0' }} con rotacion normal</small>
+    </div>
+    <div class="ci-metric ci-metric--high">
+      <span><i class="feather icon-alert-circle"></i> En riesgo</span>
+      <strong>{{ kpiResumen().riesgo | number: '1.0-0' }}</strong>
+      <small>{{ kpiResumen().lenta | number: '1.0-0' }} con rotacion lenta</small>
+    </div>
+    <div class="ci-metric ci-metric--critical">
+      <span><i class="feather icon-alert-triangle"></i> Criticos</span>
+      <strong>{{ kpiResumen().criticos | number: '1.0-0' }}</strong>
+      <small>{{ kpiResumen().sobreStock | number: '1.0-0' }} en sobre stock</small>
+    </div>
+    <div class="ci-metric ci-metric--finance">
+      <span><i class="feather icon-clock"></i> Dias inventario</span>
+      <strong>{{ kpiResumen().promedioDiasInventario | number: '1.0-1' }}d</strong>
+      <small>{{ kpiResumen().rapida | number: '1.0-0' }} con rotacion rapida</small>
+    </div>
+  </div>
+
+  <div class="ci-filter-shell ci-filter-shell--compact">
+    <div class="ci-quick-filters">
+      <label>
+        <span>Producto</span>
+        <input
+          class="form-control"
+          type="search"
+          placeholder="Codigo producto"
+          [ngModel]="codigoProducto()"
+          (ngModelChange)="codigoProducto.set($event)"
+        />
+      </label>
+
+      <label>
+        <span>Almacen</span>
+        <input class="form-control" type="search" [ngModel]="codigoAlmacen()" (ngModelChange)="codigoAlmacen.set($event)" />
+      </label>
+
+      <label>
+        <span>Clasificacion</span>
+        <select class="form-select" [ngModel]="clasificacion()" (ngModelChange)="clasificacion.set($event); pageNumber.set(1)">
+          <option value="">Todas</option>
+          @for (item of clasificacionOptions; track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Dias analisis</span>
+        <input class="form-control" type="number" min="1" [ngModel]="diasAnalisis()" (ngModelChange)="diasAnalisis.set($event)" />
+      </label>
+
+      <label class="ci-autocomplete ci-autocomplete--provider">
+        <span>Proveedor</span>
+        <div class="ci-autocomplete__control">
+          <input
+            class="form-control"
+            type="search"
+            placeholder="Nombre o codigo"
+            [ngModel]="proveedorSearch()"
+            (ngModelChange)="buscarProveedores($event)"
+          />
+        </div>
+        @if (proveedores().length > 0 || proveedoresLoading()) {
+          <div class="ci-autocomplete__menu">
+            @if (proveedoresLoading()) {
+              <div class="ci-autocomplete__empty">Buscando proveedores...</div>
+            } @else {
+              @for (item of proveedores(); track item.codigo) {
+                <button type="button" (click)="seleccionarProveedor(item)">
+                  <strong>{{ item.descripcion }}</strong>
+                  <span>{{ item.codigo }} / {{ item.ruc || 'Sin RUC' }}</span>
+                </button>
+              }
+            }
+          </div>
+        }
+      </label>
+
+      <div class="ci-filter-actions ci-filter-actions--quick">
+        <button class="btn btn-sm btn-primary" type="button" [disabled]="filtrosBloqueados()" (click)="aplicarFiltros()">
+          {{ filtrosBloqueados() ? 'Espere...' : 'Buscar' }}
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar</button>
+        <button
+          class="btn btn-sm btn-outline-primary"
+          type="button"
+          [disabled]="loading()"
+          [attr.aria-expanded]="mostrarAvanzados()"
+          (click)="alternarFiltrosAvanzados()"
+        >
+          {{ mostrarAvanzados() ? 'Ocultar filtros' : 'Mas filtros' }}
+        </button>
+        <button
+          class="ci-filter-settings"
+          type="button"
+          aria-label="Configuracion tecnica"
+          [attr.aria-expanded]="mostrarTecnicos()"
+          (click)="alternarConfiguracionTecnica()"
+        >
+          <i class="feather icon-settings"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="ci-collapse" [class.ci-collapse--open]="mostrarAvanzados()">
+      <div class="ci-advanced-grid">
+        <section class="ci-filter-group">
+          <h3>Clasificacion comercial</h3>
+          <div class="ci-filter-grid ci-filter-grid--compact">
+            <label>
+              <span>Linea</span>
+              <select class="form-select" [ngModel]="lineaCodigo()" [disabled]="lineasLoading()" (ngModelChange)="seleccionarLinea($event)">
+                <option value="">{{ lineasLoading() ? 'Cargando lineas...' : 'Todas' }}</option>
+                @for (item of lineas(); track item.CAC02_CodLinea) {
+                  <option [value]="item.CAC02_CodLinea">{{ item.CAC02_LineaProdu }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              <span>Categoria</span>
+              <select class="form-select" [ngModel]="categoria()" [disabled]="!lineaCodigo() || categoriasLoading()" (ngModelChange)="categoria.set($event); pageNumber.set(1)">
+                <option value="">{{ categoriasLoading() ? 'Cargando categorias...' : 'Todas' }}</option>
+                @for (item of categorias(); track item.CAC03_CodCate) {
+                  <option [value]="item.CAC03_Categoria">{{ item.CAC03_Categoria }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="ci-technical-panel" [class.ci-technical-panel--open]="mostrarTecnicos()">
+      <div class="ci-technical-panel__inner">
+        <label>
+          <span>Pagina</span>
+          <input class="form-control" type="number" min="1" [ngModel]="pageNumber()" (ngModelChange)="pageNumber.set($event)" />
+        </label>
+
+        <label>
+          <span>Registros</span>
+          <select class="form-select" [ngModel]="pageSize()" (ngModelChange)="pageSize.set($event); pageNumber.set(1)">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <app-operational-widget title="Panel de salud de inventario" subtitle="Producto, consumo, cobertura, margen financiero y estado" [compact]="true">
+    <div class="ci-feed-summary" widget-actions>
+      <strong>{{ totalRegistros() | number: '1.0-0' }} productos</strong>
+      <span>Pagina {{ pageNumber() }} de {{ totalPaginas() }}</span>
+    </div>
+
+    <div class="ci-toolbar ci-toolbar--inline">
+      <div class="ci-feed-summary">
+        <strong>Inventario analitico</strong>
+        <span>Prioridad visual: salud, margen financiero, dias inventario y rotacion.</span>
+      </div>
+      <div class="ci-header__actions">
+        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="pageNumber() <= 1 || loading()" (click)="cambiarPagina(-1)">Anterior</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="loading() || pageNumber() >= totalPaginas()" (click)="cambiarPagina(1)">Siguiente</button>
+      </div>
+    </div>
+
+    @if (!busquedaEjecutada()) {
+      <div class="ci-empty-state">Configure los filtros y presione Buscar para consultar la salud del inventario.</div>
+    } @else if (loading()) {
+      <div class="ci-product-list">
+        @for (item of [1, 2, 3, 4, 5]; track item) {
+          <article class="ci-product-card ci-product-card--skeleton">
+            <div class="ci-skeleton ci-skeleton--title"></div>
+            <div class="ci-skeleton ci-skeleton--line"></div>
+            <div class="ci-product-card__metrics">
+              <div class="ci-skeleton"></div>
+              <div class="ci-skeleton"></div>
+              <div class="ci-skeleton"></div>
+              <div class="ci-skeleton"></div>
+              <div class="ci-skeleton"></div>
+            </div>
+          </article>
+        }
+      </div>
+    } @else if (error()) {
+      <div class="ci-empty-state">{{ error() }}</div>
+    } @else if (productosFiltrados().length > 0) {
+      <div class="ci-product-list">
+        @for (producto of productosFiltrados(); track trackByProducto($index, producto)) {
+          <article class="ci-product-card" [ngClass]="'ci-product-card--' + healthTone(producto.saludInventario)">
+            <div class="ci-product-card__head">
+              <div class="ci-product-card__title">
+                <strong>{{ producto.nomProducto || 'Producto sin nombre' }}</strong>
+                <span>{{ producto.codProducto }} · {{ producto.codAlmacen || 'Sin almacen' }}</span>
+              </div>
+
+              <div class="ci-product-card__badges">
+                <span class="ci-badge" [ngClass]="'ci-badge--' + primaryProductBadge(producto).tone">
+                  {{ primaryProductBadge(producto).label }}
+                </span>
+              </div>
+            </div>
+
+            <div class="ci-product-card__provider">
+              <span>Proveedor:</span>
+              <strong>{{ producto.nomProveedorPrincipal || 'Sin proveedor' }}</strong>
+            </div>
+
+            <div class="ci-product-card__metrics">
+              <div>
+                <span>Stock actual</span>
+                <strong>{{ producto.stockActual | number: '1.0-2' }}</strong>
+              </div>
+              <div>
+                <span>Consumido</span>
+                <strong>{{ producto.cantidadConsumida | number: '1.0-2' }}</strong>
+              </div>
+              <div>
+                <span>Consumo diario</span>
+                <strong>{{ producto.consumoPromedioDiario | number: '1.0-2' }}</strong>
+              </div>
+              <div>
+                <span>Rotacion mensual</span>
+                <strong>{{ producto.rotacionMensual | number: '1.0-2' }}</strong>
+              </div>
+              <div>
+                <span>Dias inventario</span>
+                <strong>{{ producto.diasInventario | number: '1.0-1' }}d</strong>
+              </div>
+              <div class="ci-finance" [ngClass]="'ci-finance--' + marginTone(producto.margenDiasFinanciero)">
+                <span>Margen financiero</span>
+                <strong>
+                  @if (hasNumericValue(producto.margenDiasFinanciero)) {
+                    {{ producto.margenDiasFinanciero | number: '1.0-1' }}d
+                  } @else {
+                    N/D
+                  }
+                </strong>
+              </div>
+            </div>
+
+            <div class="ci-product-card__message" [ngClass]="'ci-product-card__message--' + statusMessage(producto).tone">
+              <i class="feather" [ngClass]="statusMessage(producto).icon"></i>
+              <span>{{ statusMessage(producto).text }}</span>
+            </div>
+
+            <div class="ci-product-card__foot">
+              <span>{{ producto.categoriaProducto || 'Sin categoria' }}</span>
+              <span>{{ producto.lineaProducto || 'Sin linea' }}</span>
+              <span>
+                Credito
+                @if (hasNumericValue(producto.diasCreditoProveedor)) {
+                  {{ producto.diasCreditoProveedor | number: '1.0-0' }}d
+                } @else {
+                  N/D
+                }
+              </span>
+              <span>Analisis {{ producto.diasAnalizados | number: '1.0-0' }}d</span>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="ci-empty-state">No se encontraron productos con los filtros seleccionados</div>
+    }
+  </app-operational-widget>
+</section>

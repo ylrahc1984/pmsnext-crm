@@ -1,0 +1,11 @@
+<div class="rotation-indicator" [class.rotation-indicator--risk]="riesgo()">
+  <div class="rotation-indicator__values">
+    <span>Rotacion <strong>{{ diasRotacion() }}d</strong></span>
+    <span>Credito <strong>{{ diasCredito() }}d</strong></span>
+  </div>
+  <div class="rotation-indicator__bar">
+    <span class="rotation-indicator__bar-rotation" [style.width.%]="rotacionWidth()"></span>
+    <span class="rotation-indicator__bar-credit" [style.left.%]="creditoPosition()"></span>
+  </div>
+  <small>{{ riesgo() ? 'Riesgo financiero +' + diferencia() + ' dias' : 'Credito cubre la rotacion' }}</small>
+</div>

@@ -1,0 +1,5 @@
+<div class="erp-mini-chart">
+  @for (point of points(); track point.label) {
+    <span class="erp-mini-chart__bar" [style.height.%]="point.value" [title]="point.label + ': ' + point.value + '%'"></span>
+  }
+</div>

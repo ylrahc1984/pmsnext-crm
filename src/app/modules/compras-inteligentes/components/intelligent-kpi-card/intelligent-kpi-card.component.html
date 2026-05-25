@@ -1,0 +1,9 @@
+<article class="intelligent-kpi" [ngClass]="'intelligent-kpi--' + kpi().tone">
+  <div class="intelligent-kpi__top">
+    <span class="intelligent-kpi__icon"><i [ngClass]="kpi().icon"></i></span>
+    <span class="intelligent-kpi__trend">{{ kpi().trend }}</span>
+  </div>
+  <span class="intelligent-kpi__label">{{ kpi().label }}</span>
+  <strong>{{ kpi().value }}</strong>
+  <small>{{ kpi().subtitle }}</small>
+</article>

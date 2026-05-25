@@ -1,0 +1,57 @@
+.erp-alert-card {
+  --erp-alert-color: #0369a1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-left: 3px solid var(--erp-alert-color);
+  border-radius: var(--erp-radius-md, 10px);
+  background: #fff;
+}
+
+.erp-alert-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--erp-alert-color) 12%, white);
+  color: var(--erp-alert-color);
+  flex: 0 0 auto;
+}
+
+strong,
+small {
+  display: block;
+}
+
+strong {
+  color: var(--erp-text, #172033);
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+small {
+  margin-top: 0.15rem;
+  color: var(--erp-text-muted, #64748b);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.erp-alert-card--success {
+  --erp-alert-color: #047857;
+}
+
+.erp-alert-card--warning {
+  --erp-alert-color: #b45309;
+}
+
+.erp-alert-card--danger {
+  --erp-alert-color: #b91c1c;
+}
+
+.erp-alert-card--neutral {
+  --erp-alert-color: #475569;
+}

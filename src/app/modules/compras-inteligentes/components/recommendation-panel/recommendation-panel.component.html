@@ -1,0 +1,19 @@
+<div class="recommendation-list">
+  @for (recomendacion of recomendaciones(); track recomendacion.id) {
+    <article class="recommendation-card" [ngClass]="'recommendation-card--' + recomendacion.estado">
+      <div class="recommendation-card__top">
+        <span class="recommendation-card__icon"><i class="feather icon-cpu"></i></span>
+        <app-inventory-status-chip [estado]="recomendacion.estado" />
+      </div>
+      <h4>{{ recomendacion.titulo }}</h4>
+      <p>{{ recomendacion.problema }}</p>
+      <div class="recommendation-card__action">
+        <strong>{{ recomendacion.accion }}</strong>
+        <span>{{ formatCurrency(recomendacion.impactoFinanciero) }} impacto</span>
+      </div>
+      @if (recomendacion.productoId) {
+        <a [routerLink]="['/compras-inteligentes/producto', recomendacion.productoId]">Ver analisis</a>
+      }
+    </article>
+  }
+</div>

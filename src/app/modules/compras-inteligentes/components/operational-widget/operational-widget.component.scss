@@ -1,0 +1,47 @@
+.operational-widget {
+  height: 100%;
+  border: 1px solid var(--erp-border, rgba(148, 163, 184, 0.18));
+  border-radius: var(--erp-radius-lg, 12px);
+  background: #fff;
+  box-shadow: var(--erp-shadow-sm, 0 8px 18px rgba(15, 23, 42, 0.05));
+  overflow: hidden;
+}
+
+.operational-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 48px;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(180deg, #fff, #f8fafc);
+}
+
+h3 {
+  margin: 0;
+  color: var(--erp-text, #172033);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.operational-widget__header span {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--erp-text-muted, #64748b);
+  font-size: 0.74rem;
+}
+
+.operational-widget__body {
+  padding: 0.9rem;
+}
+
+.operational-widget--compact .operational-widget__body {
+  padding: 0.65rem;
+}
+
+.operational-widget__actions {
+  display: inline-flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}

@@ -1,0 +1,13 @@
+<article class="erp-kpi-card" [ngClass]="'erp-kpi-card--' + tone()">
+  <div class="erp-kpi-card__top">
+    <span class="erp-kpi-card__icon"><i [ngClass]="icon()"></i></span>
+    @if (trend()) {
+      <span class="erp-kpi-card__trend">{{ trend() }}</span>
+    }
+  </div>
+  <span class="erp-kpi-card__label">{{ label() }}</span>
+  <strong class="erp-kpi-card__value">{{ value() }}</strong>
+  @if (hint()) {
+    <small class="erp-kpi-card__hint">{{ hint() }}</small>
+  }
+</article>

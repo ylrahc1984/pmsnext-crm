@@ -1,0 +1,37 @@
+<section class="ci-page">
+  <header class="ci-header">
+    <div>
+      <span class="ci-header__eyebrow">Flujo operativo</span>
+      <h1>Generar Pedido Inteligente</h1>
+      <p>Selecciona proveedor, revisa rotacion y aprueba cantidades sugeridas antes de generar pedido.</p>
+    </div>
+    <div class="ci-header__actions">
+      <button class="btn btn-sm btn-primary">Generar pedido</button>
+    </div>
+  </header>
+
+  <div class="ci-toolbar">
+    <select class="form-select" [ngModel]="proveedor()" (ngModelChange)="proveedor.set($event)">
+      @for (item of proveedores(); track item) {
+        <option [value]="item">{{ item === 'todos' ? 'Todos los proveedores' : item }}</option>
+      }
+    </select>
+    <strong>Total sugerido: {{ data.formatCurrency(total()) }}</strong>
+  </div>
+
+  <app-operational-widget title="Productos sugeridos" subtitle="Stock, rotacion, recomendacion y cantidad aprobada" [compact]="true">
+    <div>
+      @for (item of items(); track item.productoId) {
+        <div class="ci-order-row">
+          <div><strong>{{ item.producto }}</strong><span>{{ item.proveedor }}</span></div>
+          <div><span>Stock</span><strong>{{ item.stockActual }}</strong></div>
+          <div><span>Rotacion</span><strong>{{ item.rotacionDias }}d</strong></div>
+          <div><span>Sugerido</span><strong>{{ item.cantidadSugerida }}</strong></div>
+          <div><span>Costo</span><strong>{{ data.formatCurrency(item.costoEstimado) }}</strong></div>
+          <div><input class="form-control form-control-sm" type="number" [ngModel]="item.cantidadAprobada" /></div>
+          <app-inventory-status-chip [estado]="item.estado" />
+        </div>
+      }
+    </div>
+  </app-operational-widget>
+</section>

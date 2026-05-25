@@ -82,47 +82,47 @@ export class OportunidadService {
 
   create(payload: OportunidadFormValue): Observable<{ mensaje?: string }> {
     return this.http.post<{ mensaje?: string }>(this.apiUrl, {
-      proceso: Number(payload.proceso || 0),
-      PPV04_IdOportunidad: Number(payload.idOportunidad || 0),
-      PPV04_CodClien: payload.codCliente,
-      PPV04_Titulo: payload.titulo,
-      PPV04_Descripcion: payload.descripcion,
-      PPV04_MontoEstimado: Number(payload.montoEstimado || 0),
-      PPV04_Probabilidad: Number(payload.probabilidad || 0),
-      PPV04_Etapa: this.normalizeStage(payload.etapa),
-      PPV04_Vendedor: payload.vendedor?.trim() || '',
-      PPV04_FechaCierreEstimada: this.normalizeIsoDateTime(payload.fechaCierreEstimada),
-      PPV04_Origen: this.normalizeText(payload.origen),
-      PPV04_Prioridad: this.normalizeText(payload.prioridad),
-      PPV04_TipoCliente: this.normalizeText(payload.tipoCliente),
-      PPV04_TipNDP: this.normalizeText(payload.tipNDP),
-      PPV04_SerieNDP: this.normalizeText(payload.serieNDP),
-      PPV04_NumNDP: this.normalizeText(payload.numNDP),
-      PPV04_Operador: this.getOperador(),
-      respuesta: this.normalizeText(payload.respuesta)
+      proceso                    : Number(payload.proceso || 0),
+      PPV04_IdOportunidad        : Number(payload.idOportunidad || 0),
+      PPV04_CodClien             : payload.codCliente,
+      PPV04_Titulo               : payload.titulo,
+      PPV04_Descripcion          : payload.descripcion,
+      PPV04_MontoEstimado        : Number(payload.montoEstimado || 0),
+      PPV04_Probabilidad         : Number(payload.probabilidad || 0),
+      PPV04_Etapa                : this.normalizeStage(payload.etapa),
+      PPV04_Vendedor             : payload.vendedor?.trim() || '',
+      PPV04_FechaCierreEstimada  : this.normalizeIsoDateTime(payload.fechaCierreEstimada),
+      PPV04_Origen               : this.normalizeText(payload.origen),
+      PPV04_Prioridad            : this.normalizeText(payload.prioridad),
+      PPV04_TipoCliente          : this.normalizeText(payload.tipoCliente),
+      PPV04_TipNDP               : this.normalizeText(payload.tipNDP),
+      PPV04_SerieNDP             : this.normalizeText(payload.serieNDP),
+      PPV04_NumNDP               : this.normalizeText(payload.numNDP),
+      PPV04_Operador             : this.getOperador(),
+      respuesta                  : this.normalizeText(payload.respuesta)
     });
   }
 
   update(id: number, payload: OportunidadFormValue): Observable<{ mensaje?: string }> {
     return this.http.put<{ mensaje?: string }>(this.apiUrl, {
-      proceso: Number(payload.proceso || 1),
-      PPV04_IdOportunidad: id,
-      PPV04_CodClien: payload.codCliente,
-      PPV04_Titulo: payload.titulo,
-      PPV04_Descripcion: payload.descripcion,
-      PPV04_MontoEstimado: Number(payload.montoEstimado || 0),
-      PPV04_Probabilidad: Number(payload.probabilidad || 0),
-      PPV04_Etapa: this.normalizeStage(payload.etapa),
-      PPV04_Vendedor: payload.vendedor?.trim() || '',
-      PPV04_FechaCierreEstimada: this.normalizeIsoDateTime(payload.fechaCierreEstimada),
-      PPV04_Origen: this.normalizeText(payload.origen),
-      PPV04_Prioridad: this.normalizeText(payload.prioridad),
-      PPV04_TipoCliente: this.normalizeText(payload.tipoCliente),
-      PPV04_TipNDP: this.normalizeText(payload.tipNDP),
-      PPV04_SerieNDP: this.normalizeText(payload.serieNDP),
-      PPV04_NumNDP: this.normalizeText(payload.numNDP),
-      PPV04_Operador: this.getOperador(),
-      respuesta: this.normalizeText(payload.respuesta)
+      proceso                       : Number(payload.proceso || 1),
+      PPV04_IdOportunidad           : id,
+      PPV04_CodClien                : payload.codCliente,
+      PPV04_Titulo                  : payload.titulo,
+      PPV04_Descripcion             : payload.descripcion,
+      PPV04_MontoEstimado           : Number(payload.montoEstimado || 0),
+      PPV04_Probabilidad            : Number(payload.probabilidad || 0),
+      PPV04_Etapa                   : this.normalizeStage(payload.etapa),
+      PPV04_Vendedor                : payload.vendedor?.trim() || '',
+      PPV04_FechaCierreEstimada     : this.normalizeIsoDateTime(payload.fechaCierreEstimada),
+      PPV04_Origen                  : this.normalizeText(payload.origen),
+      PPV04_Prioridad               : this.normalizeText(payload.prioridad),
+      PPV04_TipoCliente             : this.normalizeText(payload.tipoCliente),
+      PPV04_TipNDP                  : this.normalizeText(payload.tipNDP),
+      PPV04_SerieNDP                : this.normalizeText(payload.serieNDP),
+      PPV04_NumNDP                  : this.normalizeText(payload.numNDP),
+      PPV04_Operador                : this.getOperador(),
+      respuesta                     : this.normalizeText(payload.respuesta)
     });
   }
 
@@ -157,10 +157,10 @@ export class OportunidadService {
     payload: { tipNDP: string; serieNDP: string; numNDP: string }
   ): Observable<{ mensaje?: string }> {
     return this.http.patch<{ mensaje?: string }>(`${this.apiUrl}/${id}/cotizacion`, {
-      TipNDP: this.normalizeText(payload.tipNDP),
-      SerieNDP: this.normalizeText(payload.serieNDP),
-      NumNDP: this.normalizeText(payload.numNDP),
-      Operador: this.getOperador()
+      TipNDP      : this.normalizeText(payload.tipNDP),
+      SerieNDP    : this.normalizeText(payload.serieNDP),
+      NumNDP      : this.normalizeText(payload.numNDP),
+      Operador    : this.getOperador()
     });
   }
 
@@ -177,26 +177,26 @@ export class OportunidadService {
     const numNDP = this.normalizeText(item.PPV04_NumNDP);
 
     return {
-      id: Number(item.PPV04_IdOportunidad ?? 0),
-      codCliente: this.normalizeText(item.PPV04_CodClien),
-      clienteNombre: this.normalizeText(item.ClienteNombre),
-      titulo: this.normalizeText(item.PPV04_Titulo),
-      descripcion: this.normalizeText(item.PPV04_Descripcion),
-      montoEstimado: Number(item.PPV04_MontoEstimado ?? 0),
-      probabilidad: Number(item.PPV04_Probabilidad ?? 0),
-      etapa: this.normalizeStage(item.PPV04_Etapa),
-      estado: this.normalizeText(item.PPV04_Estado || 'A') || 'A',
-      fechaCreacion: this.normalizeDateString(item.PPV04_FechaCreacion),
-      fechaCierreEstimada: this.normalizeNullableDate(item.PPV04_FechaCierreEstimada),
-      fechaCierreReal: this.normalizeNullableDate(item.PPV04_FechaCierreReal),
-      vendedor: this.normalizeText(item.PPV04_Vendedor),
-      tipNDP,
-      serieNDP,
-      numNDP,
-      origen: this.normalizeText(item.PPV04_Origen),
-      prioridad: this.normalizeText(item.PPV04_Prioridad),
-      tipoCliente: this.normalizeText(item.PPV04_TipoCliente),
-      tieneCotizacion: !!(tipNDP || serieNDP || numNDP)
+      id                      : Number(item.PPV04_IdOportunidad ?? 0),
+      codCliente              : this.normalizeText(item.PPV04_CodClien),
+      clienteNombre           : this.normalizeText(item.ClienteNombre),
+      titulo                  : this.normalizeText(item.PPV04_Titulo),
+      descripcion             : this.normalizeText(item.PPV04_Descripcion),
+      montoEstimado           : Number(item.PPV04_MontoEstimado ?? 0),
+      probabilidad            : Number(item.PPV04_Probabilidad ?? 0),
+      etapa                   : this.normalizeStage(item.PPV04_Etapa),
+      estado                  : this.normalizeText(item.PPV04_Estado || 'A') || 'A',
+      fechaCreacion           : this.normalizeDateString(item.PPV04_FechaCreacion),
+      fechaCierreEstimada     : this.normalizeNullableDate(item.PPV04_FechaCierreEstimada),
+      fechaCierreReal         : this.normalizeNullableDate(item.PPV04_FechaCierreReal),
+      vendedor                : this.normalizeText(item.PPV04_Vendedor),
+      tipNDP                  : tipNDP,
+      serieNDP                : serieNDP,
+      numNDP                  : numNDP,
+      origen                  : this.normalizeText(item.PPV04_Origen),
+      prioridad               : this.normalizeText(item.PPV04_Prioridad),
+      tipoCliente             : this.normalizeText(item.PPV04_TipoCliente),
+      tieneCotizacion         : !!(tipNDP || serieNDP || numNDP)
     };
   }
 

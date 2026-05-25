@@ -25,10 +25,13 @@ import { SelectorServiciosModalComponent } from 'src/app/finanzas/pages-factura/
 import { ModoPrecio, ServicioListaPrecioItem } from 'src/app/finanzas/services/servicios-lista-precio.service';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import {
+  OrdenPedidoCompletoDetalleItem,
+  OrdenPedidoCompletoResponse,
   OrdenPedidoCreateResponse,
   OrdenPedidoCreatePayload,
   OrdenPedidoDetalleItem,
   OrdenPedidoExoneracion,
+  OrdenPedidoExoneracionUpdate,
   OrdenPedidoPagoItem
 } from '../../interfaces/orden-pedido.interface';
 import { OrdenPedidoReturnInfo } from '../../interfaces/orden-pedido-return.interface';
@@ -51,10 +54,17 @@ type OportunidadPostCreateResult = {
 };
 
 type OrdenPedidoNavigationState = {
-  origin?: 'oportunidad-form' | 'orden-pedido-list' | string;
+  origin?: 'oportunidad-form' | 'oportunidad-detalle' | 'orden-pedido-list' | string;
   cliente?: ClienteUI;
   returnUrl?: string;
   oportunidadDraft?: unknown;
+};
+
+type DocumentoEdicionContext = {
+  tipNDP: string;
+  serieNDP: string;
+  numNDP: string;
+  estadoNDP: string;
 };
 
 @Component({
@@ -141,6 +151,8 @@ export class OrdenPedidoFormComponent implements OnInit {
   showServicioModal = false;
   modoReserva = false;
   modoOportunidad = false;
+  isEditingExistingOrder = false;
+  isLoadingExistingOrder = false;
   clienteSuggestions: ClienteUI[] = [];
   clienteBusquedaLoading = false;
   oportunidadContexto: OportunidadCotizacionContext | null = null;
@@ -155,6 +167,7 @@ export class OrdenPedidoFormComponent implements OnInit {
   private returnUrl = '';
   private shouldReturnToOpportunity = false;
   private opportunityContextKey = '';
+  private documentoEdicionContext: DocumentoEdicionContext | null = null;
 
   ngOnInit(): void {
     const navigationState = (this.router.getCurrentNavigation()?.extras.state ?? null) as OrdenPedidoNavigationState | null;
@@ -167,7 +180,10 @@ export class OrdenPedidoFormComponent implements OnInit {
     const resolvedOrigin = navOrigin || historyOrigin || queryOrigin;
     this.originComponent =
       resolvedOrigin === 'oportunidad-form' ? 'oportunidad-form' : resolvedOrigin === 'orden-pedido-list' ? 'orden-pedido-list' : null;
-    this.shouldReturnToOpportunity = resolvedOrigin === 'oportunidad-form';
+    if (resolvedOrigin === 'oportunidad-detalle') {
+      this.originComponent = 'oportunidad-detalle';
+    }
+    this.shouldReturnToOpportunity = resolvedOrigin === 'oportunidad-form' || resolvedOrigin === 'oportunidad-detalle';
     const queryReturnUrl = this.cleanText(this.route.snapshot.queryParamMap.get('returnUrl'));
     const stateReturnUrl = this.cleanText(navigationState?.returnUrl || historyState?.returnUrl);
     this.returnUrl = this.normalizeReturnUrl(stateReturnUrl || queryReturnUrl);
@@ -243,6 +259,7 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.loadPuntosVenta();
     this.loadPlanesTarifarios();
     this.loadListasPrecio();
+    this.initDocumentoFromQuery();
     this.initOportunidadFromQuery();
     this.initClienteFromQuery();
     this.recalculateTotals();
@@ -456,11 +473,13 @@ export class OrdenPedidoFormComponent implements OnInit {
     }
 
     const confirmation = await Swal.fire({
-      title: 'Confirmar guardado',
-      text: `¿Desea guardar esta ${this.form.controls.tipNDP.value === 'COT' ? 'proforma' : 'orden de pedido'}?`,
+      title: this.isEditingExistingOrder ? 'Confirmar actualización' : 'Confirmar guardado',
+      text: this.isEditingExistingOrder
+        ? `¿Desea guardar cambios en este ${this.form.controls.tipNDP.value === 'COT' ? 'documento de cotización' : 'documento de pedido'}?`
+        : `¿Desea guardar esta ${this.form.controls.tipNDP.value === 'COT' ? 'proforma' : 'orden de pedido'}?`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Sí, guardar',
+      confirmButtonText: this.isEditingExistingOrder ? 'Sí, actualizar' : 'Sí, guardar',
       cancelButtonText: 'Cancelar',
       reverseButtons: true
     });
@@ -471,10 +490,17 @@ export class OrdenPedidoFormComponent implements OnInit {
 
     const payload = this.buildPayload();
     this.isSubmitting = true;
+    const isUpdateMode = this.isEditingExistingOrder && !!this.documentoEdicionContext;
+    const request$ = isUpdateMode
+      ? this.ordenPedidoService.actualizarOrden(
+          this.documentoEdicionContext!.tipNDP,
+          this.getNumeroDocumentoForUpdate(this.documentoEdicionContext!),
+          payload
+        )
+      : this.ordenPedidoService.crearOrden(payload);
 
     console.log('Orden pedido payload', payload);
-    this.ordenPedidoService
-      .crearOrden(payload)
+    request$
       .pipe(
         switchMap((response) => {
           if (this.cleanText(response?.respuesta).toUpperCase() !== 'OK') {
@@ -493,7 +519,11 @@ export class OrdenPedidoFormComponent implements OnInit {
           const successMessage = this.buildCreateSuccessMessage(result.response, result.opportunityResult?.message);
           if (this.cleanText(result.response?.respuesta).toUpperCase() === 'OK') {
             void Swal.fire({
-              title: result.opportunityResult?.partial ? 'Cotización creada con observaciones' : 'Guardado',
+              title: result.opportunityResult?.partial
+                ? 'Cotización creada con observaciones'
+                : isUpdateMode
+                  ? 'Actualizado'
+                  : 'Guardado',
               text: successMessage,
               icon: result.opportunityResult?.partial ? 'warning' : 'success',
               confirmButtonText: 'Aceptar'
@@ -511,7 +541,7 @@ export class OrdenPedidoFormComponent implements OnInit {
           });
         },
         error: (error: Error) => {
-          this.errorMessage = error.message || 'No se pudo crear la orden.';
+          this.errorMessage = error.message || (isUpdateMode ? 'No se pudo actualizar la orden.' : 'No se pudo crear la orden.');
           void Swal.fire({
             title: 'Error',
             text: this.errorMessage,
@@ -544,6 +574,15 @@ export class OrdenPedidoFormComponent implements OnInit {
   get opportunityDocumentLabel(): string {
     const titulo = this.cleanText(this.oportunidadContexto?.titulo);
     return titulo ? `Oportunidad: ${titulo}` : 'Cotizacion generada desde CRM';
+  }
+
+  get editingDocumentLabel(): string {
+    if (!this.isEditingExistingOrder || !this.documentoEdicionContext) {
+      return '';
+    }
+
+    const { tipNDP, serieNDP, numNDP } = this.documentoEdicionContext;
+    return [tipNDP, serieNDP, numNDP].filter((value) => this.cleanText(value)).join(' ');
   }
 
   private recalculateTotals(): void {
@@ -858,8 +897,255 @@ export class OrdenPedidoFormComponent implements OnInit {
     this.recalculateTotals();
   }
 
+  private initDocumentoFromQuery(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const tipNDP = this.cleanText(params.get('tipNDP')).toUpperCase();
+    const serieNDP = this.cleanText(params.get('serieNDP'));
+    const numNDP = this.cleanText(params.get('numNDP'));
+    const mode = this.cleanText(params.get('mode')).toLowerCase();
+
+    if (!tipNDP || !serieNDP || !numNDP) {
+      return;
+    }
+
+    if (mode && mode !== 'edit' && mode !== 'view') {
+      return;
+    }
+
+    this.isEditingExistingOrder = true;
+    this.documentoEdicionContext = {
+      tipNDP,
+      serieNDP,
+      numNDP,
+      estadoNDP: 'ABI'
+    };
+
+    this.loadOrdenCompleta(this.documentoEdicionContext);
+  }
+
+  private loadOrdenCompleta(context: DocumentoEdicionContext): void {
+    this.isLoadingExistingOrder = true;
+    this.errorMessage = '';
+
+    this.ordenPedidoService
+      .getOrdenCompleta(context.tipNDP, context.serieNDP, context.numNDP)
+      .pipe(
+        finalize(() => {
+          this.isLoadingExistingOrder = false;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.applyOrdenCompleta(response);
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message || 'No se pudo cargar la orden para edición.';
+        }
+      });
+  }
+
+  private applyOrdenCompleta(response: OrdenPedidoCompletoResponse): void {
+    const encabezado = response?.encabezado;
+    if (!encabezado) {
+      this.errorMessage = 'El endpoint no devolvió encabezado del documento.';
+      return;
+    }
+
+    const tipNDP = this.cleanText(encabezado.ppV05_TipNDP).toUpperCase() || this.documentoEdicionContext?.tipNDP || 'NDP';
+    const serieNDP = this.cleanText(encabezado.ppV05_SerieNDP) || this.documentoEdicionContext?.serieNDP || '';
+    const numNDP = this.cleanText(encabezado.ppV05_NumNDP) || this.documentoEdicionContext?.numNDP || '';
+
+    this.documentoEdicionContext = {
+      tipNDP,
+      serieNDP,
+      numNDP,
+      estadoNDP: this.cleanText(encabezado.ppV05_EstDocu) || 'ABI'
+    };
+
+    this.modoOportunidad = false;
+    this.oportunidadContexto = null;
+    this.setTipoDocumentoEditable(true);
+    this.setClienteEditable(true);
+    this.setListaPrecioEditable(true);
+    this.setPlanTarifarioEditable(true);
+
+    const fecNDP = this.parseApiDateToIso(encabezado.ppV05_FecDocu) || this.form.controls.fecNDP.value;
+    const horaNDP = this.parseApiTime(encabezado.ppV05_HorDocu, encabezado.ppV05_FecDocu) || this.form.controls.horaNDP.value;
+
+    this.form.patchValue(
+      {
+        tipNDP,
+        pntVenta: this.cleanText(encabezado.ppV05_PntVenta),
+        moneda: this.cleanText(encabezado.ppV05_Moneda),
+        listaPrecio: this.cleanText(encabezado.ppV05_LPrecio),
+        fecNDP,
+        horaNDP,
+        codVendedor: this.cleanText(encabezado.ppV05_CodVendedor),
+        codCliente: this.cleanText(encabezado.ppV05_CodCliente),
+        rucCliente: this.cleanText(encabezado.ppV05_RucCliente),
+        nomCliente: this.cleanText(encabezado.ppV05_NomCliente),
+        observaciones: this.cleanText(encabezado.ppV05_Observaciones),
+        subTotal: this.round(this.toNumber(encabezado.ppV05_SubTotal)),
+        impuesto: this.round(this.toNumber(encabezado.ppV05_Impuesto)),
+        totDocu: this.round(this.toNumber(encabezado.ppV05_TotalDocu)),
+        totalPago: this.round(this.toNumber(encabezado.ppV05_TotalPago)),
+        exoneracionActiva: this.toNumber(encabezado.ppV05_Exonerado) > 0
+      },
+      { emitEvent: false }
+    );
+
+    this.clienteCorreo = this.cleanText(response?.cliente?.mpV00_Email);
+    this.clienteCodigoActividad = this.cleanText(encabezado.ppV05_CActividad);
+
+    this.detalleArray.clear();
+    (response?.detalle ?? []).forEach((item) => {
+      this.detalleArray.push(this.createDetalleGroupFromApi(item));
+    });
+
+    this.pagosArray.clear();
+    if ((response?.formasPago ?? []).length > 0) {
+      (response.formasPago ?? []).forEach((item, index) => {
+        this.pagosArray.push(this.createPagoGroupFromApi(item, index + 1, this.cleanText(encabezado.ppV05_Moneda)));
+      });
+    } else {
+      this.addPago();
+    }
+
+    if (this.detalleArray.length === 0) {
+      this.errorMessage = 'El documento no contiene líneas de detalle para editar.';
+    }
+
+    this.syncPagosFormaPago();
+    this.recalculateTotals();
+  }
+
+  private createDetalleGroupFromApi(item: OrdenPedidoCompletoDetalleItem): FormGroup {
+    const group = this.createDetalleGroup();
+
+    group.patchValue(
+      {
+        codProdu: this.cleanText(item.ppV06_CodProducto),
+        producto: this.cleanText(item.ppV06_NomProducto),
+        area: this.cleanText(item.ppV06_Categoria) || this.cleanText(item.ppV06_Linea) || 'TOURS',
+        uMedida: this.cleanText(item.ppV06_UMedida) || 'Unid',
+        lstPrecio: this.cleanText(item.ppV06_CodLstPrecio) || this.cleanText(this.form.controls.listaPrecio.value),
+        planTarifa: this.cleanText(item.ppV06_PlanTarifario) || this.cleanText(this.form.controls.planTarifario.value),
+        canProdu: this.toNumber(item.ppV06_Cantidad),
+        pUndLst: this.round(this.toNumber(item.ppV06_PUndLst)),
+        porDescu: this.round(this.toNumber(item.ppV06_PorDescu)),
+        mtoDescu: this.round(this.toNumber(item.ppV06_Descuento)),
+        totalNeto: this.round(this.toNumber(item.ppV06_TotalNeto)),
+        porImpu: this.round(this.toNumber(item.ppV06_PorImpuesto)),
+        mtoImpu: this.round(this.toNumber(item.ppV06_Impuestos)),
+        mtoTotal: this.round(this.toNumber(item.ppV06_Precio))
+      },
+      { emitEvent: false }
+    );
+
+    return group;
+  }
+
+  private createPagoGroupFromApi(item: Record<string, unknown>, orden: number, moneda: string): FormGroup {
+    const formaPago = this.readText(item, ['ppV07_FrmPago', 'frmPago']);
+    const monto = this.toNumber(this.readValue(item, ['ppV07_Monto', 'monto']));
+    const tCambio = this.toNumber(this.readValue(item, ['ppV07_TCambio', 'tCambio'])) || 1;
+
+    return this.fb.group({
+      orden: this.fb.control(orden),
+      frmPago: this.fb.control(formaPago),
+      tipo: this.fb.control(this.readText(item, ['ppV07_Tipo', 'tipo'])),
+      numTarjeta: this.fb.control(this.readText(item, ['ppV07_NumTarjeta', 'numTarjeta'])),
+      referencia: this.fb.control(this.readText(item, ['ppV07_Referencia', 'referencia'])),
+      moneda: this.fb.control(this.readText(item, ['ppV07_Moneda', 'moneda']) || moneda),
+      monto: this.fb.control(this.round(monto)),
+      montoOri: this.fb.control(this.round(this.toNumber(this.readValue(item, ['ppV07_MontoOri', 'montoOri'])) || monto)),
+      tCambio: this.fb.control(tCambio),
+      vencimiento: this.fb.control(this.normalizePagoVencimiento(this.readText(item, ['ppV07_Vencimiento', 'vencimiento']))),
+      caja: this.fb.control(this.readText(item, ['ppV07_Caja', 'caja'])),
+      turno: this.fb.control(this.readText(item, ['ppV07_Turno', 'turno']))
+    });
+  }
+
+  private readValue(source: Record<string, unknown>, keys: string[]): unknown {
+    for (const key of keys) {
+      if (source[key] !== undefined && source[key] !== null) {
+        return source[key];
+      }
+    }
+    return undefined;
+  }
+
+  private readText(source: Record<string, unknown>, keys: string[]): string {
+    return this.cleanText(this.readValue(source, keys));
+  }
+
+  private parseApiDateToIso(value: string): string {
+    const raw = this.cleanText(value);
+    if (!raw) {
+      return '';
+    }
+
+    const datePortion = raw.includes(' ') ? raw.split(' ')[0] : raw;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePortion)) {
+      return datePortion;
+    }
+
+    const slashMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(datePortion);
+    if (slashMatch) {
+      return `${slashMatch[3]}-${slashMatch[2]}-${slashMatch[1]}`;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
+
+    return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+  }
+
+  private parseApiTime(time: string, dateTime: string): string {
+    const rawTime = this.cleanText(time);
+    if (/^\d{2}:\d{2}:\d{2}$/.test(rawTime)) {
+      return rawTime.slice(0, 5);
+    }
+    if (/^\d{2}:\d{2}$/.test(rawTime)) {
+      return rawTime;
+    }
+
+    const rawDateTime = this.cleanText(dateTime);
+    const dateTimeMatch = /(\d{2}:\d{2})(:\d{2})?$/.exec(rawDateTime);
+    if (dateTimeMatch) {
+      return dateTimeMatch[1];
+    }
+
+    return this.getCurrentTime();
+  }
+
+  private normalizePagoVencimiento(value: string): string {
+    const raw = this.cleanText(value);
+    if (!raw) {
+      return this.formatDateForApi(this.form.controls.fecNDP.value);
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+      return raw;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return this.formatDateForApi(raw);
+    }
+
+    return this.formatDateForApi(this.form.controls.fecNDP.value);
+  }
+
   private initOportunidadFromQuery(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      if (this.isEditingExistingOrder) {
+        return;
+      }
+
       const routeOportunidadId = Number(this.route.snapshot.paramMap.get('id') ?? 0);
       const queryOportunidadId = Number(params.get('oportunidadId') ?? 0);
       const oportunidadId = queryOportunidadId > 0 ? queryOportunidadId : routeOportunidadId;
@@ -960,7 +1246,7 @@ export class OrdenPedidoFormComponent implements OnInit {
 
   private initClienteFromQuery(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      if (this.modoOportunidad || this.modoReserva || this.isSubmitting) {
+      if (this.isEditingExistingOrder || this.modoOportunidad || this.modoReserva || this.isSubmitting) {
         return;
       }
 
@@ -1205,12 +1491,12 @@ export class OrdenPedidoFormComponent implements OnInit {
     const referencia ='';
 
     return {
-      proceso: 1,
+      proceso: this.isEditingExistingOrder ? 0 : 1,
       detalle,
       formasPago,
-      tipNDP: this.form.controls.tipNDP.value,
-      serieNDP: '',
-      numeroNDP: '',
+      tipNDP: this.documentoEdicionContext?.tipNDP || this.form.controls.tipNDP.value,
+      serieNDP: this.documentoEdicionContext?.serieNDP || '',
+      numeroNDP: this.documentoEdicionContext?.numNDP || '',
       pntVenta: this.form.controls.pntVenta.value,
       fecNDP: this.formatDateForApi(this.form.controls.fecNDP.value),
       horaNDP: this.form.controls.horaNDP.value,
@@ -1223,7 +1509,7 @@ export class OrdenPedidoFormComponent implements OnInit {
       impuesto: this.round(this.form.controls.impuesto.value),
       totDocu: this.round(this.form.controls.totDocu.value),
       totalPago: this.round(this.form.controls.totalPago.value),
-      estadoNDP: 'ABI',
+      estadoNDP: this.documentoEdicionContext?.estadoNDP || 'ABI',
       moneda,
       tCambio,
       fecVenc,
@@ -1236,7 +1522,8 @@ export class OrdenPedidoFormComponent implements OnInit {
       cActividad: this.clienteCodigoActividad,
       pageNumber: 1,
       pageSize: 10,
-      respuesta: ''
+      respuesta: '',
+      exoneraciones: this.buildExoneracionesPayload()
     };
   }
 
@@ -1346,6 +1633,43 @@ export class OrdenPedidoFormComponent implements OnInit {
       tarifaExonerada: this.toNumber(ex.tarifaExonerada),
       montoExoneracion: this.toNumber(ex.montoExoneracion)
     };
+  }
+
+  private buildExoneracionesPayload(): OrdenPedidoExoneracionUpdate[] {
+    if (!this.form.controls.exoneracionActiva.value) {
+      return [];
+    }
+
+    const ex = this.mapExoneracion();
+    return [
+      {
+        tipoDocumentoEX1: ex.tipoDocumentoEX1,
+        tipoDocumentoOTRO: '',
+        numeroDocumento: ex.numeroDocumento,
+        articulo: '',
+        inciso: '',
+        nombreInstitucion: ex.nombreInstitucion,
+        nombreInstitucionOtros: '',
+        fechaEmisionEX: '',
+        tarifaExonerada: ex.tarifaExonerada,
+        montoExoneracion: ex.montoExoneracion
+      }
+    ];
+  }
+
+  private getNumeroDocumentoForUpdate(contexto: DocumentoEdicionContext): string {
+    const serie = this.cleanText(contexto.serieNDP);
+    const numero = this.cleanText(contexto.numNDP);
+
+    if (!numero) {
+      return serie;
+    }
+
+    if (!serie || numero.includes('-')) {
+      return numero;
+    }
+
+    return `${serie}-${numero}`;
   }
 
   private toNumber(value: unknown): number {
@@ -1458,6 +1782,10 @@ export class OrdenPedidoFormComponent implements OnInit {
   }
 
   private syncOportunidadCotizacion(response: OrdenPedidoCreateResponse): Observable<OportunidadPostCreateResult | null> {
+    if (this.isEditingExistingOrder) {
+      return of(null);
+    }
+
     if (!this.modoOportunidad || !this.oportunidadContexto) {
       return of(null);
     }
@@ -1509,7 +1837,10 @@ export class OrdenPedidoFormComponent implements OnInit {
     const serie = this.cleanText(data?.Serie);
     const numNDP = this.cleanText(data?.NumNDP);
     const identificador = [tipNDP, serie, numNDP].filter(Boolean).join(' ');
-    const baseMessage = this.cleanText(response?.mensaje) || this.cleanText(response?.respuesta) || 'La orden fue creada correctamente.';
+    const baseMessage =
+      this.cleanText(response?.mensaje) ||
+      this.cleanText(response?.respuesta) ||
+      (this.isEditingExistingOrder ? 'La orden fue actualizada correctamente.' : 'La orden fue creada correctamente.');
     const finalMessage = extraMessage ? `${baseMessage}\n${extraMessage}` : baseMessage;
 
     return identificador ? `${finalMessage}\nDocumento: ${identificador}` : finalMessage;

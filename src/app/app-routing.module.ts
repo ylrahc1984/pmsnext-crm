@@ -108,6 +108,13 @@ const routes: Routes = [
     ]
   },
   {
+    path: 'compras-inteligentes',
+    component: AdminComponent,
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    loadChildren: () => import('./modules/compras-inteligentes/compras-inteligentes.routes').then((m) => m.COMPRAS_INTELIGENTES_ROUTES)
+  },
+  {
     path: 'comercial',
     component: AdminComponent,
     canActivate: [AuthGuard],

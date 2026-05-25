@@ -1,0 +1,240 @@
+<section class="ci-page ci-page--product-analysis">
+  <header class="ci-header ci-analysis-header">
+    <div>
+      <span class="ci-header__eyebrow">Inteligencia comercial</span>
+      <h1>Analisis de Productos</h1>
+      <p>Inventario, ventas, rentabilidad y rotacion por producto.</p>
+      <div class="ci-header__meta">
+        <span><i class="feather icon-search"></i> Identifique agotados, stock negativo, baja rotacion y oportunidades de rentabilidad.</span>
+      </div>
+    </div>
+  </header>
+
+  <form class="ci-analysis-filterbar" [formGroup]="filtrosForm" (ngSubmit)="aplicarFiltros()">
+    <label>
+      <span>Producto</span>
+      <input class="form-control" type="search" placeholder="Codigo" formControlName="codigoProducto" />
+    </label>
+
+    <label>
+      <span>Linea</span>
+      <select class="form-select" formControlName="lineaCodigo" [disabled]="lineasLoading()" (change)="seleccionarLinea($any($event.target).value)">
+        <option value="">{{ lineasLoading() ? 'Cargando...' : 'Todas' }}</option>
+        @for (item of lineas(); track item.CAC02_CodLinea) {
+          <option [value]="item.CAC02_CodLinea">{{ item.CAC02_LineaProdu }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Categoria</span>
+      <select class="form-select" formControlName="categoria" [disabled]="!filtrosForm.controls.lineaCodigo.value || categoriasLoading()">
+        <option value="">{{ categoriasLoading() ? 'Cargando...' : 'Todas' }}</option>
+        @for (item of categorias(); track item.CAC03_CodCate) {
+          <option [value]="item.CAC03_Categoria">{{ item.CAC03_Categoria }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="ci-autocomplete ci-autocomplete--provider">
+      <span>Proveedor</span>
+      <div class="ci-autocomplete__control">
+        <input
+          class="form-control"
+          type="search"
+          placeholder="Nombre o codigo"
+          formControlName="proveedorSearch"
+          (input)="buscarProveedores($any($event.target).value)"
+        />
+      </div>
+      @if (proveedores().length > 0 || proveedoresLoading()) {
+        <div class="ci-autocomplete__menu">
+          @if (proveedoresLoading()) {
+            <div class="ci-autocomplete__empty">Buscando proveedores...</div>
+          } @else {
+            @for (item of proveedores(); track item.codigo) {
+              <button type="button" (click)="seleccionarProveedor(item)">
+                <strong>{{ item.descripcion }}</strong>
+                <span>{{ item.codigo }} / {{ item.ruc || 'Sin RUC' }}</span>
+              </button>
+            }
+          }
+        </div>
+      }
+    </label>
+
+    <label>
+      <span>Estado de Producto</span>
+      <select class="form-select" formControlName="estadoProducto">
+        <option value="">Todos</option>
+        @for (item of estadoProductoOptions; track item) {
+          <option [value]="item">{{ item }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Desde</span>
+      <input class="form-control" type="date" formControlName="fechaDesde" />
+    </label>
+
+    <label>
+      <span>Hasta</span>
+      <input class="form-control" type="date" formControlName="fechaHasta" />
+    </label>
+
+    <label>
+      <span>Registros</span>
+      <select class="form-select" formControlName="pageSize" (change)="cambiarPageSize()">
+        <option [ngValue]="5">5</option>
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
+        <option [ngValue]="100">100</option>
+      </select>
+    </label>
+
+    <div class="ci-analysis-filterbar__actions">
+      <button class="btn btn-sm btn-primary" type="submit" [disabled]="filtrosBloqueados()">
+        {{ filtrosBloqueados() ? 'Consultando...' : 'Buscar' }}
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar filtros</button>
+      <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="loading()" (click)="actualizar()">Actualizar</button>
+    </div>
+  </form>
+
+  <div class="ci-analysis-kpis" aria-label="Resumen de analisis de productos">
+    @for (kpi of kpiCards(); track kpi.label) {
+      <article class="ci-analysis-kpi" [ngClass]="'ci-analysis-kpi--' + kpi.tone">
+        <span><i class="feather" [ngClass]="kpi.icon"></i>{{ kpi.label }}</span>
+        <strong>{{ kpi.value }}</strong>
+        <small>{{ kpi.note }}</small>
+      </article>
+    }
+  </div>
+
+  <div class="ci-analysis-layout">
+    <app-operational-widget title="Resultados analiticos" [compact]="true">
+      <div class="ci-analysis-widget-actions" widget-actions>
+        <div class="ci-feed-summary ci-analysis-widget-summary">
+          <strong>{{ totalRegistros() | number: '1.0-0' }} registros</strong>
+          <span>Pagina {{ pageNumber() }} de {{ totalPaginas() }}</span>
+        </div>
+        <div class="ci-analysis-insights ci-analysis-insights--header" aria-label="Conclusiones de la pagina">
+          @for (insight of insights(); track insight.text) {
+            <div class="ci-analysis-insight" [ngClass]="'ci-analysis-insight--' + insight.tone">
+              <i class="feather" [ngClass]="insight.icon"></i>
+              <span>{{ insight.text }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="ci-analysis-table-toolbar">
+        <div class="ci-feed-summary">
+          <strong>Productos evaluados</strong>
+          <span>Inventario, ventas, margen y antiguedad en una lectura compacta.</span>
+        </div>
+      </div>
+
+      @if (!busquedaEjecutada()) {
+        <div class="ci-empty-state">Configure los filtros y presione Buscar para consultar el analisis de productos.</div>
+      } @else if (loading()) {
+        <div class="ci-analysis-skeleton">
+          @for (item of [1, 2, 3, 4, 5]; track item) {
+            <div class="ci-skeleton ci-skeleton--line"></div>
+          }
+        </div>
+      } @else if (error()) {
+        <div class="ci-empty-state">{{ error() }}</div>
+      } @else if (productos().length > 0) {
+        <div class="ci-analysis-table" role="table" aria-label="Matriz analitica de productos">
+          <div class="ci-analysis-table-head ci-analysis-table-head--groups" role="row" aria-hidden="true">
+            <span class="ci-analysis-sticky ci-analysis-col-product">Producto</span>
+            <span class="ci-analysis-sticky ci-analysis-col-status">Estado</span>
+            <span class="ci-analysis-group ci-analysis-group--inventory">Inventario</span>
+            <span class="ci-analysis-group ci-analysis-group--sales">Ventas</span>
+            <span class="ci-analysis-group ci-analysis-group--profit">Rentabilidad</span>
+            <span class="ci-analysis-group ci-analysis-group--rotation">Rotacion</span>
+          </div>
+          <div class="ci-analysis-table-head ci-analysis-table-head--columns" role="row" aria-hidden="true">
+            <span class="ci-analysis-sticky ci-analysis-col-product"></span>
+            <span class="ci-analysis-sticky ci-analysis-col-status"></span>
+            <span>Inicial</span>
+            <span>Actual</span>
+            <span>Entradas</span>
+            <span>Salidas</span>
+            <span>Valor</span>
+            <span>Trans</span>
+            <span>Und</span>
+            <span>Venta neta</span>
+            <span>Precio</span>
+            <span>Costo</span>
+            <span>Utilidad</span>
+            <span>Margen</span>
+            <span>Costo prom</span>
+            <span>Dias sin venta</span>
+            <span>Dias sin compra</span>
+            <span>Ultima venta</span>
+            <span>Ultima compra</span>
+          </div>
+
+          @for (producto of productos(); track trackByProducto($index, producto)) {
+            <article class="ci-analysis-row" [ngClass]="'ci-analysis-row--' + estadoTone(producto)">
+              <section class="ci-analysis-cell ci-analysis-product ci-analysis-sticky ci-analysis-col-product">
+                <strong>{{ producto.nomProducto || 'Producto sin nombre' }}</strong>
+                <span>{{ producto.codProducto }} · {{ producto.codAlmacen || 'Sin almacen' }} · {{ producto.categoriaProducto || 'Sin categoria' }}</span>
+                <small>{{ producto.lineaProducto || 'Sin linea' }} · {{ proveedorCorto(producto) }}</small>
+              </section>
+
+              <section class="ci-analysis-cell ci-analysis-status ci-analysis-sticky ci-analysis-col-status">
+                <span class="ci-analysis-badge" [ngClass]="'ci-analysis-badge--' + estadoTone(producto)">
+                  {{ producto.estadoProducto || 'Sin estado' }}
+                </span>
+                <div class="ci-analysis-flags">
+                  @if (producto.esAgotado) {
+                    <span class="ci-analysis-flag ci-analysis-flag--danger">Agotado</span>
+                  }
+                  @if (producto.stockActual < 0) {
+                    <span class="ci-analysis-flag ci-analysis-flag--danger">Stock negativo</span>
+                  }
+                  @if (producto.cantidadTransaccionesVenta <= 0) {
+                    <span class="ci-analysis-flag ci-analysis-flag--muted">Sin ventas</span>
+                  }
+                  @if (producto.esProductoInactivo) {
+                    <span class="ci-analysis-flag ci-analysis-flag--muted">Inactivo</span>
+                  }
+                </div>
+              </section>
+
+              <span class="ci-analysis-metric" data-label="Inicial">{{ producto.stockAlInicioPeriodo | number: '1.0-0' }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--strong" data-label="Actual" [ngClass]="'ci-analysis-value--' + stockTone(producto)">{{ producto.stockActual | number: '1.0-0' }}</span>
+              <span class="ci-analysis-metric" data-label="Entradas">{{ producto.totalEntradas | number: '1.0-0' }}</span>
+              <span class="ci-analysis-metric" data-label="Salidas">{{ producto.totalSalidas | number: '1.0-0' }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--finance" data-label="Valor" [ngClass]="'ci-analysis-value--' + inventoryValueTone(producto)">{{ formatCurrency(producto.valorInventarioEstimado) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--aux" data-label="Trans">{{ producto.cantidadTransaccionesVenta | number: '1.0-0' }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--strong" data-label="Und">{{ producto.cantidadUnidadesVendidas | number: '1.0-0' }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--dominant" data-label="Venta neta">{{ formatCurrency(producto.ventaNeta) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--aux" data-label="Precio">{{ formatCurrency(producto.precioPromedio) }}</span>
+              <span class="ci-analysis-metric" data-label="Costo">{{ formatCurrency(producto.costoVentaTotal) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--dominant" data-label="Utilidad">{{ formatCurrency(producto.utilidadBrutaTotal) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--strong" data-label="Margen" [ngClass]="'ci-analysis-value--' + margenTone(producto)">{{ formatPercent(producto.margenPorcentaje) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--aux" data-label="Costo prom">{{ formatCurrency(producto.costoPromedio) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--strong" data-label="Dias S/V" [ngClass]="'ci-analysis-value--' + diasSinVentaTone(producto)">{{ formatNullableNumber(producto.diasSinVenta, 'd') }}</span>
+              <span class="ci-analysis-metric" data-label="Dias S/C">{{ formatNullableNumber(producto.diasSinCompra, 'd') }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--date" data-label="Ult Vta">{{ formatShortDate(producto.ultimaVenta) }}</span>
+              <span class="ci-analysis-metric ci-analysis-metric--date" data-label="Ult Compra">{{ formatShortDate(producto.ultimaCompra) }}</span>
+            </article>
+          }
+        </div>
+        <div class="ci-analysis-pager ci-analysis-pager--bottom">
+          <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="pageNumber() <= 1 || loading()" (click)="cambiarPagina(-1)">Anterior</button>
+          <span>Pagina {{ pageNumber() }} de {{ totalPaginas() }} - {{ totalRegistros() | number: '1.0-0' }} registros</span>
+          <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="loading() || pageNumber() >= totalPaginas()" (click)="cambiarPagina(1)">Siguiente</button>
+        </div>
+      } @else {
+        <div class="ci-empty-state">No se encontraron productos para los filtros seleccionados.</div>
+      }
+    </app-operational-widget>
+  </div>
+</section>

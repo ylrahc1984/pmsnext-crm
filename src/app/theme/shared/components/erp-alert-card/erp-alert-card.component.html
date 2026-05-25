@@ -1,0 +1,9 @@
+<article class="erp-alert-card" [ngClass]="'erp-alert-card--' + tone()">
+  <span class="erp-alert-card__icon"><i [ngClass]="icon()"></i></span>
+  <div>
+    <strong>{{ title() }}</strong>
+    @if (meta()) {
+      <small>{{ meta() }}</small>
+    }
+  </div>
+</article>

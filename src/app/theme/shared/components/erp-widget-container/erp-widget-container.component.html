@@ -1,0 +1,14 @@
+<section class="erp-widget" [class.erp-widget--compact]="compact()">
+  <header class="erp-widget__header">
+    <div>
+      <h3>{{ title() }}</h3>
+      @if (subtitle()) {
+        <span>{{ subtitle() }}</span>
+      }
+    </div>
+    <ng-content select="[widget-actions]"></ng-content>
+  </header>
+  <div class="erp-widget__body">
+    <ng-content></ng-content>
+  </div>
+</section>

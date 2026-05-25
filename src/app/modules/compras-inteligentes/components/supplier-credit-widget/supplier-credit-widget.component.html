@@ -1,0 +1,14 @@
+<section class="supplier-credit" [ngClass]="'supplier-credit--' + riesgo().estado">
+  <div class="supplier-credit__head">
+    <div>
+      <span>Riesgo financiero</span>
+      <strong>{{ riesgo().diferenciaDias > 0 ? '+' + riesgo().diferenciaDias + ' dias' : 'Cubierto' }}</strong>
+    </div>
+    <app-inventory-status-chip [estado]="riesgo().estado" />
+  </div>
+  <div class="supplier-credit__compare">
+    <div><span>Rotacion</span><strong>{{ riesgo().diasRotacion }} dias</strong></div>
+    <div><span>Credito</span><strong>{{ riesgo().diasCreditoProveedor }} dias</strong></div>
+  </div>
+  <p>{{ riesgo().mensaje }}</p>
+</section>

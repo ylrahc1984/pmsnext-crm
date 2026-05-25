@@ -1,0 +1,54 @@
+@if (producto(); as item) {
+  <section class="ci-page">
+    <header class="ci-header">
+      <div>
+        <span class="ci-header__eyebrow">{{ item.categoria }} / {{ item.proveedor }}</span>
+        <h1>{{ item.nombre }}</h1>
+        <p>Analisis completo para entender estado, rotacion, riesgo financiero y decision recomendada.</p>
+      </div>
+      <div class="ci-header__actions">
+        <a class="btn btn-sm btn-outline-light" routerLink="/compras-inteligentes/productos">Volver</a>
+        <a class="btn btn-sm btn-primary" routerLink="/compras-inteligentes/generar-pedido">Generar pedido</a>
+      </div>
+    </header>
+
+    <div class="ci-grid">
+      <main class="ci-main">
+        <div class="ci-two">
+          <app-inventory-health-card [producto]="item" />
+          <app-supplier-credit-widget [riesgo]="item.riesgoFinanciero" />
+        </div>
+
+        <app-operational-widget title="Historial compras vs ventas" subtitle="Lectura semanal del comportamiento">
+          <app-smart-table [columns]="historialColumns" [rows]="historialRows" />
+        </app-operational-widget>
+
+        <app-operational-widget title="Tendencia consumo" subtitle="Rotacion y dias de inventario">
+          <div class="ci-bars">
+            <div class="ci-bar"><span>Rotacion</span><div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="item.rotacion.diasPromedio"></span></div><strong>{{ item.rotacion.diasPromedio }}d</strong></div>
+            <div class="ci-bar"><span>Dias inventario</span><div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="item.diasInventario"></span></div><strong>{{ item.diasInventario }}d</strong></div>
+            <div class="ci-bar"><span>Credito proveedor</span><div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="item.creditoProveedorDias"></span></div><strong>{{ item.creditoProveedorDias }}d</strong></div>
+          </div>
+        </app-operational-widget>
+      </main>
+
+      <aside class="ci-side">
+        <app-operational-widget title="Recomendaciones" subtitle="Decision sugerida">
+          <app-recommendation-panel [recomendaciones]="recomendaciones()" />
+        </app-operational-widget>
+
+        <app-operational-widget title="Acciones rapidas" subtitle="Siguiente paso operativo">
+          <div class="ci-stack">
+            <button class="btn btn-outline-primary">Ver historial</button>
+            <button class="btn btn-outline-warning">Ver alertas</button>
+            <button class="btn btn-primary">Aplicar recomendacion</button>
+          </div>
+        </app-operational-widget>
+      </aside>
+    </div>
+  </section>
+} @else {
+  <section class="ci-page">
+    <div class="alert alert-warning">Producto no encontrado.</div>
+  </section>
+}

@@ -1,0 +1,15 @@
+.erp-mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 78px;
+  padding: 0.25rem 0;
+}
+
+.erp-mini-chart__bar {
+  flex: 1 1 0;
+  min-width: 8px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, #2563eb, #38bdf8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}

@@ -86,9 +86,14 @@
           </div>
 
           <div class="oportunidad-detalle-hero__actions-desktop">
-            <button type="button" class="btn oportunidad-detalle-action oportunidad-detalle-action--quote" (click)="openCotizacion()">
+            <button
+              type="button"
+              class="btn oportunidad-detalle-action oportunidad-detalle-action--quote"
+              (click)="openCotizacionDocumento()"
+              [disabled]="!current.tieneCotizacion"
+            >
               <i class="feather icon-file-text"></i>
-              <span>{{ current.tieneCotizacion ? 'Ver cotización' : 'Crear cotización' }}</span>
+              <span>Ver documento</span>
             </button>
             <button type="button" class="btn btn-outline-primary oportunidad-detalle-action" (click)="openEdit()">
               <i class="feather icon-edit-2"></i>
@@ -121,9 +126,14 @@
               <i class="feather icon-more-vertical"></i>
             </summary>
             <div class="oportunidad-detalle-hero__actions-mobile-menu">
-              <button type="button" class="btn oportunidad-detalle-action oportunidad-detalle-action--quote" (click)="openCotizacion()">
+              <button
+                type="button"
+                class="btn oportunidad-detalle-action oportunidad-detalle-action--quote"
+                (click)="openCotizacionDocumento()"
+                [disabled]="!current.tieneCotizacion"
+              >
                 <i class="feather icon-file-text"></i>
-                <span>{{ current.tieneCotizacion ? 'Ver cotización' : 'Crear cotización' }}</span>
+                <span>Ver documento</span>
               </button>
               <button type="button" class="btn btn-outline-primary oportunidad-detalle-action" (click)="openEdit()">
                 <i class="feather icon-edit-2"></i>
@@ -306,82 +316,42 @@
               <h2 class="oportunidad-detalle-card__title">Cotización</h2>
             </div>
 
-            <div class="oportunidad-detalle-quote-line" [class.oportunidad-detalle-quote-line--pending]="!current.tieneCotizacion">
-              <strong>{{ cotizacionDocumento }}</strong>
-              <span class="oportunidad-detalle-quote-line__sep">|</span>
-              <span class="oportunidad-detalle-badge" [ngClass]="current.tieneCotizacion ? 'oportunidad-detalle-badge--active' : 'oportunidad-detalle-badge--neutral'">
-                {{ current.tieneCotizacion ? 'Vinculada' : 'Pendiente' }}
-              </span>
-            </div>
-
-            <div class="oportunidad-detalle-inline-actions">
-              <button type="button" class="btn btn-outline-primary" (click)="openCotizacion()">
-                <i class="feather icon-external-link"></i>
-                <span>{{ current.tieneCotizacion ? 'Ver documento' : 'Crear cotización' }}</span>
-              </button>
-              <button type="button" class="btn btn-outline-secondary" (click)="openCotizacionSearchModal()">
-                <i class="feather icon-search"></i>
-                <span>Buscar existente</span>
-              </button>
-            </div>
-
-            <div class="oportunidad-detalle-link-form">
-              <div class="oportunidad-detalle-link-form__title">
-                <i class="feather icon-link-2"></i>
-                <span>Vincular cotización existente</span>
+            <div class="oportunidad-cotizacion-panel" [ngClass]="{ 'oportunidad-cotizacion-panel--pending': !current.tieneCotizacion }">
+              <div class="oportunidad-cotizacion-panel__status">
+                <span class="oportunidad-detalle-badge" [ngClass]="current.tieneCotizacion ? 'oportunidad-detalle-badge--active' : 'oportunidad-detalle-badge--neutral'">
+                  {{ current.tieneCotizacion ? 'Documento vinculado' : 'Sin documento vinculado' }}
+                </span>
               </div>
 
-              <div class="alert alert-danger py-2 mb-3" *ngIf="linkError">{{ linkError }}</div>
-              <div class="alert alert-success py-2 mb-3" *ngIf="linkSuccess">{{ linkSuccess }}</div>
+              <div class="oportunidad-cotizacion-panel__doc">{{ cotizacionDocumento }}</div>
 
-              <div class="oportunidad-detalle-link-grid">
+              <div class="oportunidad-cotizacion-panel__meta" *ngIf="current.tieneCotizacion; else cotizacionHint">
                 <div>
-                  <label class="oportunidad-detalle-field__label" for="tipNDP">Tipo</label>
-                  <select
-                    id="tipNDP"
-                    class="form-control oportunidad-detalle-input"
-                    [(ngModel)]="cotizacionForm.tipNDP"
-                    [disabled]="isLinkingCotizacion"
-                  >
-                    <option value="COT">COT</option>
-                    <option value="NDP">NDP</option>
-                  </select>
+                  <span class="oportunidad-detalle-field__label">Tipo</span>
+                  <strong>{{ current.tipNDP || '-' }}</strong>
                 </div>
-
                 <div>
-                  <label class="oportunidad-detalle-field__label" for="serieNDP">Serie</label>
-                  <input
-                    id="serieNDP"
-                    type="text"
-                    class="form-control oportunidad-detalle-input"
-                    [(ngModel)]="cotizacionForm.serieNDP"
-                    [disabled]="isLinkingCotizacion"
-                    placeholder="001"
-                  />
+                  <span class="oportunidad-detalle-field__label">Serie</span>
+                  <strong>{{ current.serieNDP || '-' }}</strong>
                 </div>
-
                 <div>
-                  <label class="oportunidad-detalle-field__label" for="numNDP">Número</label>
-                  <input
-                    id="numNDP"
-                    type="text"
-                    class="form-control oportunidad-detalle-input"
-                    [(ngModel)]="cotizacionForm.numNDP"
-                    [disabled]="isLinkingCotizacion"
-                    placeholder="000123"
-                  />
+                  <span class="oportunidad-detalle-field__label">Número</span>
+                  <strong>{{ current.numNDP || '-' }}</strong>
                 </div>
               </div>
+
+              <ng-template #cotizacionHint>
+                <p class="oportunidad-cotizacion-panel__hint">Esta oportunidad aún no tiene una orden o cotización vinculada.</p>
+              </ng-template>
 
               <button
                 type="button"
-                class="btn btn-primary"
-                (click)="linkCotizacion()"
-                [disabled]="isLinkingCotizacion"
+                class="btn btn-primary oportunidad-cotizacion-panel__btn"
+                (click)="openCotizacionDocumento()"
+                [disabled]="!current.tieneCotizacion"
               >
-                <span class="spinner-border spinner-border-sm me-2" *ngIf="isLinkingCotizacion"></span>
-                <i class="feather icon-link-2" *ngIf="!isLinkingCotizacion"></i>
-                <span>{{ current.tieneCotizacion ? 'Actualizar vínculo' : 'Vincular cotización' }}</span>
+                <i class="feather icon-external-link"></i>
+                <span>Ver documento</span>
               </button>
             </div>
           </section>

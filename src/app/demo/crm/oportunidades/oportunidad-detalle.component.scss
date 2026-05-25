@@ -1234,3 +1234,108 @@
     row-gap: 10px;
   }
 }
+
+/* Cotizacion panel refresh (CRM style) */
+.oportunidad-detalle-action--quote {
+  background: #e8f3ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+.oportunidad-detalle-action--quote:hover:not(:disabled) {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+.oportunidad-detalle-action--quote:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.oportunidad-cotizacion-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #dbe5ef;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.oportunidad-cotizacion-panel--pending {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.oportunidad-cotizacion-panel__status {
+  display: flex;
+  align-items: center;
+}
+
+.oportunidad-cotizacion-panel__doc {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #cfe0f5;
+  background: #eef5ff;
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.oportunidad-cotizacion-panel--pending .oportunidad-cotizacion-panel__doc {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.oportunidad-cotizacion-panel__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oportunidad-cotizacion-panel__meta > div {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.oportunidad-cotizacion-panel__meta strong {
+  color: #0f172a;
+  font-size: 0.83rem;
+}
+
+.oportunidad-cotizacion-panel__hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.oportunidad-cotizacion-panel__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.oportunidad-cotizacion-panel__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 991.98px) {
+  .oportunidad-cotizacion-panel__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .oportunidad-cotizacion-panel__meta {
+    grid-template-columns: 1fr;
+  }
+}
