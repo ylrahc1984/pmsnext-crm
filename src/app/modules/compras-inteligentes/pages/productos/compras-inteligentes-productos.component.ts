@@ -48,6 +48,7 @@ export class ComprasInteligentesProductosComponent implements OnInit {
   readonly pageNumber = signal(1);
   readonly pageSize = signal(50);
   readonly clasificacion = signal('');
+  readonly estadoRotacion = signal('');
   readonly codigoProducto = signal('');
   readonly codigoAlmacen = signal('PRINCIP');
   readonly categoria = signal('');
@@ -68,27 +69,38 @@ export class ComprasInteligentesProductosComponent implements OnInit {
 
   readonly clasificacionOptions = [
     'AGOTADO',
-    'SIN CONSUMO',
-    'SIN DATOS',
     'CRITICO',
+    'INVENTARIO INMOVIL',
+    'RIESGO',
+    'SALUDABLE',
+    'SIN CREDITO',
+    'SIN DATOS'
+  ];
+  readonly estadoRotacionOptions = [
+    'AGOTADO',
+    'SIN CONSUMO',
     'ROTACION RAPIDA',
     'ROTACION NORMAL',
     'ROTACION LENTA',
-    'SOBRE STOCK'
+    'SOBRE STOCK',
+    'SIN DATOS'
   ];
   readonly kpis = computed(() => this.metadata()?.kpIs ?? null);
   readonly productosFiltrados = computed(() => {
     const clasificacion = this.normalizeForCompare(this.clasificacion());
+    const estadoRotacion = this.normalizeForCompare(this.estadoRotacion());
     const productos = this.productos();
 
-    if (!clasificacion) {
+    if (!clasificacion && !estadoRotacion) {
       return productos;
     }
 
-    return productos.filter((producto) => this.matchesClasificacion(producto, clasificacion));
+    return productos.filter(
+      (producto) => this.matchesClasificacion(producto, clasificacion) && this.matchesEstadoRotacion(producto, estadoRotacion)
+    );
   });
   readonly totalRegistros = computed(() => {
-    if (this.normalizeText(this.clasificacion())) {
+    if (this.normalizeText(this.clasificacion()) || this.normalizeText(this.estadoRotacion())) {
       return this.productosFiltrados().length;
     }
 
@@ -204,6 +216,18 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     this.buscar();
   }
 
+  cambiarClasificacion(value: string): void {
+    this.clasificacion.set(value);
+    this.pageNumber.set(1);
+    this.buscarSiYaHayConsulta();
+  }
+
+  cambiarEstadoRotacion(value: string): void {
+    this.estadoRotacion.set(value);
+    this.pageNumber.set(1);
+    this.buscarSiYaHayConsulta();
+  }
+
   buscar(): void {
     if (this.loading()) {
       this.buscarPendiente = true;
@@ -246,6 +270,7 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     this.pageNumber.set(1);
     this.pageSize.set(50);
     this.clasificacion.set('');
+    this.estadoRotacion.set('');
     this.codigoProducto.set('');
     this.codigoAlmacen.set('PRINCIP');
     this.categoria.set('');
@@ -524,6 +549,8 @@ export class ComprasInteligentesProductosComponent implements OnInit {
       categoria: this.categoria(),
       linea: this.linea(),
       proveedor: this.resolveProveedorCodigo(),
+      saludInventario: this.clasificacion(),
+      estadoRotacion: this.estadoRotacion(),
       diasAnalisis: this.toOptionalNumber(this.diasAnalisis())
     };
   }
@@ -612,10 +639,46 @@ export class ComprasInteligentesProductosComponent implements OnInit {
   }
 
   private matchesClasificacion(producto: RotacionInventario, clasificacion: string): boolean {
-    const health = this.normalizeForCompare(this.healthLabel(producto.saludInventario));
-    const rotation = this.normalizeForCompare(this.rotationLabel(producto.estadoRotacion));
+    if (!clasificacion) {
+      return true;
+    }
 
-    return health === clasificacion || rotation === clasificacion;
+    const saludInventario = this.productoText(producto, 'saludInventario', 'SaludInventario');
+    const health = this.normalizeForCompare(saludInventario);
+    const healthLabel = this.normalizeForCompare(this.healthLabel(saludInventario));
+
+    return health === clasificacion || healthLabel === clasificacion;
+  }
+
+  private matchesEstadoRotacion(producto: RotacionInventario, estadoRotacion: string): boolean {
+    if (!estadoRotacion) {
+      return true;
+    }
+
+    const rotation = this.normalizeForCompare(this.productoText(producto, 'estadoRotacion', 'EstadoRotacion'));
+
+    return rotation === estadoRotacion;
+  }
+
+  private buscarSiYaHayConsulta(): void {
+    if (!this.busquedaEjecutada() || this.filtrosBloqueados()) {
+      return;
+    }
+
+    this.buscar();
+  }
+
+  private productoText(producto: RotacionInventario, ...keys: string[]): string {
+    const source = producto as unknown as Record<string, unknown>;
+
+    for (const key of keys) {
+      const value = source[key];
+      if (value !== null && value !== undefined) {
+        return String(value);
+      }
+    }
+
+    return '';
   }
 
   private isLikelyProveedorCodigo(value: string): boolean {
@@ -627,6 +690,8 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     return this.normalizeText(value)
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
       .toUpperCase();
   }
 

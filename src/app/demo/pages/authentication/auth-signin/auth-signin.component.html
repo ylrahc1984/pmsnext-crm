@@ -1,97 +1,129 @@
-<div class="auth-wrapper">
-  <div class="auth-content">
-    <div class="auth-bg">
-      <span class="r"></span>
-      <span class="r s"></span>
-      <span class="r s"></span>
-      <span class="r"></span>
+<main class="login-shell">
+  <section class="brand-panel" aria-label="Presentación de Next CRM">
+    <div class="brand-visual" aria-hidden="true">
+      <span class="flow flow-one"></span>
+      <span class="flow flow-two"></span>
+      <span class="node node-a"></span>
+      <span class="node node-b"></span>
+      <span class="node node-c"></span>
+      <span class="node node-d"></span>
     </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <img
-          [src]="logoSrc"
-          (error)="onLogoError()"
-          alt="Logo de la empresa"
-          class="auth-logo mb-4"
-        />
-        <div class="mb-4">
-          <i class="feather icon-unlock auth-icon"></i>
-        </div>
-        <h3 class="mb-4">Iniciar Sesión</h3>
 
-        <!-- Mensaje de Error -->
-        <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="brand-content">
+      <img [src]="logoSrc" (error)="onLogoError()" alt="Next CRM" class="brand-logo" />
+      <h1>
+        El siguiente paso
+        <span>para la gestión empresarial.</span>
+      </h1>
+
+      <p>
+        Una plataforma moderna para administrar clientes, procesos y operaciones desde un solo lugar.
+      </p>
+
+      <span class="brand-accent"></span>
+    </div>
+  </section>
+
+  <section class="login-panel" aria-label="Inicio de sesión">
+    <div class="login-workspace">
+      <div class="login-card">
+        <div class="login-heading">
+          <div class="lock-badge" aria-hidden="true">
+            <i class="feather icon-lock"></i>
+          </div>
+          <h2>Bienvenido nuevamente</h2>
+          <p>Ingrese sus credenciales para continuar</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show login-alert" role="alert">
           <i class="feather icon-alert-circle"></i>
-          <span class="ms-2">{{ errorMessage }}</span>
-          <button 
-            type="button" 
-            class="btn-close" 
-            (click)="errorMessage = ''"
-            aria-label="Close">
-          </button>
+          <span>{{ errorMessage }}</span>
+          <button type="button" class="btn-close" (click)="errorMessage = ''" aria-label="Cerrar"></button>
         </div>
 
-        <!-- Formulario de Login -->
-        <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-          <!-- Campo Usuario -->
-          <div class="input-group mb-3">
-            <input 
-              type="text" 
-              class="form-control"
-              formControlName="usuario"
-              placeholder="Usuario"
-              [class.is-invalid]="usuario?.invalid && usuario?.touched"
-              [disabled]="isLoading" />
+        <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="login-form">
+          <div class="field-group">
+            <label for="usuario">Usuario</label>
+            <div class="input-shell" [class.has-error]="usuario?.invalid && usuario?.touched">
+              <i class="feather icon-user" aria-hidden="true"></i>
+              <input
+                id="usuario"
+                type="text"
+                formControlName="usuario"
+                placeholder="Ingrese su usuario"
+                autocomplete="username"
+                [class.is-invalid]="usuario?.invalid && usuario?.touched"
+                [disabled]="isLoading"
+              />
+            </div>
             <div class="invalid-feedback" *ngIf="usuario?.invalid && usuario?.touched">
               <span *ngIf="usuario?.errors?.['required']">El usuario es requerido</span>
               <span *ngIf="usuario?.errors?.['minlength']">Mínimo 3 caracteres</span>
             </div>
           </div>
 
-          <!-- Campo Contraseña -->
-          <div class="input-group mb-4">
-            <input 
-              [type]="showPassword ? 'text' : 'password'" 
-              class="form-control"
-              formControlName="clave"
-              placeholder="Contraseña"
-              [class.is-invalid]="clave?.invalid && clave?.touched"
-              [disabled]="isLoading" />
-            <button 
-              type="button" 
-              class="btn btn-outline-secondary"
-              (click)="togglePasswordVisibility()"
-              [disabled]="isLoading"
-              tabindex="-1">
-              <i [class]="showPassword ? 'feather icon-eye-off' : 'feather icon-eye'"></i>
-            </button>
+          <div class="field-group">
+            <label for="clave">Contraseña</label>
+            <div class="input-shell" [class.has-error]="clave?.invalid && clave?.touched">
+              <i class="feather icon-shield" aria-hidden="true"></i>
+              <input
+                id="clave"
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="clave"
+                placeholder="Ingrese su contraseña"
+                autocomplete="current-password"
+                [class.is-invalid]="clave?.invalid && clave?.touched"
+                [disabled]="isLoading"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="togglePasswordVisibility()"
+                [disabled]="isLoading"
+                [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                <i [class]="showPassword ? 'feather icon-eye-off' : 'feather icon-eye'"></i>
+              </button>
+            </div>
             <div class="invalid-feedback" *ngIf="clave?.invalid && clave?.touched">
               <span *ngIf="clave?.errors?.['required']">La contraseña es requerida</span>
               <span *ngIf="clave?.errors?.['minlength']">Mínimo 3 caracteres</span>
             </div>
           </div>
 
-          <!-- Botón Login -->
-          <button 
-            type="submit" 
-            class="btn btn-primary mb-4 w-100"
-            [disabled]="isLoading">
+          <div class="form-options">
+            <label class="remember-option">
+              <input type="checkbox" [disabled]="isLoading" />
+              <span>Recordarme</span>
+            </label>
+            <a href="javascript:">¿Olvidó su contraseña?</a>
+          </div>
+
+          <button type="submit" class="login-button" [disabled]="isLoading">
             <span *ngIf="!isLoading">Iniciar Sesión</span>
-            <span *ngIf="isLoading">
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span *ngIf="isLoading" class="loading-state">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
               Cargando...
             </span>
+            <i class="feather icon-arrow-right" aria-hidden="true"></i>
           </button>
+
+          <div class="login-divider" aria-hidden="true">
+            <span></span>
+          </div>
+
+          <a href="javascript:" class="support-link">
+            <i class="feather icon-shield" aria-hidden="true"></i>
+            <span>Ayuda y Soporte</span>
+          </a>
         </form>
-        <p class="mb-2 text-muted">
-          ¿Olvidó su contraseña?
-          <a href="javascript:">Restablecer</a>
-        </p>
-        <p class="mb-0 text-muted">
-          ¿No tiene cuenta?
-          <a [routerLink]="['/register']">Registrarse</a>
-        </p>
       </div>
+
     </div>
-  </div>
-</div>
+
+    <footer class="login-footer">
+      <span>© 2026 Diria Labs. Todos los derechos reservados.</span>
+      <span>Versión 1.0.0</span>
+    </footer>
+  </section>
+</main>

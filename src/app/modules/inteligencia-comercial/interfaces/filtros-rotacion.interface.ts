@@ -12,6 +12,8 @@ export interface FiltrosRotacionInventario {
   categoria?: string;
   linea?: string;
   proveedor?: string;
+  saludInventario?: string;
+  estadoRotacion?: string;
 
   diasAnalisis?: number;
 }

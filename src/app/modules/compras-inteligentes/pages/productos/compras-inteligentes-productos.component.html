@@ -58,13 +58,18 @@
       </label>
 
       <label>
-        <span>Almacen</span>
-        <input class="form-control" type="search" [ngModel]="codigoAlmacen()" (ngModelChange)="codigoAlmacen.set($event)" />
+        <span>Estado rotacion</span>
+        <select class="form-select" [ngModel]="estadoRotacion()" (ngModelChange)="cambiarEstadoRotacion($event)">
+          <option value="">Todos</option>
+          @for (item of estadoRotacionOptions; track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
       </label>
 
       <label>
         <span>Clasificacion</span>
-        <select class="form-select" [ngModel]="clasificacion()" (ngModelChange)="clasificacion.set($event); pageNumber.set(1)">
+        <select class="form-select" [ngModel]="clasificacion()" (ngModelChange)="cambiarClasificacion($event)">
           <option value="">Todas</option>
           @for (item of clasificacionOptions; track item) {
             <option [value]="item">{{ item }}</option>
