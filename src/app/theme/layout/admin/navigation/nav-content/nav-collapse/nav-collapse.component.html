@@ -3,17 +3,27 @@
   <li
     data-username="dashboard Default Ecommerce CRM Analytics Crypto Project"
     class="nav-item pcoded-hasmenu"
-    [ngClass]="{ 'pcoded-trigger': isExpanded, active: isExpanded }"
+    [ngClass]="{ 'pcoded-trigger': isExpanded, active: isExpanded, 'nav-item--locked': item().locked }"
   >
-    <a [routerLinkActive]="['active']" href="javascript:" class="nav-link" (click)="navCollapse($event)">
+    <a
+      [routerLinkActive]="['active']"
+      href="javascript:"
+      class="nav-link"
+      [attr.aria-disabled]="item().locked ? 'true' : null"
+      [attr.aria-label]="item().locked ? item().title + ': ' + (item().lockedMessage || 'No se tiene acceso') : null"
+      [attr.title]="item().locked ? item().lockedMessage : null"
+      (click)="navCollapse($event)"
+    >
       <ng-container *ngTemplateOutlet="itemContent"></ng-container>
     </a>
-    <ng-container *ngTemplateOutlet="subMenuContent"></ng-container>
+    @if (!item().locked) {
+      <ng-container *ngTemplateOutlet="subMenuContent"></ng-container>
+    }
   </li>
   <ng-template #itemContent>
     @if (item().icon) {
       <span class="pcoded-micon">
-        <i class="{{ item().icon }}"></i>
+        <i [class]="item().locked ? 'feather icon-lock' : item().icon"></i>
       </span>
     }
     <span class="pcoded-mtext">

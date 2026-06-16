@@ -11,8 +11,20 @@
         }
       }
     </ul>
-    <div class="version">
-      <label for="version" disabled class="pe-auto">v{{ currentApplicationVersion }}</label>
+    <div class="nav-developer-card" aria-label="Informacion del sistema">
+      <div class="nav-developer-card__divider"></div>
+      <div class="nav-developer-card__company">
+        <i class="feather icon-briefcase" aria-hidden="true"></i>
+        <span>{{ companyName() }}</span>
+      </div>
+      <div class="nav-developer-card__product">
+        <strong>{{ productName }}</strong>
+        <span>v{{ currentApplicationVersion }}</span>
+      </div>
+      <a class="nav-developer-card__developer" [href]="developerUrl" target="_blank" rel="noopener noreferrer">
+        <span>{{ developerName }}</span>
+        <i class="feather icon-external-link" aria-hidden="true"></i>
+      </a>
     </div>
   </div>
 </ng-scrollbar>

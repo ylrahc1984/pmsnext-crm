@@ -1,0 +1,35 @@
+.nav-item--locked {
+  > .nav-link {
+    display: flex;
+    align-items: center;
+    cursor: not-allowed;
+    opacity: 1;
+    color: rgba(148, 163, 184, 0.56) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    &:after {
+      display: none;
+    }
+
+    &:hover,
+    &:focus {
+      color: rgba(148, 163, 184, 0.7) !important;
+      background: rgba(148, 163, 184, 0.04) !important;
+    }
+  }
+
+  .pcoded-micon {
+    flex: 0 0 30px;
+    background: rgba(148, 163, 184, 0.08) !important;
+    color: rgba(148, 163, 184, 0.62) !important;
+  }
+
+  .pcoded-mtext {
+    color: inherit;
+    position: static !important;
+    top: auto !important;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}

@@ -1,10 +1,11 @@
 // angular import
-import { Component, DestroyRef, inject, output } from '@angular/core';
+import { Component, DestroyRef, computed, inject, output } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 
 // project import
+import { EmpresaContextService } from 'src/app/core/services/empresa-context.service';
 import { environment } from 'src/environments/environment';
 import { NavigationItem, NavigationItems } from '../navigation';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
@@ -20,10 +21,18 @@ import { NavItemComponent } from './nav-item/nav-item.component';
 export class NavContentComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly empresaContext = inject(EmpresaContextService);
 
   // public method
   // version
   title = 'Demo application for version numbering';
+  companyName = computed(() => {
+    const empresa = this.empresaContext.empresa();
+    return empresa?.MA04_Nombre || empresa?.MA04_RazonSocial || empresa?.MA04_Unidad || 'Empresa';
+  });
+  productName = 'PmsNext';
+  developerName = 'DiriaLabs';
+  developerUrl = 'https://dirialabs.com';
   currentApplicationVersion = environment.appVersion;
 
   navigations!: NavigationItem[];

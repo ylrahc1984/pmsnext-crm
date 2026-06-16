@@ -10,16 +10,6 @@
       </div>
     </div>
 
-    <div class="erp-ops-header__actions">
-      <button class="btn btn-sm btn-outline-primary" routerLink="/crm/pipeline">
-        <i class="feather icon-git-branch"></i>
-        Pipeline
-      </button>
-      <button class="btn btn-sm btn-primary" routerLink="/demo/ordenes-pedido" [queryParams]="{ tipOrden: 'COT' }">
-        <i class="feather icon-file-text"></i>
-        Cotizar
-      </button>
-    </div>
   </header>
 
   <div class="erp-kpi-grid">
@@ -136,38 +126,7 @@
         <app-erp-data-table [columns]="tableColumns" [rows]="operationalRows" />
       </app-erp-widget-container>
 
-      <app-erp-widget-container title="Accesos rapidos" subtitle="Acciones frecuentes" [compact]="true">
-        <div class="quick-actions">
-          <button class="quick-action quick-action--emerald" routerLink="/crm/contactos">
-            <span class="quick-action__icon"><i class="feather icon-users"></i></span>
-            <span class="quick-action__content">
-              <span class="quick-action__label">Clientes</span>
-              <span class="quick-action__hint">Catalogo y datos</span>
-            </span>
-          </button>
-          <button class="quick-action quick-action--primary" routerLink="/crm/oportunidades">
-            <span class="quick-action__icon"><i class="feather icon-briefcase"></i></span>
-            <span class="quick-action__content">
-              <span class="quick-action__label">Oportunidades</span>
-              <span class="quick-action__hint">Gestion comercial</span>
-            </span>
-          </button>
-          <button class="quick-action quick-action--sky" routerLink="/crm/pipeline">
-            <span class="quick-action__icon"><i class="feather icon-activity"></i></span>
-            <span class="quick-action__content">
-              <span class="quick-action__label">Pipeline</span>
-              <span class="quick-action__hint">Etapas y avance</span>
-            </span>
-          </button>
-          <button class="quick-action quick-action--amber" routerLink="/demo/ordenes-pedido" [queryParams]="{ tipOrden: 'COT' }">
-            <span class="quick-action__icon"><i class="feather icon-file-text"></i></span>
-            <span class="quick-action__content">
-              <span class="quick-action__label">Cotizaciones</span>
-              <span class="quick-action__hint">Documentos</span>
-            </span>
-          </button>
-        </div>
-      </app-erp-widget-container>
+
     </aside>
   </div>
 </section>

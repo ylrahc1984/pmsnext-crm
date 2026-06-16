@@ -1,69 +1,342 @@
-<section class="ci-page">
-  <header class="ci-header">
+<section class="ci-page ci-executive-dashboard">
+  <header class="ci-header ci-executive-header">
     <div>
       <span class="ci-header__eyebrow">Compras Inteligentes</span>
-      <h1>Centro de Control de Compras</h1>
-      <div class="ci-header__meta">
-        <span><i class="feather icon-zap"></i>{{ data.productosCriticos().length }} productos criticos</span>
-        <span><i class="feather icon-dollar-sign"></i>{{ data.kpis()[1].value }} en riesgo</span>
-        <span><i class="feather icon-pause-circle"></i>{{ data.productosSinRotacion().length }} sin rotacion</span>
-        <span><i class="feather icon-alert-triangle"></i>{{ data.alertas().length }} alertas activas</span>
-      </div>
+      <h1>Dashboard Inteligencia Comercial</h1>
+      <p>Monitoreo ejecutivo de inventario, abastecimiento y riesgo financiero.</p>
     </div>
-    <div class="ci-header__actions">
-      <a class="btn btn-sm btn-outline-light" routerLink="/compras-inteligentes/alertas">Monitorear</a>
-      <a class="btn btn-sm btn-primary" routerLink="/compras-inteligentes/generar-pedido">Generar pedido</a>
+    <div class="ci-header__actions ci-executive-header__meta">
+      <span>Ultima actualizacion</span>
+      <strong>{{ ultimaActualizacion() }}</strong>
     </div>
   </header>
 
-  <div class="ci-kpi-grid">
-    @for (kpi of data.kpis(); track kpi.id) {
-      <app-intelligent-kpi-card [kpi]="kpi" />
+  @if (errorMessage()) {
+    <div class="ci-alert ci-alert--danger">
+      <i class="feather icon-alert-circle"></i>
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="loadDashboard()">Reintentar</button>
+    </div>
+  }
+
+  <section class="ci-executive-kpis" aria-label="KPIs ejecutivos">
+    @for (kpi of kpis(); track kpi.id) {
+      <article class="ci-kpi" [class]="'ci-kpi ci-kpi--' + kpi.tone" [attr.title]="kpi.tooltip">
+        <span class="ci-kpi__icon"><i [class]="kpi.icon"></i></span>
+        <div class="ci-kpi__body">
+          <strong>{{ kpi.value }}</strong>
+          <span>{{ kpi.label }}</span>
+        </div>
+        <i class="feather icon-info ci-kpi__info" aria-hidden="true"></i>
+      </article>
     }
-  </div>
+  </section>
 
-  <div class="ci-grid">
-    <main class="ci-main">
-      <app-operational-widget title="Productos criticos" subtitle="Rotacion, credito proveedor y accion inmediata" [compact]="true">
-        <a widget-actions class="btn btn-sm btn-outline-primary" routerLink="/compras-inteligentes/productos">Ver todos</a>
-        <app-product-risk-table [productos]="data.productosEnRiesgo()" />
-      </app-operational-widget>
-
-      <div class="ci-two">
-        <app-operational-widget title="Tendencia de rotacion" subtitle="Dias promedio por categoria">
-          <div class="ci-bars">
-            @for (producto of data.productos().slice(0, 5); track producto.id) {
-              <div class="ci-bar">
-                <span>{{ producto.categoria }}</span>
-                <div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="producto.rotacion.diasPromedio"></span></div>
-                <strong>{{ producto.rotacion.diasPromedio }}d</strong>
-              </div>
-            }
+  <div class="ci-dashboard-grid">
+    <main class="ci-dashboard-main">
+      <section class="ci-panel ci-panel--actions">
+        <div class="ci-panel__head">
+          <div>
+            <span>Centro de Alertas y Acciones</span>
+            <h2>Acciones Recomendadas</h2>
           </div>
-        </app-operational-widget>
+          <strong>{{ acciones().length }} acciones</strong>
+        </div>
 
-        <app-operational-widget title="Inventario por proveedor" subtitle="Capital en riesgo">
-          <div class="ci-bars">
-            @for (proveedor of data.proveedores(); track proveedor.id) {
-              <div class="ci-bar">
-                <span>{{ proveedor.nombre }}</span>
-                <div class="ci-bar__track"><span class="ci-bar__fill" [style.width.%]="proveedor.inventarioRiesgo * 8"></span></div>
-                <strong>{{ proveedor.inventarioRiesgo }}</strong>
-              </div>
-            }
-          </div>
-        </app-operational-widget>
-      </div>
+        <div class="ci-table-shell">
+          <table class="ci-data-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Proveedor</th>
+                <th>Estado</th>
+                <th>Nivel Riesgo</th>
+                <th class="ci-number">Stock Actual</th>
+                <th class="ci-number">Dias Inventario</th>
+                <th class="ci-number">Compra Sugerida</th>
+                <th class="ci-number">Monto Sugerido</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (accion of acciones(); track accion.codProducto + accion.codAlmacen) {
+                <tr>
+                  <td>
+                    <strong class="ci-table-title">{{ accion.nomProducto }}</strong>
+                    <small class="ci-table-code">{{ accion.codProducto }}</small>
+                  </td>
+                  <td>
+                    <strong class="ci-table-title">{{ accion.nomProveedorPrincipal || 'Sin proveedor' }}</strong>
+                    <small class="ci-table-code">{{ accion.codProveedorPrincipal || 'N/D' }}</small>
+                  </td>
+                  <td><span [class]="estadoBadgeClass(accion.estadoInventario)">{{ accion.estadoInventario }}</span></td>
+                  <td><span [class]="riesgoBadgeClass(accion.nivelRiesgo)">{{ accion.nivelRiesgo }}</span></td>
+                  <td class="ci-number" [class]="stockClass(accion.stockActual)">{{ formatQuantity(accion.stockActual) }}</td>
+                  <td class="ci-number">{{ formatDays(accion.diasInventario) }}</td>
+                  <td class="ci-number">{{ formatQuantity(accion.cantidadSugeridaCompra) }}</td>
+                  <td class="ci-number ci-money">{{ formatCurrency(accion.montoSugeridoCompra) }}</td>
+                  <td>
+                    <div class="ci-action-cell">
+                      <span>{{ accionRecomendadaLabel(accion) }}</span>
+                      <button type="button" class="btn btn-sm btn-outline-primary" (click)="openMotivo(accion)">Ver Motivo</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="9">
+                    <div class="ci-empty-state">No hay acciones recomendadas para los filtros actuales.</div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
-    <aside class="ci-side">
-      <app-operational-widget title="Alertas" subtitle="Feed operativo priorizado">
-        <app-inventory-alert-feed [alertas]="data.alertas().slice(0, 4)" />
-      </app-operational-widget>
+    <aside class="ci-dashboard-side">
+      <section class="ci-panel">
+        <div class="ci-panel__head">
+          <div>
+            <span>Analitica de Estado Inventario</span>
+            <h2>Distribucion por Estado</h2>
+          </div>
+        </div>
 
-      <app-operational-widget title="Recomendaciones inteligentes" subtitle="Problema, causa y accion">
-        <app-recommendation-panel [recomendaciones]="data.recomendaciones().slice(0, 3)" />
-      </app-operational-widget>
+        <div class="ci-doughnut-wrap">
+          <div class="ci-doughnut" [style.background]="doughnutBackground()">
+            <div>
+              <strong>{{ formatQuantity(totalEstados()) }}</strong>
+              <span>Productos</span>
+            </div>
+          </div>
+          <div class="ci-doughnut-legend">
+            @for (slice of estadoSlices(); track slice.estado) {
+              <span>
+                <i [style.background]="slice.color"></i>
+                {{ slice.estado }} {{ formatPercent(slice.porcentaje) }}
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="ci-table-shell ci-table-shell--compact">
+          <table class="ci-data-table ci-data-table--compact">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th class="ci-number">Cantidad</th>
+                <th class="ci-number">Valor Inventario</th>
+                <th class="ci-number">Compra Sugerida</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (estado of estados(); track estado.estadoInventario) {
+                <tr>
+                  <td><span [class]="estadoBadgeClass(estado.estadoInventario)">{{ estado.estadoInventario }}</span></td>
+                  <td class="ci-number">{{ formatQuantity(estado.cantidadProductos) }}</td>
+                  <td class="ci-number ci-money">{{ formatCurrency(estado.valorInventarioTotal) }}</td>
+                  <td class="ci-number ci-money">{{ formatCurrency(estado.compraSugeridaTotal) }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">
+                    <div class="ci-empty-state">Sin distribucion disponible.</div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
     </aside>
   </div>
+
+  <section class="ci-panel">
+    <div class="ci-panel__head ci-panel__head--with-control">
+      <div>
+        <span>Productos Criticos</span>
+        <h2>Top Productos Criticos</h2>
+      </div>
+      <label class="ci-control">
+        <span>Mostrar</span>
+        <select class="form-select form-select-sm" [value]="filtros().topProductosCriticos" (change)="onTopProductosChange($event)">
+          @for (option of topOptions; track option) {
+            <option [value]="option">Top {{ option }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <div class="ci-table-shell">
+      <table class="ci-data-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Proveedor</th>
+            <th class="ci-number">Stock</th>
+            <th class="ci-number">Venta 30</th>
+            <th class="ci-number">Venta 60</th>
+            <th class="ci-number">Venta 90</th>
+            <th class="ci-number">Venta Promedio</th>
+            <th class="ci-number">Dias Inventario</th>
+            <th class="ci-number">Dias Sin Venta</th>
+            <th class="ci-number">Valor Inventario</th>
+            <th class="ci-number">Compra Sugerida</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (producto of productosCriticos(); track producto.codProducto + producto.codAlmacen) {
+            <tr>
+              <td>
+                <strong class="ci-table-title">{{ producto.nomProducto }}</strong>
+                <small class="ci-table-code">{{ producto.codProducto }}</small>
+              </td>
+              <td>
+                <strong class="ci-table-title">{{ producto.nomProveedorPrincipal || 'Sin proveedor' }}</strong>
+                <small class="ci-table-code">{{ producto.codProveedorPrincipal || 'N/D' }}</small>
+              </td>
+              <td class="ci-number" [class]="stockClass(producto.stockActual)">{{ formatQuantity(producto.stockActual) }}</td>
+              <td class="ci-number">{{ formatQuantity(producto.venta30Dias) }}</td>
+              <td class="ci-number">{{ formatQuantity(producto.venta60Dias) }}</td>
+              <td class="ci-number">{{ formatQuantity(producto.venta90Dias) }}</td>
+              <td class="ci-number">{{ formatDecimal(producto.ventaPromedioDiaria, 4) }}</td>
+              <td class="ci-number" [class]="inventoryDaysClass(producto.diasInventario)">{{ formatDays(producto.diasInventario) }}</td>
+              <td class="ci-number" [class]="staleDaysClass(producto.diasSinVenta)">{{ formatDays(producto.diasSinVenta) }}</td>
+              <td class="ci-number ci-money">{{ formatCurrency(producto.valorInventario) }}</td>
+              <td class="ci-number ci-money">{{ formatCurrency(producto.montoSugeridoCompra) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="11">
+                <div class="ci-empty-state">No hay productos criticos para mostrar.</div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="ci-dual-panels">
+    <article class="ci-panel">
+      <div class="ci-panel__head">
+        <div>
+          <span>Proveedores y Riesgo</span>
+          <h2>Top Proveedores Riesgo</h2>
+        </div>
+      </div>
+
+      <div class="ci-table-shell">
+        <table class="ci-data-table ci-data-table--compact">
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th class="ci-number">Productos</th>
+              <th>Capital Riesgo</th>
+              <th class="ci-number">Criticos</th>
+              <th class="ci-number">Sin Rotacion</th>
+              <th class="ci-number">SobreStock</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (proveedor of proveedores(); track (proveedor.codProveedorPrincipal || proveedor.nomProveedorPrincipal || 'sin-proveedor')) {
+              <tr>
+                <td>
+                  <strong class="ci-table-title">{{ proveedor.nomProveedorPrincipal || 'Sin proveedor' }}</strong>
+                  <small class="ci-table-code">{{ proveedor.codProveedorPrincipal || 'N/D' }}</small>
+                </td>
+                <td class="ci-number">{{ formatQuantity(proveedor.cantidadProductos) }}</td>
+                <td>
+                  <div class="ci-risk-bar">
+                    <span [style.width.%]="proveedorBarWidth(proveedor)"></span>
+                  </div>
+                  <strong class="ci-money">{{ formatCurrency(proveedor.capitalEnRiesgo) }}</strong>
+                </td>
+                <td class="ci-number ci-value-danger">{{ formatQuantity(proveedor.productosCriticos) }}</td>
+                <td class="ci-number">{{ formatQuantity(proveedor.productosSinRotacion) }}</td>
+                <td class="ci-number">{{ formatQuantity(proveedor.productosSobreStock) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="ci-empty-state">Sin proveedores de riesgo.</div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="ci-panel">
+      <div class="ci-panel__head">
+        <div>
+          <span>Categorias</span>
+          <h2>Top Categorias</h2>
+        </div>
+      </div>
+
+      <div class="ci-table-shell">
+        <table class="ci-data-table ci-data-table--compact">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th class="ci-number">Productos</th>
+              <th class="ci-number">Dias Inventario</th>
+              <th class="ci-number">Valor Inventario</th>
+              <th class="ci-number">Criticos</th>
+              <th class="ci-number">SobreStock</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (categoria of categorias(); track (categoria.codCategoria || categoria.nomCategoria || 'sin-categoria')) {
+              <tr>
+                <td>
+                  <strong class="ci-table-title">{{ categoria.nomCategoria || 'Sin categoria' }}</strong>
+                  <small class="ci-table-code">{{ categoria.codCategoria || 'N/D' }}</small>
+                </td>
+                <td class="ci-number">{{ formatQuantity(categoria.cantidadProductos) }}</td>
+                <td class="ci-number">{{ formatDays(categoria.diasInventarioPromedio) }}</td>
+                <td class="ci-number ci-money">{{ formatCurrency(categoria.valorInventarioTotal) }}</td>
+                <td class="ci-number ci-value-danger">{{ formatQuantity(categoria.productosCriticos) }}</td>
+                <td class="ci-number">{{ formatQuantity(categoria.productosSobreStock) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="ci-empty-state">Sin categorias disponibles.</div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  @if (loading()) {
+    <div class="ci-loading">
+      <span class="spinner-border spinner-border-sm"></span>
+      <strong>Cargando inteligencia comercial...</strong>
+    </div>
+  }
+
+  @if (selectedAction(); as accion) {
+    <div class="ci-popover-backdrop" (click)="closeMotivo()">
+      <aside class="ci-motive-popover" (click)="$event.stopPropagation()">
+        <header>
+          <div>
+            <span>Motivo Analitico</span>
+            <h3>{{ accion.nomProducto }}</h3>
+          </div>
+          <button type="button" class="btn btn-sm btn-light" (click)="closeMotivo()" aria-label="Cerrar">
+            <i class="feather icon-x"></i>
+          </button>
+        </header>
+        <p>{{ accion.motivoAnalitica }}</p>
+      </aside>
+    </div>
+  }
 </section>

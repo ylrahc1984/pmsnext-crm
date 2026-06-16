@@ -11,6 +11,8 @@ export interface NavigationItem {
   external?: boolean;
   target?: boolean;
   breadcrumbs?: boolean;
+  locked?: boolean;
+  lockedMessage?: string;
 
   children?: NavigationItem[];
 }
@@ -98,6 +100,8 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Inventario',
         type: 'collapse',
         icon: 'feather icon-package',
+        locked: true,
+        lockedMessage: 'No se tiene acceso',
         children: [
           {
             id: 'inventario-productos',
@@ -130,6 +134,8 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Ventas',
         type: 'collapse',
         icon: 'feather icon-shopping-cart',
+        locked: true,
+        lockedMessage: 'No se tiene acceso',
         children: [
           {
             id: 'ventas-cotizaciones',
@@ -232,6 +238,8 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Control Financiero',
         type: 'collapse',
         icon: 'feather icon-credit-card',
+        locked: true,
+        lockedMessage: 'No se tiene acceso',
         children: [
           {
             id: 'cuentas-cobrar',
@@ -264,6 +272,8 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Reporteria',
         type: 'collapse',
         icon: 'feather icon-bar-chart-2',
+        locked: true,
+        lockedMessage: 'No se tiene acceso',
         children: [
           {
             id: 'reporte-finanzas',
