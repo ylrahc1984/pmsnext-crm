@@ -21,14 +21,12 @@ type KpiCard = { label: string; value: string; note: string; icon: string; tone:
 type InsightLine = { text: string; tone: Tone; icon: string };
 
 type ProductoAnalisisKpis = {
-  totalProductos?: number;
-  productosAgotados?: number;
-  productosStockNegativo?: number;
-  ventaNetaTotal?: number;
-  utilidadBrutaTotal?: number;
-  margenPromedio?: number;
-  valorInventarioEstimado?: number;
-  productosInactivos?: number;
+  ProductosStockNegativo?: number;
+  ProductosAgotados?: number;
+  ProductosInactivos?: number;
+  VentaNetaTotal?: number;
+  UtilidadBrutaTotal?: number;
+  ValorInventarioEstimadoTotal?: number;
 };
 
 @Component({
@@ -88,22 +86,14 @@ export class ComprasInteligentesProductosAnalisisComponent implements OnInit {
   readonly resumen = computed(() => {
     const productos = this.productos();
     const metadataKpis = (this.metadata()?.kpIs ?? {}) as ProductoAnalisisKpis;
-    const ventaNetaTotal = this.sum(productos, 'ventaNeta');
-    const utilidadBrutaTotal = this.sum(productos, 'utilidadBrutaTotal');
-    const margenValues = productos.map((item) => Number(item.margenPorcentaje)).filter((value) => Number.isFinite(value));
 
     return {
-      totalProductos: this.kpiNumber(metadataKpis.totalProductos, productos.length),
-      productosAgotados: this.kpiNumber(metadataKpis.productosAgotados, productos.filter((item) => item.esAgotado).length),
-      productosStockNegativo: this.kpiNumber(metadataKpis.productosStockNegativo, productos.filter((item) => Number(item.stockActual) < 0).length),
-      ventaNetaTotal: this.kpiNumber(metadataKpis.ventaNetaTotal, ventaNetaTotal),
-      utilidadBrutaTotal: this.kpiNumber(metadataKpis.utilidadBrutaTotal, utilidadBrutaTotal),
-      margenPromedio: this.kpiNumber(
-        metadataKpis.margenPromedio,
-        margenValues.length ? margenValues.reduce((acc, value) => acc + value, 0) / margenValues.length : 0
-      ),
-      valorInventarioEstimado: this.kpiNumber(metadataKpis.valorInventarioEstimado, this.sum(productos, 'valorInventarioEstimado')),
-      productosInactivos: this.kpiNumber(metadataKpis.productosInactivos, productos.filter((item) => item.esProductoInactivo).length),
+      productosStockNegativo: this.kpiNumber(metadataKpis.ProductosStockNegativo),
+      productosAgotados: this.kpiNumber(metadataKpis.ProductosAgotados),
+      productosInactivos: this.kpiNumber(metadataKpis.ProductosInactivos),
+      ventaNetaTotal: this.kpiNumber(metadataKpis.VentaNetaTotal),
+      utilidadBrutaTotal: this.kpiNumber(metadataKpis.UtilidadBrutaTotal),
+      valorInventarioEstimadoTotal: this.kpiNumber(metadataKpis.ValorInventarioEstimadoTotal),
       mas60SinVenta: productos.filter((item) => Number(item.diasSinVenta) > 60).length,
       margenBajo: productos.filter((item) => Number(item.margenPorcentaje) < 10).length
     };
@@ -113,14 +103,18 @@ export class ComprasInteligentesProductosAnalisisComponent implements OnInit {
     const kpis = this.resumen();
 
     return [
-      { label: 'Productos listados', value: this.formatNumber(kpis.totalProductos), note: `${this.formatNumber(this.totalRegistros())} registros`, icon: 'icon-package', tone: 'info' },
-      { label: 'Agotados', value: this.formatNumber(kpis.productosAgotados), note: 'Ruptura visible', icon: 'icon-alert-triangle', tone: 'danger-strong' },
       { label: 'Stock negativo', value: this.formatNumber(kpis.productosStockNegativo), note: 'Validar inventario', icon: 'icon-minus-circle', tone: 'danger' },
-      { label: 'Venta neta', value: this.formatCurrency(kpis.ventaNetaTotal), note: 'Pagina actual', icon: 'icon-dollar-sign', tone: 'finance' },
+      { label: 'Agotados', value: this.formatNumber(kpis.productosAgotados), note: 'Ruptura visible', icon: 'icon-alert-triangle', tone: 'danger-strong' },
+      { label: 'Inactivos', value: this.formatNumber(kpis.productosInactivos), note: 'Sin movimiento relevante', icon: 'icon-pause-circle', tone: 'muted' },
+      { label: 'Venta neta total', value: this.formatCurrency(kpis.ventaNetaTotal), note: 'Periodo consultado', icon: 'icon-dollar-sign', tone: 'finance' },
       { label: 'Utilidad bruta', value: this.formatCurrency(kpis.utilidadBrutaTotal), note: 'Contribucion', icon: 'icon-trending-up', tone: 'success' },
-      { label: 'Margen promedio', value: this.formatPercent(kpis.margenPromedio), note: this.marginLabel(kpis.margenPromedio), icon: 'icon-percent', tone: this.marginTone(kpis.margenPromedio) },
-      { label: 'Valor inventario', value: this.formatCurrency(kpis.valorInventarioEstimado), note: kpis.valorInventarioEstimado < 0 ? 'Advertencia contable' : 'Estimado', icon: 'icon-archive', tone: kpis.valorInventarioEstimado < 0 ? 'warning' : 'finance' },
-      { label: 'Inactivos', value: this.formatNumber(kpis.productosInactivos), note: 'Sin movimiento relevante', icon: 'icon-pause-circle', tone: 'muted' }
+      {
+        label: 'Valor inventario',
+        value: this.formatCurrency(kpis.valorInventarioEstimadoTotal),
+        note: kpis.valorInventarioEstimadoTotal < 0 ? 'Advertencia contable' : 'Estimado',
+        icon: 'icon-archive',
+        tone: kpis.valorInventarioEstimadoTotal < 0 ? 'warning' : 'finance'
+      }
     ];
   });
 
@@ -581,13 +575,9 @@ export class ComprasInteligentesProductosAnalisisComponent implements OnInit {
     return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
   }
 
-  private kpiNumber(value: number | null | undefined, fallback: number): number {
+  private kpiNumber(value: number | null | undefined): number {
     const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : fallback;
-  }
-
-  private sum(items: ProductoAnalisis[], key: keyof ProductoAnalisis): number {
-    return items.reduce((acc, item) => acc + (Number(item[key]) || 0), 0);
+    return Number.isFinite(numeric) ? numeric : 0;
   }
 
   private marginTone(value: number): Tone {
@@ -598,16 +588,6 @@ export class ComprasInteligentesProductosAnalisisComponent implements OnInit {
       return 'warning';
     }
     return 'success';
-  }
-
-  private marginLabel(value: number): string {
-    if (value < 10) {
-      return 'Margen bajo';
-    }
-    if (value <= 25) {
-      return 'Margen medio';
-    }
-    return 'Margen saludable';
   }
 
   private normalizeForCompare(value: string | null | undefined): string {

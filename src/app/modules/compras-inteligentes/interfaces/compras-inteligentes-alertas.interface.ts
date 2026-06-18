@@ -42,35 +42,6 @@ export interface ComprasInteligentesAlerta {
 }
 
 export interface ComprasInteligentesAlertasKpis {
-  totalAlertasCriticas?: number;
-  totalAlertasAltas?: number;
-  totalAlertasMedias?: number;
-  totalAlertasBajas?: number;
-  tiposDiferentesAlerta?: number;
-  tiposAlertaBase?: number;
-  tiposAlertaAnalitica?: number;
-  capitalTotalEnRiesgo?: number;
-  productosAgotados?: number;
-  riesgoRuptura?: number;
-  sobreStock?: number;
-  sobreStockAnalitico?: number;
-  margenesNegativos?: number;
-  altoCapitalInmovilizado?: number;
-  totalAlertasInventario?: number;
-  totalAlertasComerciales?: number;
-  totalAlertasFinancieras?: number;
-  alertasInventarioMinimo?: number;
-  alertasInventarioMaximo?: number;
-  alertasBajaRotacion?: number;
-  alertasExcesoPermanencia?: number;
-  scorePromedio?: number;
-  riesgoOperacional?: number;
-  riesgoFinanciero?: number;
-  riesgoComercial?: number;
-  riesgoMixto?: number;
-  diasAnalisis?: number;
-  fechaDesdeAnalisis?: string;
-  fechaHastaAnalisis?: string;
   TotalAlertasCriticas?: number;
   TotalAlertasAltas?: number;
   TotalAlertasMedias?: number;
@@ -79,12 +50,7 @@ export interface ComprasInteligentesAlertasKpis {
   TiposAlertaBase?: number;
   TiposAlertaAnalitica?: number;
   CapitalTotalEnRiesgo?: number;
-  ProductosAgotados?: number;
-  RiesgoRuptura?: number;
-  SobreStock?: number;
-  SobreStockAnalitico?: number;
-  MargenesNegativos?: number;
-  AltoCapitalInmovilizado?: number;
+  ScorePromedio?: number;
   TotalAlertasInventario?: number;
   TotalAlertasComerciales?: number;
   TotalAlertasFinancieras?: number;
@@ -92,11 +58,11 @@ export interface ComprasInteligentesAlertasKpis {
   AlertasInventarioMaximo?: number;
   AlertasBajaRotacion?: number;
   AlertasExcesoPermanencia?: number;
-  ScorePromedio?: number;
-  RiesgoOperacional?: number;
-  RiesgoFinanciero?: number;
-  RiesgoComercial?: number;
-  RiesgoMixto?: number;
+  ProductosAgotados?: number;
+  RiesgoRuptura?: number;
+  SobreStockAnalitico?: number;
+  MargenesNegativos?: number;
+  AltoCapitalInmovilizado?: number;
   DiasAnalisis?: number;
   FechaDesdeAnalisis?: string;
   FechaHastaAnalisis?: string;

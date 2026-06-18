@@ -146,44 +146,34 @@ export class ComprasInteligentesAlertasComponent implements OnInit {
     const kpis = this.kpis();
 
     return {
-      alertasCriticas: this.kpiNumber(kpis, 'totalAlertasCriticas', 'TotalAlertasCriticas'),
-      alertasAltas: this.kpiNumber(kpis, 'totalAlertasAltas', 'TotalAlertasAltas'),
-      alertasMedias: this.kpiNumber(kpis, 'totalAlertasMedias', 'TotalAlertasMedias'),
-      alertasBajas: this.kpiNumber(kpis, 'totalAlertasBajas', 'TotalAlertasBajas'),
-      tiposDiferentesAlerta: this.kpiNumber(kpis, 'tiposDiferentesAlerta', 'TiposDiferentesAlerta'),
-      capitalRiesgo: this.kpiNumber(kpis, 'capitalTotalEnRiesgo', 'CapitalTotalEnRiesgo'),
-      scorePromedio: this.kpiNumber(kpis, 'scorePromedio', 'ScorePromedio') || this.scorePromedioLocal(),
-      productosAgotados: this.kpiNumber(kpis, 'productosAgotados', 'ProductosAgotados'),
-      sobreStock:
-        this.kpiNumber(kpis, 'alertasInventarioMaximo', 'AlertasInventarioMaximo') +
-        this.kpiNumber(kpis, 'sobreStockAnalitico', 'SobreStockAnalitico', 'sobreStock', 'SobreStock'),
-      altoCapitalInmovilizado: this.kpiNumber(kpis, 'altoCapitalInmovilizado', 'AltoCapitalInmovilizado'),
-      riesgoOperacional:
-        this.kpiNumber(kpis, 'riesgoOperacional', 'RiesgoOperacional') ||
-        this.kpiNumber(kpis, 'totalAlertasInventario', 'TotalAlertasInventario'),
-      riesgoFinanciero:
-        this.kpiNumber(kpis, 'riesgoFinanciero', 'RiesgoFinanciero') ||
-        this.kpiNumber(kpis, 'totalAlertasFinancieras', 'TotalAlertasFinancieras'),
-      riesgoComercial:
-        this.kpiNumber(kpis, 'riesgoComercial', 'RiesgoComercial') ||
-        this.kpiNumber(kpis, 'totalAlertasComerciales', 'TotalAlertasComerciales'),
-      riesgoMixto: this.kpiNumber(kpis, 'riesgoMixto', 'RiesgoMixto')
+      alertasCriticas: this.kpiNumber(kpis, 'TotalAlertasCriticas'),
+      alertasAltas: this.kpiNumber(kpis, 'TotalAlertasAltas'),
+      alertasMedias: this.kpiNumber(kpis, 'TotalAlertasMedias'),
+      alertasBajas: this.kpiNumber(kpis, 'TotalAlertasBajas'),
+      tiposDiferentesAlerta: this.kpiNumber(kpis, 'TiposDiferentesAlerta'),
+      tiposAlertaBase: this.kpiNumber(kpis, 'TiposAlertaBase'),
+      tiposAlertaAnalitica: this.kpiNumber(kpis, 'TiposAlertaAnalitica'),
+      capitalRiesgo: this.kpiNumber(kpis, 'CapitalTotalEnRiesgo'),
+      scorePromedio: this.kpiNumber(kpis, 'ScorePromedio'),
+      riesgoOperacional: this.kpiNumber(kpis, 'TotalAlertasInventario'),
+      riesgoFinanciero: this.kpiNumber(kpis, 'TotalAlertasFinancieras'),
+      riesgoComercial: this.kpiNumber(kpis, 'TotalAlertasComerciales'),
+      alertasInventarioMinimo: this.kpiNumber(kpis, 'AlertasInventarioMinimo'),
+      sobreStock: this.kpiNumber(kpis, 'AlertasInventarioMaximo'),
+      alertasBajaRotacion: this.kpiNumber(kpis, 'AlertasBajaRotacion'),
+      alertasExcesoPermanencia: this.kpiNumber(kpis, 'AlertasExcesoPermanencia'),
+      productosAgotados: this.kpiNumber(kpis, 'ProductosAgotados'),
+      riesgoRuptura: this.kpiNumber(kpis, 'RiesgoRuptura'),
+      sobreStockAnalitico: this.kpiNumber(kpis, 'SobreStockAnalitico'),
+      margenesNegativos: this.kpiNumber(kpis, 'MargenesNegativos'),
+      altoCapitalInmovilizado: this.kpiNumber(kpis, 'AltoCapitalInmovilizado')
     };
   });
   readonly periodoAnalisis = computed(() => {
     const kpis = this.kpis();
-    const primeraAlerta = this.alertas()[0];
-    const diasAnalisis =
-      this.kpiNumber(kpis, 'diasAnalisis', 'DiasAnalisis') ||
-      this.toOptionalNumber(primeraAlerta?.diasAnalisis ?? null) ||
-      this.toOptionalNumber(this.diasAnalisis()) ||
-      0;
-    const fechaDesde =
-      this.kpiString(kpis, 'fechaDesdeAnalisis', 'FechaDesdeAnalisis') ||
-      this.normalizeText(primeraAlerta?.fechaDesdeAnalisis);
-    const fechaHasta =
-      this.kpiString(kpis, 'fechaHastaAnalisis', 'FechaHastaAnalisis') ||
-      this.normalizeText(primeraAlerta?.fechaHastaAnalisis);
+    const diasAnalisis = this.kpiNumber(kpis, 'DiasAnalisis');
+    const fechaDesde = this.kpiString(kpis, 'FechaDesdeAnalisis');
+    const fechaHasta = this.kpiString(kpis, 'FechaHastaAnalisis');
 
     return {
       diasAnalisis,
@@ -481,50 +471,28 @@ export class ComprasInteligentesAlertasComponent implements OnInit {
     return numeric && numeric > 0 ? numeric : fallback;
   }
 
-  private scorePromedioLocal(): number {
-    const alertas = this.alertas();
-    if (alertas.length === 0) {
-      return 0;
-    }
-
-    const total = alertas.reduce((acc, alerta) => acc + this.sortValue(alerta, 'scorePrioridad'), 0);
-    return Math.round(total / alertas.length);
-  }
-
   private sortValue(alerta: ComprasInteligentesAlerta, key: string): number {
     const value = alerta[key as keyof ComprasInteligentesAlerta];
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
-  private kpiNumber(kpis: ComprasInteligentesAlertasMetadata['kpIs'] | null, ...keys: Array<keyof ComprasInteligentesAlertasMetadata['kpIs']>): number {
+  private kpiNumber(kpis: ComprasInteligentesAlertasMetadata['kpIs'] | null, key: keyof ComprasInteligentesAlertasMetadata['kpIs']): number {
     if (!kpis) {
       return 0;
     }
 
-    for (const key of keys) {
-      const value = Number(kpis[key]);
-      if (Number.isFinite(value)) {
-        return value;
-      }
-    }
-
-    return 0;
+    const value = Number(kpis[key]);
+    return Number.isFinite(value) ? value : 0;
   }
 
-  private kpiString(kpis: ComprasInteligentesAlertasMetadata['kpIs'] | null, ...keys: Array<keyof ComprasInteligentesAlertasMetadata['kpIs']>): string {
+  private kpiString(kpis: ComprasInteligentesAlertasMetadata['kpIs'] | null, key: keyof ComprasInteligentesAlertasMetadata['kpIs']): string {
     if (!kpis) {
       return '';
     }
 
-    for (const key of keys) {
-      const value = kpis[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        return value.trim();
-      }
-    }
-
-    return '';
+    const value = kpis[key];
+    return typeof value === 'string' ? value.trim() : '';
   }
 
   private formatDateRange(fechaDesde: string, fechaHasta: string): string {

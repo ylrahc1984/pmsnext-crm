@@ -12,8 +12,18 @@ export interface FiltrosRotacionInventario {
   categoria?: string;
   linea?: string;
   proveedor?: string;
+
+  /**
+   * @deprecated Usar SaludInventario para el endpoint de rotacion.
+   */
   saludInventario?: string;
+
+  /**
+   * @deprecated Usar EstadoRotacion para el endpoint de rotacion.
+   */
   estadoRotacion?: string;
+  SaludInventario?: string;
+  EstadoRotacion?: string;
 
   diasAnalisis?: number;
 }

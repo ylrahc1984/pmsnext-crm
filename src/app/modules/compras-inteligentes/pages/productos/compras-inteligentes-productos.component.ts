@@ -47,7 +47,7 @@ export class ComprasInteligentesProductosComponent implements OnInit {
 
   readonly pageNumber = signal(1);
   readonly pageSize = signal(50);
-  readonly clasificacion = signal('');
+  readonly saludInventario = signal('');
   readonly estadoRotacion = signal('');
   readonly codigoProducto = signal('');
   readonly codigoAlmacen = signal('PRINCIP');
@@ -67,7 +67,7 @@ export class ComprasInteligentesProductosComponent implements OnInit {
   readonly mostrarAvanzados = signal(false);
   readonly mostrarTecnicos = signal(false);
 
-  readonly clasificacionOptions = [
+  readonly saludInventarioOptions = [
     'AGOTADO',
     'CRITICO',
     'INVENTARIO INMOVIL',
@@ -86,24 +86,8 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     'SIN DATOS'
   ];
   readonly kpis = computed(() => this.metadata()?.kpIs ?? null);
-  readonly productosFiltrados = computed(() => {
-    const clasificacion = this.normalizeForCompare(this.clasificacion());
-    const estadoRotacion = this.normalizeForCompare(this.estadoRotacion());
-    const productos = this.productos();
-
-    if (!clasificacion && !estadoRotacion) {
-      return productos;
-    }
-
-    return productos.filter(
-      (producto) => this.matchesClasificacion(producto, clasificacion) && this.matchesEstadoRotacion(producto, estadoRotacion)
-    );
-  });
+  readonly productosFiltrados = computed(() => this.productos());
   readonly totalRegistros = computed(() => {
-    if (this.normalizeText(this.clasificacion()) || this.normalizeText(this.estadoRotacion())) {
-      return this.productosFiltrados().length;
-    }
-
     return this.metadata()?.totalRegistros ?? this.productos().length;
   });
   readonly totalPaginas = computed(() => Math.max(1, this.metadata()?.totalPaginas ?? 1));
@@ -112,16 +96,15 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     const kpis = this.kpis();
 
     return {
-      saludables: this.kpiNumber(kpis, 'TotalSaludables', 'totalSaludables'),
-      riesgo: this.kpiNumber(kpis, 'TotalRiesgo', 'totalRiesgo', 'TotalEnRiesgo', 'totalEnRiesgo'),
-      criticos: this.kpiNumber(kpis, 'TotalCriticos', 'totalCriticos', 'TotalCriticosSalud', 'totalCriticosSalud'),
-      rapida: this.kpiNumber(kpis, 'TotalRotacionRapida', 'totalRotacionRapida'),
-      normal: this.kpiNumber(kpis, 'TotalRotacionNormal', 'totalRotacionNormal'),
-      lenta: this.kpiNumber(kpis, 'TotalRotacionLenta', 'totalRotacionLenta'),
-      sobreStock: this.kpiNumber(kpis, 'TotalSobreStock', 'totalSobreStock'),
-      promedioDiasInventario:
-        this.kpiOptionalNumber(kpis, 'PromedioDiasInventario', 'promedioDiasInventario') ?? this.promedioLocal('diasInventario'),
-      promedioMargenFinanciero: this.kpiOptionalNumber(kpis, 'PromedioMargenFinanciero', 'promedioMargenFinanciero')
+      saludables: this.toFiniteNumber(kpis?.TotalSaludables, 0),
+      riesgo: this.toFiniteNumber(kpis?.TotalRiesgo, 0),
+      criticos: this.toFiniteNumber(kpis?.TotalCriticos, 0),
+      rapida: this.toFiniteNumber(kpis?.TotalRotacionRapida, 0),
+      normal: this.toFiniteNumber(kpis?.TotalRotacionNormal, 0),
+      lenta: this.toFiniteNumber(kpis?.TotalRotacionLenta, 0),
+      sobreStock: this.toFiniteNumber(kpis?.TotalSobreStock, 0),
+      promedioDiasInventario: this.toFiniteNumber(kpis?.PromedioDiasInventario, 0),
+      promedioMargenFinanciero: this.toOptionalFiniteNumber(kpis?.PromedioMargenFinanciero)
     };
   });
 
@@ -216,16 +199,14 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     this.buscar();
   }
 
-  cambiarClasificacion(value: string): void {
-    this.clasificacion.set(value);
+  cambiarSaludInventario(value: string): void {
+    this.saludInventario.set(value);
     this.pageNumber.set(1);
-    this.buscarSiYaHayConsulta();
   }
 
   cambiarEstadoRotacion(value: string): void {
     this.estadoRotacion.set(value);
     this.pageNumber.set(1);
-    this.buscarSiYaHayConsulta();
   }
 
   buscar(): void {
@@ -269,7 +250,7 @@ export class ComprasInteligentesProductosComponent implements OnInit {
   limpiar(): void {
     this.pageNumber.set(1);
     this.pageSize.set(50);
-    this.clasificacion.set('');
+    this.saludInventario.set('');
     this.estadoRotacion.set('');
     this.codigoProducto.set('');
     this.codigoAlmacen.set('PRINCIP');
@@ -294,7 +275,6 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     }
 
     this.pageNumber.set(nextPage);
-    this.buscar();
   }
 
   alternarFiltrosAvanzados(): void {
@@ -549,8 +529,8 @@ export class ComprasInteligentesProductosComponent implements OnInit {
       categoria: this.categoria(),
       linea: this.linea(),
       proveedor: this.resolveProveedorCodigo(),
-      saludInventario: this.clasificacion(),
-      estadoRotacion: this.estadoRotacion(),
+      SaludInventario: this.saludInventario(),
+      EstadoRotacion: this.estadoRotacion(),
       diasAnalisis: this.toOptionalNumber(this.diasAnalisis())
     };
   }
@@ -605,80 +585,14 @@ export class ComprasInteligentesProductosComponent implements OnInit {
     return numeric && numeric > 0 ? numeric : fallback;
   }
 
-  private kpiNumber(kpis: KpisRotacionInventario | null, ...keys: string[]): number {
-    return this.kpiOptionalNumber(kpis, ...keys) ?? 0;
+  private toFiniteNumber(value: number | null | undefined, fallback: number): number {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
   }
 
-  private kpiOptionalNumber(kpis: KpisRotacionInventario | null, ...keys: string[]): number | null {
-    if (!kpis) {
-      return null;
-    }
-
-    const source = kpis as unknown as Record<string, unknown>;
-    for (const key of keys) {
-      const value = Number(source[key]);
-      if (Number.isFinite(value)) {
-        return value;
-      }
-    }
-
-    return null;
-  }
-
-  private promedioLocal(key: keyof Pick<RotacionInventario, 'diasInventario' | 'margenDiasFinanciero'>): number {
-    const values = this.productos()
-      .map((producto) => Number(producto[key]))
-      .filter((value) => Number.isFinite(value));
-
-    if (values.length === 0) {
-      return 0;
-    }
-
-    const total = values.reduce((acc, value) => acc + value, 0);
-    return total / values.length;
-  }
-
-  private matchesClasificacion(producto: RotacionInventario, clasificacion: string): boolean {
-    if (!clasificacion) {
-      return true;
-    }
-
-    const saludInventario = this.productoText(producto, 'saludInventario', 'SaludInventario');
-    const health = this.normalizeForCompare(saludInventario);
-    const healthLabel = this.normalizeForCompare(this.healthLabel(saludInventario));
-
-    return health === clasificacion || healthLabel === clasificacion;
-  }
-
-  private matchesEstadoRotacion(producto: RotacionInventario, estadoRotacion: string): boolean {
-    if (!estadoRotacion) {
-      return true;
-    }
-
-    const rotation = this.normalizeForCompare(this.productoText(producto, 'estadoRotacion', 'EstadoRotacion'));
-
-    return rotation === estadoRotacion;
-  }
-
-  private buscarSiYaHayConsulta(): void {
-    if (!this.busquedaEjecutada() || this.filtrosBloqueados()) {
-      return;
-    }
-
-    this.buscar();
-  }
-
-  private productoText(producto: RotacionInventario, ...keys: string[]): string {
-    const source = producto as unknown as Record<string, unknown>;
-
-    for (const key of keys) {
-      const value = source[key];
-      if (value !== null && value !== undefined) {
-        return String(value);
-      }
-    }
-
-    return '';
+  private toOptionalFiniteNumber(value: number | null | undefined): number | null {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 
   private isLikelyProveedorCodigo(value: string): boolean {

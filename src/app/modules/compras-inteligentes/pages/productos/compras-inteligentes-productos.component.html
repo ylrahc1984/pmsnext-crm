@@ -68,10 +68,10 @@
       </label>
 
       <label>
-        <span>Clasificacion</span>
-        <select class="form-select" [ngModel]="clasificacion()" (ngModelChange)="cambiarClasificacion($event)">
+        <span>Salud inventario</span>
+        <select class="form-select" [ngModel]="saludInventario()" (ngModelChange)="cambiarSaludInventario($event)">
           <option value="">Todas</option>
-          @for (item of clasificacionOptions; track item) {
+          @for (item of saludInventarioOptions; track item) {
             <option [value]="item">{{ item }}</option>
           }
         </select>
