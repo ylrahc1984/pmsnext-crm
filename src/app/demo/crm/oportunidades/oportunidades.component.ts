@@ -261,7 +261,7 @@ export class OportunidadesComponent implements OnInit {
 
   openCotizacion(oportunidad: OportunidadUI): void {
     if (oportunidad.tieneCotizacion) {
-      this.router.navigate(['/demo/ordenes-pedido'], {
+      this.router.navigate(['/ventas/pedidos'], {
         queryParams: {
           tipOrden: oportunidad.tipNDP || 'COT',
           nomCliente: oportunidad.clienteNombre || '',

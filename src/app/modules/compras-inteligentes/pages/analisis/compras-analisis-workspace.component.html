@@ -1,0 +1,21 @@
+<section class="ci-page">
+  <header class="ci-header">
+    <div><span class="ci-header__eyebrow">Compras Inteligentes</span><h1>Análisis de Productos</h1><p>Ventas, compras y rotación en un único espacio de decisión.</p></div>
+  </header>
+
+  <app-compras-analisis-filtros [perspectiva]="perspectiva()" [loading]="(perspectiva() === 'ventas' && ventasLoading()) || (perspectiva() === 'compras' && comprasLoading()) || (perspectiva() === 'rotacion' && rotacionLoading())" (consultar)="aplicarFiltros($event)" />
+
+  <nav class="ci-analysis-tabs" role="tablist" aria-label="Perspectiva de análisis">
+    <button type="button" role="tab" [attr.aria-selected]="perspectiva() === 'ventas'" [class.active]="perspectiva() === 'ventas'" (click)="seleccionar('ventas')">Ventas</button>
+    <button type="button" role="tab" [attr.aria-selected]="perspectiva() === 'compras'" [class.active]="perspectiva() === 'compras'" (click)="seleccionar('compras')">Compras</button>
+    <button type="button" role="tab" [attr.aria-selected]="perspectiva() === 'rotacion'" [class.active]="perspectiva() === 'rotacion'" (click)="seleccionar('rotacion')">Rotación</button>
+  </nav>
+
+  <section class="ci-analysis-content" role="tabpanel">
+    @switch (perspectiva()) {
+      @case ('ventas') { <app-ventas-analisis [filtros]="filtrosAplicados()" (loadingChange)="ventasLoading.set($event)" /> }
+      @case ('compras') { <app-compras-analisis-perspectiva [filtros]="filtrosAplicados()" (loadingChange)="comprasLoading.set($event)" /> }
+      @case ('rotacion') { <app-rotacion-analisis [filtros]="filtrosAplicados()" (loadingChange)="rotacionLoading.set($event)" /> }
+    }
+  </section>
+</section>

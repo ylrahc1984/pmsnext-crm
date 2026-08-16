@@ -204,7 +204,7 @@ export class CuentasPagarComponent implements OnInit {
       this.toast.warning('Selecciona al menos una factura pendiente para aplicar el pago.');
       return;
     }
-    this.router.navigate(['/bancos/retiros-cxp/nuevo'], {
+    this.router.navigate(['/finanzas/bancos/retiros-cxp/nuevo'], {
       state: { facturasSeleccionadas }
     });
   }

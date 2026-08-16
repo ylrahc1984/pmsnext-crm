@@ -103,7 +103,7 @@ export class OrdenPedidoListComponent implements OnInit {
   }
 
   nuevaOrden(): void {
-    void this.router.navigate(['/demo/ordenes-pedido/nuevo'], {
+    void this.router.navigate(['/ventas/pedidos/nuevo'], {
       queryParams: {
         origin: 'orden-pedido-list'
       },
@@ -266,7 +266,7 @@ export class OrdenPedidoListComponent implements OnInit {
     };
 
     return this.router.serializeUrl(
-      this.router.createUrlTree(['/demo/ordenes-pedido'], {
+      this.router.createUrlTree(['/ventas/pedidos'], {
         queryParams
       })
     );

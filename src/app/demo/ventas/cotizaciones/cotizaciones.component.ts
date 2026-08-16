@@ -79,7 +79,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   openNuevo(): void {
-    this.router.navigate(['/demo/ordenes-pedido/nuevo'], {
+    this.router.navigate(['/ventas/pedidos/nuevo'], {
       queryParams: { tipNDP: 'COT' }
     });
   }

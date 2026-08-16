@@ -414,7 +414,7 @@ export class OportunidadFormComponent implements OnInit {
       oportunidadDraft: this.buildNavigationDraft()
     };
 
-    void this.router.navigate(['/demo/ordenes-pedido/nuevo'], {
+    void this.router.navigate(['/ventas/pedidos/nuevo'], {
       queryParams,
       state
     });

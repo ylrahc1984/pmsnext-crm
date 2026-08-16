@@ -12,23 +12,23 @@ export const COMPRAS_INTELIGENTES_ROUTES: Routes = [
       import('./pages/dashboard/compras-inteligentes-dashboard.component').then((c) => c.ComprasInteligentesDashboardComponent)
   },
   {
-    path: 'productos',
+    path: 'analisis',
     loadComponent: () =>
-      import('./pages/productos/compras-inteligentes-productos.component').then((c) => c.ComprasInteligentesProductosComponent)
+      import('./pages/analisis/compras-analisis-workspace.component').then((c) => c.ComprasAnalisisWorkspaceComponent)
+  },
+  {
+    path: 'productos',
+    redirectTo: 'analisis',
+    pathMatch: 'full'
   },
   {
     path: 'productos-analisis',
-    loadComponent: () =>
-      import('./pages/productos-analisis/compras-inteligentes-productos-analisis.component').then(
-        (c) => c.ComprasInteligentesProductosAnalisisComponent
-      )
+    redirectTo: 'analisis',
+    pathMatch: 'full'
   },
   {
     path: 'producto/:id',
-    loadComponent: () =>
-      import('./pages/producto-detalle/compras-inteligentes-producto-detalle.component').then(
-        (c) => c.ComprasInteligentesProductoDetalleComponent
-      )
+    redirectTo: 'analisis'
   },
   {
     path: 'proveedores',
@@ -41,10 +41,8 @@ export const COMPRAS_INTELIGENTES_ROUTES: Routes = [
   },
   {
     path: 'recomendaciones',
-    loadComponent: () =>
-      import('./pages/recomendaciones/compras-inteligentes-recomendaciones.component').then(
-        (c) => c.ComprasInteligentesRecomendacionesComponent
-      )
+    redirectTo: 'analisis',
+    pathMatch: 'full'
   },
   {
     path: 'generar-pedido',

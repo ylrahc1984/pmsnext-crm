@@ -1,0 +1,75 @@
+<form class="ci-filter-shell" [formGroup]="form" (ngSubmit)="enviar()">
+  <div class="ci-filter-shell__heading">
+    <div><strong>Filtros de análisis</strong><span>Se conservan al cambiar de perspectiva</span></div>
+  </div>
+  <div class="ci-analysis-filter-grid">
+    <label><span>Fecha Desde *</span><input class="form-control" type="date" formControlName="fechaDesde" /></label>
+    <label><span>Fecha Hasta *</span><input class="form-control" type="date" formControlName="fechaHasta" /></label>
+    <label class="ci-provider-autocomplete">
+      <span>Proveedor *</span>
+      <input
+        class="form-control"
+        type="search"
+        formControlName="proveedorSearch"
+        placeholder="Buscar por código o nombre"
+        autocomplete="off"
+        aria-autocomplete="list"
+        [attr.aria-expanded]="proveedorMenuVisible()"
+        (focus)="mostrarProveedores()"
+        (blur)="ocultarProveedores()"
+        (keydown.escape)="ocultarProveedores()"
+      />
+      @if (proveedorMenuVisible()) {
+        <div class="ci-provider-menu" role="listbox">
+          @if (proveedoresLoading()) {
+            <div class="ci-provider-message" role="status">Buscando proveedores...</div>
+          } @else if (proveedores().length) {
+            @for (proveedor of proveedores(); track proveedor.codigo) {
+              <button type="button" role="option" (mousedown)="$event.preventDefault()" (click)="seleccionarProveedor(proveedor)">
+                <strong>{{ proveedor.descripcion }}</strong>
+                <span>{{ proveedor.codigo }} · {{ proveedor.ruc || 'Sin RUC' }}</span>
+              </button>
+            }
+          } @else {
+            <div class="ci-provider-message">No se encontraron proveedores.</div>
+          }
+        </div>
+      }
+      @if (submitted() && form.controls.codProveedor.invalid) {
+        <small class="ci-control-error">Seleccione un proveedor de la lista.</small>
+      }
+    </label>
+    <label>
+      <span>Producto</span>
+      <select class="form-select" formControlName="codProducto">
+        <option value="">Todos</option>
+        @for (producto of productos(); track producto.MAC02_CodProducto) {
+          <option [value]="producto.MAC02_CodProducto">{{ producto.MAC02_CodProducto }} - {{ producto.MAC02_NomProducto }}</option>
+        }
+      </select>
+    </label>
+    @if (showWarehouse()) {
+      <label>
+        <span>Almacén</span>
+        <select class="form-select" formControlName="almacen">
+          <option value="">Todos</option>
+          @for (almacen of almacenes(); track almacen.CAC05_CodAlmacen) {
+            <option [value]="almacen.CAC05_CodAlmacen">{{ almacen.CAC05_CodAlmacen }} - {{ almacen.CAC05_NomAlmacen }}</option>
+          }
+        </select>
+      </label>
+    }
+    <div class="ci-filter-actions">
+      <button class="btn btn-primary" type="submit" [disabled]="catalogosLoading() || loading()">{{ loading() ? 'Analizando...' : 'Analizar' }}</button>
+    </div>
+  </div>
+  @if (showHistoricalSupplier()) {
+    <details class="ci-analysis-advanced">
+      <summary>Filtros avanzados</summary>
+      <label class="ci-check ci-analysis-history"><input type="checkbox" formControlName="proveedorHistorico" /><span>Usar proveedor histórico</span></label>
+    </details>
+  }
+  @if (submitted() && (form.invalid || form.controls.fechaDesde.value > form.controls.fechaHasta.value)) {
+    <div class="ci-filter-error" role="alert">Seleccione proveedor y fechas válidas; la fecha inicial no puede superar la final.</div>
+  }
+</form>

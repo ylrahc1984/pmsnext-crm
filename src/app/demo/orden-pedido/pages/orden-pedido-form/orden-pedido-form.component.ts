@@ -343,7 +343,7 @@ export class OrdenPedidoFormComponent implements OnInit {
       return;
     }
 
-    void this.router.navigate(['/demo/ordenes-pedido']);
+    void this.router.navigate(['/ventas/pedidos']);
   }
 
   abrirModalClientes(): void {

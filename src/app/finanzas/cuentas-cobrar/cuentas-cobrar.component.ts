@@ -184,7 +184,7 @@ export class CuentasCobrarComponent implements OnInit {
       this.toast.warning('Selecciona documentos pendientes para registrar la cobranza.');
       return;
     }
-    this.router.navigate(['/bancos/depositos-cxc/nuevo'], {
+    this.router.navigate(['/finanzas/bancos/depositos-cxc/nuevo'], {
       state: {
         documentosSeleccionados,
         clienteSeleccionado: this.selectedCliente

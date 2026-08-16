@@ -227,11 +227,11 @@ export class ClienteDetalleComponent implements OnInit {
 
   openCreateQuotation(): void {
     if (!this.cliente?.codigo) {
-      this.router.navigate(['/demo/ordenes-pedido/nuevo']);
+      this.router.navigate(['/ventas/pedidos/nuevo']);
       return;
     }
 
-    this.router.navigate(['/demo/ordenes-pedido/nuevo'], {
+    this.router.navigate(['/ventas/pedidos/nuevo'], {
       queryParams: {
         tipNDP: 'COT',
         codCliente: this.cliente.codigo,
@@ -260,7 +260,7 @@ export class ClienteDetalleComponent implements OnInit {
     }
 
     if (oportunidad.tieneCotizacion) {
-      this.router.navigate(['/demo/ordenes-pedido'], {
+      this.router.navigate(['/ventas/pedidos'], {
         queryParams: {
           tipOrden: oportunidad.tipNDP || 'COT',
           nomCliente: oportunidad.clienteNombre || this.cliente?.nombre || '',
@@ -294,7 +294,7 @@ export class ClienteDetalleComponent implements OnInit {
   }
 
   openDocumento(documento: OrdenPedidoListadoItem): void {
-    this.router.navigate(['/demo/ordenes-pedido'], {
+    this.router.navigate(['/ventas/pedidos'], {
       queryParams: {
         tipOrden: documento.tipOrden || 'NDP',
         nomCliente: documento.cliente || this.cliente?.nombre || '',

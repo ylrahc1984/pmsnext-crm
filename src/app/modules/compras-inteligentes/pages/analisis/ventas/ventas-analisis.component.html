@@ -1,0 +1,38 @@
+@switch (estado()) {
+  @case ('initial') {
+    <div class="sales-state sales-state--initial"><i class="feather icon-bar-chart-2" aria-hidden="true"></i><div><strong>Analice las ventas del proveedor</strong><p>Configure los filtros y seleccione Analizar para consultar su desempeño.</p></div></div>
+  }
+  @case ('loading') {
+    <div class="sales-skeleton" role="status" aria-label="Cargando análisis de ventas">
+      <div class="skeleton skeleton--context"></div><div class="sales-skeleton-grid">@for (item of [1,2,3,4]; track item) {<div class="skeleton skeleton--kpi"></div>}</div><div class="skeleton skeleton--table"></div>
+    </div>
+  }
+  @case ('empty') {
+    <div class="sales-state"><i class="feather icon-inbox" aria-hidden="true"></i><div><strong>No se encontraron ventas</strong><p>No existen movimientos de venta para el proveedor y período seleccionados. Revise el período o los filtros aplicados.</p></div></div>
+  }
+  @case ('error') {
+    <div class="sales-state sales-state--error" role="alert"><i class="feather icon-alert-circle" aria-hidden="true"></i><div><strong>No se pudo completar el análisis</strong><p>{{ mensajeError() }}</p></div></div>
+  }
+  @case ('data') {
+    @if (contexto(); as proveedor) {
+      <section class="supplier-context">
+        <div><span class="context-eyebrow">Proveedor analizado</span><h2>{{ proveedor.proveedor }}</h2><p>Código: <strong>{{ proveedor.codProveedor }}</strong></p></div>
+        <div class="context-periods"><div><span>Período analizado</span><strong>{{ formatDate(proveedor.fechaDesde) }} — {{ formatDate(proveedor.fechaHasta) }}</strong><small>{{ proveedor.diasPeriodo }} días</small></div><div><span>Comparativo</span><strong>{{ formatDate(proveedor.fechaDesdeAnterior) }} — {{ formatDate(proveedor.fechaHastaAnterior) }}</strong><small>Período definido por el backend</small></div></div>
+      </section>
+    }
+
+    <section class="sales-kpis" aria-label="Indicadores globales de ventas">
+      <app-erp-kpi-card label="Ventas netas" [value]="formatCurrency(resumen().ventasNetas)" hint="Total vendido durante el período" icon="feather icon-dollar-sign" tone="info" />
+      <app-erp-kpi-card label="Unidades vendidas" [value]="formatNumber(resumen().unidadesVendidas)" hint="Cantidad neta del período" icon="feather icon-package" tone="info" />
+      <app-erp-kpi-card label="Margen" [value]="formatCurrency(resumen().margenNeto)" [trend]="formatPercent(resumen().margenPorcentajeGlobal)" hint="Rentabilidad del período" icon="feather icon-trending-up" tone="success" />
+      <app-erp-kpi-card label="Productos con venta" [value]="resumen().productosConVenta + ' / ' + resumen().totalProductos" [hint]="resumen().productosSinVenta + ' sin venta actual'" icon="feather icon-check-circle" [tone]="resumen().productosSinVenta ? 'warning' : 'success'" />
+    </section>
+
+    <div class="sales-insight-grid">
+      <section class="insight-card portfolio-card"><header><h3>Comportamiento del portafolio</h3><p>Clasificación comparativa del backend</p></header><div class="portfolio-statuses"><div class="portfolio-status portfolio-status--success"><span aria-hidden="true">↑</span><div><strong>CRECIENDO</strong><small>Productos con evolución positiva</small></div><b>{{ resumen().productosCreciendo }}</b></div><div class="portfolio-status portfolio-status--warning"><span aria-hidden="true">↓</span><div><strong>DISMINUYENDO</strong><small>Productos con menor desempeño</small></div><b>{{ resumen().productosDisminuyendo }}</b></div><div class="portfolio-status portfolio-status--neutral"><span aria-hidden="true">○</span><div><strong>SIN VENTA ACTUAL</strong><small>Con actividad en el comparativo</small></div><b>{{ resumen().productosSinVentaActual }}</b></div></div></section>
+      <section class="insight-card participation-card"><header><div><h3>Participación en ventas del proveedor</h3><p>{{ mostrarTodaParticipacion() ? 'Todos los productos' : 'Top 5 por participación' }}</p></div>@if (filas().length > 5) {<button type="button" (click)="alternarParticipacion()">{{ mostrarTodaParticipacion() ? 'Ver Top 5' : 'Ver todos' }}</button>}</header><div class="participation-list">@for (producto of participacion(); track producto.codProducto) {<div class="participation-item"><div><strong>{{ producto.producto }}</strong><span>{{ formatPercent(producto.participacionProveedor) }}</span></div><div class="participation-track"><i [style.width]="barWidth(producto.participacionProveedor)"></i></div></div>}</div></section>
+    </div>
+
+    <app-ventas-productos-table [filas]="filas()" />
+  }
+}

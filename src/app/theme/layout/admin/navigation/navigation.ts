@@ -19,141 +19,17 @@ export interface NavigationItem {
 
 export const NavigationItems: NavigationItem[] = [
   {
-    id: 'operacion',
-    title: 'OPERACION',
+    id: 'inicio',
+    title: 'INICIO',
     type: 'group',
     children: [
       {
-        id: 'dashboard',
-        title: 'Dashboard',
+        id: 'resumen-ejecutivo',
+        title: 'Resumen ejecutivo',
         type: 'item',
         url: '/dashboard',
-        icon: 'feather icon-grid',
+        icon: 'feather icon-home',
         classes: 'nav-item'
-      },
-      {
-        id: 'compras-inteligentes',
-        title: 'Compras Inteligentes',
-        type: 'collapse',
-        icon: 'feather icon-cpu',
-        children: [
-          {
-            id: 'compras-inteligentes-dashboard',
-            title: 'Dashboard',
-            type: 'item',
-            url: '/compras-inteligentes/dashboard',
-            icon: 'feather icon-grid',
-            classes: 'nav-item'
-          },
-          {
-            id: 'compras-inteligentes-productos',
-            title: 'Productos',
-            type: 'item',
-            url: '/compras-inteligentes/productos',
-            icon: 'feather icon-package',
-            classes: 'nav-item'
-          },
-          {
-            id: 'compras-inteligentes-productos-analisis',
-            title: 'Analisis Productos',
-            type: 'item',
-            url: '/compras-inteligentes/productos-analisis',
-            icon: 'feather icon-bar-chart-2',
-            classes: 'nav-item'
-          },
-          {
-            id: 'compras-inteligentes-proveedores',
-            title: 'Proveedores',
-            type: 'item',
-            url: '/compras-inteligentes/proveedores',
-            icon: 'feather icon-briefcase',
-            classes: 'nav-item'
-          },
-          {
-            id: 'compras-inteligentes-alertas',
-            title: 'Alertas',
-            type: 'item',
-            url: '/compras-inteligentes/alertas',
-            icon: 'feather icon-alert-triangle',
-            classes: 'nav-item'
-          },
-          {
-            id: 'compras-inteligentes-recomendaciones',
-            title: 'Recomendaciones',
-            type: 'item',
-            url: '/compras-inteligentes/recomendaciones',
-            icon: 'feather icon-cpu',
-            classes: 'nav-item'
-          },
-          {
-            id: 'compras-inteligentes-generar-pedido',
-            title: 'Generar Pedido',
-            type: 'item',
-            url: '/compras-inteligentes/generar-pedido',
-            icon: 'feather icon-shopping-cart',
-            classes: 'nav-item'
-          }
-        ]
-      },
-      {
-        id: 'inventario',
-        title: 'Inventario',
-        type: 'collapse',
-        icon: 'feather icon-package',
-        locked: true,
-        lockedMessage: 'No se tiene acceso',
-        children: [
-          {
-            id: 'inventario-productos',
-            title: 'Productos',
-            type: 'item',
-            url: '/compras/producto-list',
-            icon: 'feather icon-box',
-            classes: 'nav-item'
-          },
-          {
-            id: 'inventario-almacenes',
-            title: 'Almacenes',
-            type: 'item',
-            url: '/compras/almacen',
-            icon: 'feather icon-archive',
-            classes: 'nav-item'
-          },
-          {
-            id: 'inventario-configuracion',
-            title: 'Configuracion',
-            type: 'item',
-            url: '/compras/configuracion',
-            icon: 'feather icon-sliders',
-            classes: 'nav-item'
-          }
-        ]
-      },
-      {
-        id: 'ventas',
-        title: 'Ventas',
-        type: 'collapse',
-        icon: 'feather icon-shopping-cart',
-        locked: true,
-        lockedMessage: 'No se tiene acceso',
-        children: [
-          {
-            id: 'ventas-cotizaciones',
-            title: 'Cotizaciones',
-            type: 'item',
-            url: '/ventas/cotizaciones',
-            icon: 'feather icon-file-text',
-            classes: 'nav-item'
-          },
-          {
-            id: 'ventas-ordenes',
-            title: 'Ordenes',
-            type: 'item',
-            url: '/demo/ordenes-pedido',
-            icon: 'feather icon-layers',
-            classes: 'nav-item'
-          }
-        ]
       }
     ]
   },
@@ -189,39 +65,7 @@ export const NavigationItems: NavigationItem[] = [
             title: 'Pipeline',
             type: 'item',
             url: '/crm/pipeline',
-            icon: 'feather icon-activity',
-            classes: 'nav-item'
-          }
-        ]
-      },
-      {
-        id: 'catalogos-comerciales',
-        title: 'Catalogos',
-        type: 'collapse',
-        icon: 'feather icon-folder',
-        children: [
-          {
-            id: 'catalogos-clientes',
-            title: 'Clientes',
-            type: 'item',
-            url: '/catalogos/clientes',
-            icon: 'feather icon-briefcase',
-            classes: 'nav-item'
-          },
-          {
-            id: 'catalogos-servicios',
-            title: 'Servicios',
-            type: 'item',
-            url: '/catalogos/servicios',
-            icon: 'feather icon-list',
-            classes: 'nav-item'
-          },
-          {
-            id: 'catalogos-listas-precios',
-            title: 'Listas de precios',
-            type: 'item',
-            url: '/catalogos/listas-precios',
-            icon: 'feather icon-tag',
+            icon: 'feather icon-trending-up',
             classes: 'nav-item'
           }
         ]
@@ -229,80 +73,99 @@ export const NavigationItems: NavigationItem[] = [
     ]
   },
   {
-    id: 'finanzas',
-    title: 'FINANZAS',
+    id: 'abastecimiento',
+    title: 'ABASTECIMIENTO',
     type: 'group',
     children: [
       {
-        id: 'finanzas-control',
-        title: 'Control Financiero',
+        id: 'compras',
+        title: 'Compras',
         type: 'collapse',
-        icon: 'feather icon-credit-card',
-        locked: true,
-        lockedMessage: 'No se tiene acceso',
+        icon: 'feather icon-shopping-cart',
         children: [
           {
-            id: 'cuentas-cobrar',
-            title: 'Cuentas por cobrar',
+            id: 'compras-resumen',
+            title: 'Resumen',
             type: 'item',
-            url: '/finanzas/cuentas-cobrar',
-            icon: 'feather icon-arrow-down-circle',
+            url: '/compras-inteligentes/dashboard',
+            icon: 'feather icon-grid',
             classes: 'nav-item'
           },
           {
-            id: 'cuentas-pagar',
-            title: 'Cuentas por pagar',
+            id: 'compras-analisis',
+            title: 'Análisis',
             type: 'item',
-            url: '/finanzas/cuentas-pagar',
-            icon: 'feather icon-arrow-up-circle',
+            url: '/compras-inteligentes/analisis',
+            icon: 'feather icon-bar-chart-2',
             classes: 'nav-item'
           },
           {
-            id: 'bancos',
-            title: 'Bancos',
+            id: 'compras-alertas',
+            title: 'Alertas de inventario',
             type: 'item',
-            url: '/finanzas/bancos',
-            icon: 'feather icon-home',
+            url: '/compras-inteligentes/alertas',
+            icon: 'feather icon-alert-triangle',
+            classes: 'nav-item'
+          },
+          {
+            id: 'compras-pedido-inteligente',
+            title: 'Pedido inteligente',
+            type: 'item',
+            url: '/compras-inteligentes/generar-pedido',
+            icon: 'feather icon-clipboard',
             classes: 'nav-item'
           }
         ]
+      }
+    ]
+  },
+  {
+    id: 'maestros',
+    title: 'MAESTROS',
+    type: 'group',
+    children: [
+      {
+        id: 'maestros-clientes',
+        title: 'Clientes',
+        type: 'item',
+        url: '/catalogos/clientes',
+        icon: 'feather icon-user-check',
+        classes: 'nav-item'
       },
       {
-        id: 'reporteria',
-        title: 'Reporteria',
-        type: 'collapse',
-        icon: 'feather icon-bar-chart-2',
-        locked: true,
-        lockedMessage: 'No se tiene acceso',
-        children: [
-          {
-            id: 'reporte-finanzas',
-            title: 'Finanzas',
-            type: 'item',
-            url: '/reportes/finanzas',
-            icon: 'feather icon-trending-up',
-            classes: 'nav-item'
-          },
-          {
-            id: 'reporte-comercial',
-            title: 'Comercial',
-            type: 'item',
-            url: '/reportes/comercial',
-            icon: 'feather icon-dollar-sign',
-            classes: 'nav-item'
-          }
-        ]
+        id: 'maestros-proveedores',
+        title: 'Proveedores',
+        type: 'item',
+        url: '/compras/proveedores',
+        icon: 'feather icon-briefcase',
+        classes: 'nav-item'
+      },
+      {
+        id: 'maestros-servicios',
+        title: 'Servicios',
+        type: 'item',
+        url: '/catalogos/servicios',
+        icon: 'feather icon-layers',
+        classes: 'nav-item'
+      },
+      {
+        id: 'maestros-listas-precios',
+        title: 'Listas de precios',
+        type: 'item',
+        url: '/catalogos/listas-precios',
+        icon: 'feather icon-tag',
+        classes: 'nav-item'
       }
     ]
   },
   {
     id: 'administracion',
-    title: 'ADMINISTRACION',
+    title: 'ADMINISTRACIÓN',
     type: 'group',
     children: [
       {
         id: 'configuracion-sistema',
-        title: 'Configuracion',
+        title: 'Configuración del sistema',
         type: 'item',
         url: '/administracion/configuracion',
         icon: 'feather icon-settings',
@@ -313,7 +176,7 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Usuarios',
         type: 'item',
         url: '/usuarios',
-        icon: 'feather icon-user-check',
+        icon: 'feather icon-shield',
         classes: 'nav-item'
       }
     ]

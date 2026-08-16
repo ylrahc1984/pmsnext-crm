@@ -1,0 +1,37 @@
+@switch (estado()) {
+  @case ('initial') {
+    <div class="ci-empty-state">{{ mensajeInicial() }}</div>
+  }
+  @case ('loading') {
+    <div class="ci-empty-state" role="status">Cargando información...</div>
+  }
+  @case ('empty') {
+    <div class="ci-empty-state">No se encontraron datos para los criterios seleccionados.</div>
+  }
+  @case ('error') {
+    <div class="ci-empty-state ci-empty-state--error" role="alert">{{ mensajeError() }}</div>
+  }
+  @case ('data') {
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            @for (columna of columnas(); track columna) {
+              <th scope="col">{{ columna }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filas(); track $index) {
+            <tr>
+              @for (columna of columnas(); track columna) {
+                <td>{{ valor(fila, columna) ?? '—' }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
+

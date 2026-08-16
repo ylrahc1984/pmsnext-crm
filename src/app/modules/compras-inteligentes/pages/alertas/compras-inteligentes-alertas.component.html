@@ -1,317 +1,129 @@
-<section class="ci-page">
-  <header class="ci-header">
+<section class="ci-page inventory-alerts">
+  <header class="ci-header alert-header">
     <div>
-      <span class="ci-header__eyebrow">Inteligencia comercial</span>
-      <h1>Centro Inteligente de Alertas</h1>
-      <p>
-        Centro operacional para detectar productos con excepciones, priorizar atencion y ejecutar acciones inmediatas.
-      </p>
-      <div class="ci-header__meta">
-        <span><i class="feather icon-calendar"></i> {{ periodoAnalisis().diasAnalisis | number: '1.0-0' }} dias</span>
-        <span><i class="feather icon-clock"></i> {{ periodoAnalisis().rango }}</span>
-        <span><i class="feather icon-zap"></i> Score global {{ kpiResumen().scorePromedio | number: '1.0-0' }}/100</span>
-        <span><i class="feather icon-map-pin"></i> Almacen PRINCIP</span>
-      </div>
+      <span class="ci-header__eyebrow"><i class="feather icon-alert-triangle" aria-hidden="true"></i> Compras Inteligentes</span>
+      <h1>Alertas de Inventario</h1>
+      <strong>Productos sin movimiento</strong>
+      <p>Identifique productos con existencia actual que llevan demasiado tiempo sin registrar ventas.</p>
     </div>
   </header>
 
-  @if (kpiResumen(); as item) {
-    <div class="ci-metric-strip">
-      <div class="ci-metric ci-metric--critical">
-        <span><i class="feather icon-alert-triangle"></i> Alertas criticas</span>
-        <strong>{{ item.alertasCriticas | number: '1.0-0' }}</strong>
-        <small>Atencion inmediata</small>
-      </div>
-      <div class="ci-metric ci-metric--high">
-        <span><i class="feather icon-package"></i> Productos agotados</span>
-        <strong>{{ item.productosAgotados | number: '1.0-0' }}</strong>
-        <small>Riesgo operativo</small>
-      </div>
-      <div class="ci-metric ci-metric--finance">
-        <span><i class="feather icon-dollar-sign"></i> Capital en riesgo</span>
-        <strong>₡{{ item.capitalRiesgo | number: '1.0-0' }}</strong>
-        <small>Impacto financiero</small>
-      </div>
-      <div class="ci-metric ci-metric--money">
-        <span><i class="feather icon-shopping-cart"></i> Sobre stock</span>
-        <strong>{{ item.sobreStock | number: '1.0-0' }}</strong>
-        <small>Exceso de inventario</small>
-      </div>
-    </div>
-  }
-
-  <section class="ci-period-panel ci-period-panel--secondary" aria-label="Contexto operacional">
-    <div>
-      <span>Score promedio</span>
-      <strong>{{ kpiResumen().scorePromedio | number: '1.0-0' }}/100</strong>
-    </div>
-    <div>
-      <span>Riesgo operacional</span>
-      <strong>{{ kpiResumen().riesgoOperacional | number: '1.0-0' }}</strong>
-    </div>
-    <div>
-      <span>Distribucion</span>
-      <strong>
-        {{ kpiResumen().alertasAltas | number: '1.0-0' }} altas · {{ kpiResumen().alertasMedias | number: '1.0-0' }} medias ·
-        {{ kpiResumen().alertasBajas | number: '1.0-0' }} bajas
-      </strong>
-    </div>
-    <div>
-      <span>Impacto adicional</span>
-      <strong>
-        {{ kpiResumen().riesgoFinanciero | number: '1.0-0' }} financiero · {{ kpiResumen().riesgoComercial | number: '1.0-0' }}
-        comercial
-      </strong>
-    </div>
-  </section>
-
-  <div class="ci-filter-shell">
+  <form class="ci-filter-shell alert-config" [formGroup]="form" (ngSubmit)="buscar()">
     <div class="ci-filter-shell__heading">
-      <div>
-        <strong>Filtros operacionales</strong>
-        <span>Filtre excepciones para priorizar atencion y accion inmediata.</span>
-      </div>
+      <div><strong>Configurar evaluación</strong><span>Defina la fecha, el proveedor y la regla de negocio</span></div>
     </div>
-
-    <div class="ci-quick-filters">
-      <label [attr.title]="tooltip.prioridad">
-        <span>Prioridad</span>
-        <select class="form-select" [ngModel]="filtroPrioridad()" (ngModelChange)="filtroPrioridad.set($event); pageNumber.set(1)">
-          <option value="">Todas</option>
-          @for (prioridad of prioridadOptions; track prioridad) {
-            <option [value]="prioridad">{{ prioridad }}</option>
-          }
-        </select>
+    <div class="alert-filter-grid">
+      <label><span>Fecha de corte *</span><input class="form-control" type="date" formControlName="fechaCorte" /></label>
+      <label class="alert-rule">
+        <span>Días de alerta *</span>
+        <input class="form-control" type="number" min="1" step="1" formControlName="diasAlerta" />
+        <small>Generar alerta cuando un producto supere este número de días sin ventas.</small>
       </label>
-
-      <label [attr.title]="tooltip.impacto">
-        <span>Impacto</span>
-        <select class="form-select" [ngModel]="filtroNivelImpacto()" (ngModelChange)="filtroNivelImpacto.set($event); pageNumber.set(1)">
-          <option value="">Todos</option>
-          @for (impacto of impactoOptions; track impacto) {
-            <option [value]="impacto">{{ impacto }}</option>
-          }
-        </select>
-      </label>
-
-      <label [attr.title]="tooltip.tipo">
-        <span>Tipo</span>
-        <select class="form-select" [ngModel]="filtroTipoAlerta()" (ngModelChange)="filtroTipoAlerta.set($event); pageNumber.set(1)">
-          <option value="">Todos</option>
-          @for (tipo of tipoAlertaOptions; track tipo) {
-            <option [value]="tipo">{{ tipo }}</option>
-          }
-        </select>
-      </label>
-
-      <label [attr.title]="tooltip.producto">
-        <span>Producto</span>
-        <input
-          class="form-control"
-          type="search"
-          placeholder="Codigo producto"
-          [ngModel]="codigoProducto()"
-          (ngModelChange)="codigoProducto.set($event)"
-        />
-      </label>
-
-      <label class="ci-autocomplete ci-autocomplete--provider" [attr.title]="tooltip.proveedor">
-        <span>Proveedor</span>
-        <div class="ci-autocomplete__control">
-          <input
-            class="form-control"
-            type="search"
-            placeholder="Nombre o codigo"
-            [ngModel]="proveedorSearch()"
-            (ngModelChange)="buscarProveedores($event)"
-          />
-        </div>
-        @if (proveedores().length > 0 || proveedoresLoading()) {
-          <div class="ci-autocomplete__menu">
-            @if (proveedoresLoading()) {
-              <div class="ci-autocomplete__empty">Buscando proveedores...</div>
-            } @else {
-              @for (item of proveedores(); track item.codigo) {
-                <button type="button" (click)="seleccionarProveedor(item)">
-                  <strong>{{ item.descripcion }}</strong>
-                  <span>{{ item.codigo }} / {{ item.ruc || 'Sin RUC' }}</span>
+      <label class="provider-autocomplete">
+        <span>Proveedor *</span>
+        <input class="form-control" type="search" formControlName="proveedorSearch" placeholder="Buscar por código o nombre" autocomplete="off" aria-autocomplete="list" [attr.aria-expanded]="proveedorMenuVisible()" (focus)="mostrarProveedores()" (blur)="ocultarProveedores()" (keydown.escape)="ocultarProveedores()" />
+        @if (proveedorMenuVisible()) {
+          <div class="provider-menu" role="listbox">
+            @if (proveedoresLoading()) { <div class="provider-message" role="status">Buscando proveedores...</div> }
+            @else if (proveedores().length) {
+              @for (proveedor of proveedores(); track proveedor.codigo) {
+                <button type="button" role="option" (mousedown)="$event.preventDefault()" (click)="seleccionarProveedor(proveedor)">
+                  <strong>{{ proveedor.descripcion }}</strong><span>{{ proveedor.codigo }} · {{ proveedor.ruc || 'Sin RUC' }}</span>
                 </button>
               }
-            }
+            } @else { <div class="provider-message">No se encontraron proveedores.</div> }
           </div>
         }
+        @if (submitted() && form.controls.codProveedor.invalid) { <small class="control-error">Seleccione un proveedor de la lista.</small> }
       </label>
-
-      <div class="ci-filter-actions ci-filter-actions--quick">
-        <button class="btn btn-sm btn-primary" type="button" [disabled]="filtrosBloqueados()" (click)="aplicarFiltros()">
-          {{ filtrosBloqueados() ? 'Espere...' : 'Buscar' }}
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar</button>
-        <button
-          class="btn btn-sm btn-outline-primary"
-          type="button"
-          [disabled]="loading()"
-          [attr.aria-expanded]="mostrarAvanzados()"
-          (click)="alternarFiltrosAvanzados()"
-        >
-          {{ mostrarAvanzados() ? 'Ocultar filtros avanzados' : 'Mostrar filtros avanzados' }}
-        </button>
-        <button
-          class="ci-filter-settings"
-          type="button"
-          aria-label="Configuracion tecnica"
-          [attr.aria-expanded]="mostrarTecnicos()"
-          (click)="alternarConfiguracionTecnica()"
-        >
-          <i class="feather icon-settings"></i>
-        </button>
-      </div>
+      <label><span>Producto</span><select class="form-select" formControlName="codProducto"><option value="">Todos los productos</option>@for (producto of productos(); track producto.MAC02_CodProducto) {<option [value]="producto.MAC02_CodProducto">{{ producto.MAC02_CodProducto }} - {{ producto.MAC02_NomProducto }}</option>}</select></label>
+      <div class="alert-filter-action"><button class="btn btn-primary" type="submit" [disabled]="catalogosLoading() || estado() === 'loading'"><i class="feather icon-search" aria-hidden="true"></i> {{ estado() === 'loading' ? 'Evaluando...' : 'Evaluar alertas' }}</button></div>
     </div>
+    @if (submitted() && form.invalid) { <div class="filter-error" role="alert">Seleccione una fecha, un proveedor y un número entero de días mayor que cero.</div> }
+  </form>
 
-    <div class="ci-collapse" [class.ci-collapse--open]="mostrarAvanzados()">
-      <div class="ci-advanced-grid">
-        <section class="ci-filter-group">
-          <h3>Clasificacion</h3>
-          <div class="ci-filter-grid ci-filter-grid--compact">
-            <label [attr.title]="tooltip.linea">
-              <span>Linea</span>
-              <select class="form-select" [ngModel]="lineaCodigo()" [disabled]="lineasLoading()" (ngModelChange)="seleccionarLinea($event)">
-                <option value="">{{ lineasLoading() ? 'Cargando lineas...' : 'Todas' }}</option>
-                @for (item of lineas(); track item.CAC02_CodLinea) {
-                  <option [value]="item.CAC02_CodLinea">{{ item.CAC02_LineaProdu }}</option>
-                }
-              </select>
-            </label>
-
-            <label [attr.title]="tooltip.categoria">
-              <span>Categoria</span>
-              <select class="form-select" [ngModel]="categoria()" [disabled]="!lineaCodigo() || categoriasLoading()" (ngModelChange)="categoria.set($event); pageNumber.set(1)">
-                <option value="">{{ categoriasLoading() ? 'Cargando categorias...' : 'Todas' }}</option>
-                @for (item of categorias(); track item.CAC03_CodCate) {
-                  <option [value]="item.CAC03_Categoria">{{ item.CAC03_Categoria }}</option>
-                }
-              </select>
-            </label>
-
-            <label [attr.title]="tooltip.severidad">
-              <span>Severidad legacy</span>
-              <input class="form-control" type="search" [ngModel]="severidad()" (ngModelChange)="severidad.set($event)" />
-            </label>
-          </div>
-        </section>
-
-        <section class="ci-filter-group">
-          <h3>Operacion</h3>
-          <div class="ci-filter-grid ci-filter-grid--compact">
-            <label [attr.title]="tooltip.diasSinVenta">
-              <span>Dias sin venta</span>
-              <input class="form-control" type="number" min="0" [ngModel]="diasSinVenta()" (ngModelChange)="diasSinVenta.set($event)" />
-            </label>
-
-            <label [attr.title]="tooltip.diasSobreStock">
-              <span>Dias sobre stock</span>
-              <input class="form-control" type="number" min="0" [ngModel]="diasSobreStock()" (ngModelChange)="diasSobreStock.set($event)" />
-            </label>
-
-            <label [attr.title]="tooltip.diasCritico">
-              <span>Dias critico</span>
-              <input class="form-control" type="number" min="0" [ngModel]="diasCritico()" (ngModelChange)="diasCritico.set($event)" />
-            </label>
-
-            <label [attr.title]="tooltip.diasAnalisis">
-              <span>Dias analisis</span>
-              <input class="form-control" type="number" min="1" [ngModel]="diasAnalisis()" (ngModelChange)="diasAnalisis.set($event)" />
-            </label>
-          </div>
-        </section>
-
-        <section class="ci-filter-group">
-          <h3>Riesgo financiero</h3>
-          <div class="ci-filter-grid ci-filter-grid--compact">
-            <label [attr.title]="tooltip.margenBajo">
-              <span>Margen bajo</span>
-              <input class="form-control" type="number" min="0" step="0.01" [ngModel]="margenBajo()" (ngModelChange)="margenBajo.set($event)" />
-            </label>
-
-            <label [attr.title]="tooltip.capitalAlto">
-              <span>Capital alto</span>
-              <input class="form-control" type="number" min="0" step="0.01" [ngModel]="capitalAlto()" (ngModelChange)="capitalAlto.set($event)" />
-            </label>
-          </div>
-        </section>
-      </div>
-
-      <div class="ci-filter-actions ci-filter-actions--advanced">
-        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="loading()" (click)="limpiar()">Limpiar filtros</button>
-        <button class="btn btn-sm btn-primary" type="button" [disabled]="filtrosBloqueados()" (click)="aplicarFiltros()">
-          {{ filtrosBloqueados() ? 'Aplicando...' : 'Aplicar filtros' }}
-        </button>
-      </div>
-    </div>
-
-    <div class="ci-technical-panel" [class.ci-technical-panel--open]="mostrarTecnicos()">
-      <div class="ci-technical-panel__inner">
-        <label [attr.title]="tooltip.pagina">
-          <span>Pagina</span>
-          <input class="form-control" type="number" min="1" [ngModel]="pageNumber()" (ngModelChange)="pageNumber.set($event)" />
-        </label>
-
-        <label [attr.title]="tooltip.registros">
-          <span>Registros</span>
-          <select class="form-select" [ngModel]="pageSize()" (ngModelChange)="pageSize.set($event); pageNumber.set(1)">
-            <option [ngValue]="10">10</option>
-            <option [ngValue]="25">25</option>
-            <option [ngValue]="50">50</option>
-            <option [ngValue]="100">100</option>
-          </select>
-        </label>
-
-        <label class="ci-check" [attr.title]="tooltip.registrarLog">
-          <input type="checkbox" [ngModel]="registrarLog()" (ngModelChange)="registrarLog.set($event)" />
-          <span>Registrar log</span>
-        </label>
-
-        <label class="ci-check" [attr.title]="tooltip.debug">
-          <input type="checkbox" [ngModel]="debug()" (ngModelChange)="debug.set($event)" />
-          <span>Debug</span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <app-operational-widget title="Incidentes operativos" subtitle="Producto, problema, urgencia y accion">
-    <div class="ci-priority-legend" widget-actions>
-      <p>Las prioridades combinan riesgo operativo/comercial, impacto en inventario y comportamiento reciente.</p>
-      <div>
-        <span><strong>ALTA</strong> Atender hoy</span>
-        <span><strong>MEDIA</strong> Revisar pronto</span>
-        <span><strong>BAJA</strong> Monitorear</span>
-      </div>
-    </div>
-
-    <div class="ci-toolbar ci-toolbar--inline">
-      <div class="ci-feed-summary">
-        <strong>{{ totalRegistros() | number: '1.0-0' }} alertas</strong>
-        <span>Pagina {{ pageNumber() }} de {{ totalPaginas() }}</span>
-      </div>
-      <div class="ci-header__actions">
-        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="pageNumber() <= 1 || loading()" (click)="cambiarPagina(-1)">Anterior</button>
-        <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="loading() || pageNumber() >= totalPaginas()" (click)="cambiarPagina(1)">Siguiente</button>
-      </div>
-    </div>
-
-    @if (!busquedaEjecutada()) {
-      <div class="ci-empty-state">
-        Configure los filtros y presione Buscar para consultar las alertas del periodo.
-      </div>
-    } @else if (loading()) {
-      <div class="ci-empty-state">Cargando alertas...</div>
-    } @else if (error()) {
-      <div class="ci-empty-state">{{ error() }}</div>
-    } @else if (alertasOrdenadas().length > 0) {
-      <app-inventory-alert-feed [alertas]="alertasOrdenadas()" />
-    } @else {
-      <div class="ci-empty-state">No hay alertas para los filtros seleccionados.</div>
+  @switch (estado()) {
+    @case ('initial') {
+      <section class="alert-state"><i class="feather icon-activity" aria-hidden="true"></i><div><strong>Configure la evaluación de inventario</strong><p>Seleccione un proveedor y defina cuántos días sin ventas deben generar atención.</p></div></section>
     }
-  </app-operational-widget>
+    @case ('loading') {
+      <section class="alert-loading" role="status" aria-label="Evaluando alertas de inventario"><div class="loading-kpis">@for (item of [1,2,3,4]; track item) { <span></span> }</div><div class="loading-panel"></div><div class="loading-table"></div></section>
+    }
+    @case ('empty') {
+      <section class="alert-state alert-state--success"><i class="feather icon-check-circle" aria-hidden="true"></i><div><strong>No se encontraron productos que superen el criterio configurado</strong><p>Para la fecha y proveedor seleccionados no existen productos que requieran atención bajo el límite actual de {{ form.controls.diasAlerta.value }} días sin venta.</p></div></section>
+    }
+    @case ('error') {
+      <section class="alert-state alert-state--error" role="alert"><i class="feather icon-alert-circle" aria-hidden="true"></i><div><strong>No se pudo completar la evaluación</strong><p>{{ mensajeError() }}</p><button class="btn btn-outline-primary btn-sm" type="button" (click)="buscar()">Reintentar</button></div></section>
+    }
+    @case ('data') {
+      <section class="alert-context" aria-label="Contexto evaluado">
+        <div><span>Proveedor</span><strong>{{ proveedorSeleccionado()?.codigo || filas()[0].codProveedor }} - {{ proveedorSeleccionado()?.descripcion || 'Proveedor seleccionado' }}</strong></div>
+        <div><span>Fecha de corte</span><strong>{{ formatDate(filas()[0].fechaCorte) }}</strong></div>
+        <div><span>Regla evaluada</span><strong>Más de {{ filas()[0].diasAlerta }} días sin venta</strong></div>
+      </section>
+
+      <section class="alert-kpis" aria-label="Indicadores ejecutivos">
+        <app-erp-kpi-card label="Productos a revisar" [value]="resumen().total" [hint]="resumen().alertas + ' en alerta · ' + resumen().sinVentas + ' sin ventas'" icon="feather icon-box" [tone]="resumen().total ? 'warning' : 'success'" />
+        <app-erp-kpi-card label="Unidades asociadas" [value]="formatNumber(resumen().unidades)" hint="Existencia actual en productos que requieren revisión" icon="feather icon-package" tone="info" />
+        <app-erp-kpi-card label="Sin ventas registradas" [value]="resumen().sinVentas" hint="Con existencia y sin historial de ventas encontrado" icon="feather icon-help-circle" [tone]="resumen().sinVentas ? 'neutral' : 'success'" />
+        <app-erp-kpi-card label="Mayor tiempo sin venta" [value]="formatDays(resumen().maximoDias)" [hint]="resumen().productoMasCritico?.producto || 'Sin datos calculables'" icon="feather icon-clock" [tone]="resumen().maximoDias ? 'danger' : 'neutral'" />
+      </section>
+
+      <section class="alert-card severity-card">
+        <header><div><h2>Resumen de severidad</h2><p>Clasificación visual según los días que exceden el límite; no reemplaza el estado del backend.</p></div></header>
+        <div class="severity-grid">@for (item of resumenSeveridad(); track item.severidad) {<article [class]="'severity-summary severity-summary--' + item.tone"><span>{{ item.etiqueta }}</span><strong>{{ item.cantidad }}</strong></article>}</div>
+      </section>
+
+      <section class="alert-card critical-chart">
+        <header><div><h2>Productos con mayor tiempo sin venta</h2><p>Top 10 · Límite configurado: <strong>{{ filas()[0].diasAlerta }} días</strong></p></div></header>
+        @if (productosCriticos().length) {
+          <div class="critical-bars">@for (producto of productosCriticos(); track producto.codProducto) {
+            <button type="button" class="critical-bar" (click)="abrirDetalle(producto)" [attr.aria-label]="'Ver detalle de ' + producto.producto" [title]="producto.producto + ' · Días sin venta: ' + formatNumber(producto.diasSinVenta) + ' · Límite: ' + producto.diasAlerta + ' · Exceso: ' + formatExcess(producto.diasExceso) + ' · Existencia: ' + formatNumber(producto.existencia) + ' ' + producto.unidadMedida + ' · Última venta: ' + formatDate(producto.fechaUltimaVenta)">
+              <span class="bar-product"><strong>{{ producto.producto }}</strong><small>{{ producto.codProducto }}</small></span><i><b [class]="'bar-fill bar-fill--' + severityClass(producto)" [style.width]="graficoWidth(producto.diasSinVenta)"></b></i><span class="bar-value">{{ formatDays(producto.diasSinVenta) }}</span>
+            </button>
+          }</div>
+        } @else { <div class="inline-empty">No hay productos con días sin venta calculables.</div> }
+      </section>
+
+      @if (productosSinVentas().length) {
+        <section class="alert-card no-sales-card">
+          <header><div><h2>Productos con existencia y sin ventas registradas</h2><p>Estos productos tienen existencia actual, pero no se encontró una venta histórica para calcular sus días sin movimiento.</p></div><span>{{ productosSinVentas().length }} productos</span></header>
+          <div class="no-sales-list">@for (producto of productosSinVentas(); track producto.codProducto) {
+            <button type="button" (click)="abrirDetalle(producto)"><div><strong>{{ producto.producto }}</strong><small>{{ producto.codProducto }}</small></div><dl><div><dt>Existencia</dt><dd>{{ formatNumber(producto.existencia) }} {{ producto.unidadMedida }}</dd></div><div><dt>Estado</dt><dd>Sin ventas registradas</dd></div></dl><i class="feather icon-chevron-right" aria-hidden="true"></i></button>
+          }</div>
+        </section>
+      }
+
+      <section class="alert-card operational-table">
+        <header><div><h2>Detalle operativo</h2><p>Seleccione un producto para revisar el diagnóstico completo.</p></div><span>{{ filasFiltradas().length }} de {{ filas().length }}</span></header>
+        <div class="table-tools">
+          <label><i class="feather icon-search" aria-hidden="true"></i><input type="search" class="form-control" placeholder="Buscar producto o código" [value]="busquedaLocal()" (input)="actualizarBusquedaLocal($event)" /></label>
+          <div class="filter-chips" aria-label="Filtrar por severidad">
+            <button type="button" [class.active]="filtroSeveridad() === 'TODOS'" (click)="filtroSeveridad.set('TODOS')">Todos</button>
+            @for (item of resumenSeveridad(); track item.severidad) {<button type="button" [class.active]="filtroSeveridad() === item.severidad" (click)="filtroSeveridad.set(item.severidad)">{{ item.etiqueta }}</button>}
+          </div>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>Producto</th><th>Existencia</th><th>Última venta</th><th>Días sin venta</th><th>Límite</th><th>Exceso</th><th>Severidad</th><th>Estado</th><th><span class="visually-hidden">Detalle</span></th></tr></thead><tbody>
+          @for (producto of filasFiltradas(); track producto.codProducto) {
+            <tr tabindex="0" (click)="abrirDetalle(producto)" (keydown.enter)="abrirDetalle(producto)"><td><strong>{{ producto.producto }}</strong><small>{{ producto.codProducto }}</small></td><td>{{ formatNumber(producto.existencia) }} <small>{{ producto.unidadMedida }}</small></td><td>{{ producto.fechaUltimaVenta ? formatDate(producto.fechaUltimaVenta) : '—' }}</td><td>{{ formatDays(producto.diasSinVenta) }}</td><td>{{ formatDays(producto.diasAlerta) }}</td><td class="excess">{{ formatExcess(producto.diasExceso) }}</td><td><span [class]="'severity-badge severity-badge--' + severityClass(producto)">{{ severityLabel(producto) }}</span></td><td><span class="backend-state" [class.backend-state--no-sales]="producto.estadoAlerta === 'SIN VENTAS'">{{ producto.estadoAlerta }}</span></td><td><button type="button" class="detail-button" (click)="$event.stopPropagation(); abrirDetalle(producto)" [attr.aria-label]="'Ver detalle de ' + producto.producto"><i class="feather icon-chevron-right"></i></button></td></tr>
+          } @empty { <tr><td colspan="9"><div class="inline-empty">No hay productos que coincidan con los filtros locales.</div></td></tr> }
+        </tbody></table></div>
+        <p class="semantic-note"><i class="feather icon-info" aria-hidden="true"></i> La existencia es actual y los días se calculan desde la última venta registrada; esto no demuestra la antigüedad física de esas unidades.</p>
+      </section>
+    }
+  }
 </section>
+
+@if (detalleSeleccionado(); as producto) {
+  <div class="detail-backdrop" (click)="cerrarDetalle()" aria-hidden="true"></div>
+  <aside class="alert-detail" role="dialog" aria-modal="true" aria-labelledby="alert-detail-title">
+    <header><div><span>Revisión operativa</span><h2 id="alert-detail-title">{{ producto.producto }}</h2><small>Código: {{ producto.codProducto }}</small></div><button type="button" (click)="cerrarDetalle()" aria-label="Cerrar detalle"><i class="feather icon-x"></i></button></header>
+    <div class="detail-badges"><span class="backend-state" [class.backend-state--no-sales]="producto.estadoAlerta === 'SIN VENTAS'">{{ producto.estadoAlerta }}</span><span [class]="'severity-badge severity-badge--' + severityClass(producto)">{{ severityLabel(producto) }}</span></div>
+    <section><h3>Inventario actual</h3><dl><div><dt>Existencia actual</dt><dd>{{ formatNumber(producto.existencia) }} {{ producto.unidadMedida }}</dd></div><div><dt>Fecha de corte</dt><dd>{{ formatDate(producto.fechaCorte) }}</dd></div></dl></section>
+    <section><h3>Actividad de ventas</h3><dl><div><dt>Última venta</dt><dd>{{ producto.fechaUltimaVenta ? formatDate(producto.fechaUltimaVenta) : 'Sin ventas registradas' }}</dd></div><div><dt>Días sin venta</dt><dd>{{ formatDays(producto.diasSinVenta) }}</dd></div></dl></section>
+    <section><h3>Regla de alerta</h3><dl><div><dt>Límite configurado</dt><dd>{{ formatDays(producto.diasAlerta) }}</dd></div><div><dt>Exceso</dt><dd>{{ formatExcess(producto.diasExceso) }}</dd></div></dl></section>
+    <section class="diagnostic"><h3>Diagnóstico</h3><p>{{ diagnostico(producto) }}</p></section>
+    <section class="review-actions"><h3>Acciones sugeridas de revisión</h3><ul><li>Revisar el nivel actual de inventario.</li><li>Validar si el producto continúa activo comercialmente.</li><li>Revisar el historial de compras antes de realizar un nuevo pedido.</li><li>Verificar si existen sustitutos o productos equivalentes.</li>@if (producto.estadoAlerta === 'SIN VENTAS') {<li>Validar si el artículo es nuevo, nunca se ha comercializado o existe un problema de parametrización.</li>}</ul></section>
+    <p class="detail-disclaimer">Estas son pautas de revisión; el reporte no determina por sí solo una decisión de compra o baja de inventario.</p>
+  </aside>
+}

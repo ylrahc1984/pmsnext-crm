@@ -1,0 +1,30 @@
+<section class="purchase-table-card">
+  <header class="purchase-table-header"><div><h3>Detalle por producto</h3><p>{{ filasVisibles().length }} de {{ filas().length }} productos</p></div><label><span class="visually-hidden">Buscar producto</span><input class="form-control form-control-sm" type="search" placeholder="Buscar producto..." [value]="busqueda()" (input)="actualizarBusqueda($event)" /></label></header>
+  @if (filasVisibles().length) {
+    <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Producto</th><th class="number"><button type="button" (click)="ordenar('cantidadComprada')">Cantidad {{ iconoOrden('cantidadComprada') }}</button></th><th class="number"><button type="button" (click)="ordenar('netoComprado')">Compra neta {{ iconoOrden('netoComprado') }}</button></th><th class="number"><button type="button" (click)="ordenar('costoPromedio')">Costo promedio {{ iconoOrden('costoPromedio') }}</button></th><th class="number"><button type="button" (click)="ordenar('ultimoCosto')">Último costo {{ iconoOrden('ultimoCosto') }}</button></th><th class="number"><button type="button" (click)="ordenar('variacionCostoPromedio')">Variación costo {{ iconoOrden('variacionCostoPromedio') }}</button></th><th><button type="button" (click)="ordenar('participacionProveedor')">Participación {{ iconoOrden('participacionProveedor') }}</button></th><th>Estado</th><th><span class="visually-hidden">Detalle</span></th></tr></thead>
+      <tbody>
+        @for (fila of filasVisibles(); track fila.codProducto) {
+          <tr [class.no-current]="fila.estadoComparativo.toUpperCase() === 'SIN COMPRA ACTUAL'">
+            <td><strong class="product-name">{{ fila.producto }}</strong><small>{{ fila.codProducto }} · {{ fila.unidadMedida }}</small></td>
+            <td class="number">{{ formatNumber(fila.cantidadComprada) }}</td><td class="number"><strong>{{ formatCurrency(fila.netoComprado) }}</strong></td><td class="number">{{ formatCurrency(fila.costoPromedio) }}</td><td class="number">{{ formatCurrency(fila.ultimoCosto) }}</td>
+            <td class="number"><span class="variation" [class]="'variation variation--' + costoTone(fila.variacionCostoPromedio)">{{ variacionIcono(fila.variacionCostoPromedio) }} {{ formatPercent(fila.variacionCostoPromedio, true) }}</span></td>
+            <td><div class="participation"><span>{{ formatPercent(fila.participacionProveedor) }}</span><i><b [style.width]="barWidth(fila.participacionProveedor)"></b></i></div></td>
+            <td><span class="status" [class]="'status status--' + estadoTone(fila.estadoComparativo)"><span aria-hidden="true">{{ estadoIcono(fila.estadoComparativo) }}</span>{{ fila.estadoComparativo }}</span></td>
+            <td><button class="detail-button" type="button" [attr.aria-expanded]="expandido() === fila.codProducto" [attr.aria-label]="'Ver detalle de ' + fila.producto" (click)="alternarDetalle(fila.codProducto)"><i class="feather" [class.icon-chevron-down]="expandido() !== fila.codProducto" [class.icon-chevron-up]="expandido() === fila.codProducto"></i></button></td>
+          </tr>
+          @if (expandido() === fila.codProducto) {
+            <tr class="detail-row"><td colspan="9"><article class="purchase-detail"><header><div><h4>{{ fila.producto }}</h4><span>{{ fila.codProducto }} · {{ fila.unidadMedida }}</span></div><span class="status" [class]="'status status--' + estadoTone(fila.estadoComparativo)">{{ estadoIcono(fila.estadoComparativo) }} {{ fila.estadoComparativo }}</span></header>
+              <div class="detail-grid">
+                <section><h5>Período actual</h5><dl><div><dt>Cantidad</dt><dd>{{ formatNumber(fila.cantidadComprada) }}</dd></div><div><dt>Neto / total</dt><dd>{{ formatCurrency(fila.netoComprado) }} / {{ formatCurrency(fila.totalComprado) }}</dd></div><div><dt>Costo promedio / mín. / máx.</dt><dd>{{ formatCurrency(fila.costoPromedio) }} / {{ formatCurrency(fila.costoMinimo) }} / {{ formatCurrency(fila.costoMaximo) }}</dd></div><div><dt>Último costo</dt><dd>{{ formatCurrency(fila.ultimoCosto) }}</dd></div><div><dt>Número de compras</dt><dd>{{ fila.numeroCompras }}</dd></div><div><dt>Primera / última compra</dt><dd>{{ formatDate(fila.primeraCompra) }} / {{ formatDate(fila.ultimaCompra) }}</dd></div><div><dt>Días desde última compra</dt><dd>{{ fila.diasDesdeUltimaCompra ?? '—' }}</dd></div></dl></section>
+                <section><h5>Período anterior</h5><dl><div><dt>Cantidad</dt><dd>{{ formatNumber(fila.cantidadAnterior) }}</dd></div><div><dt>Neto / total</dt><dd>{{ formatCurrency(fila.netoAnterior) }} / {{ formatCurrency(fila.totalAnterior) }}</dd></div><div><dt>Costo promedio / mín. / máx.</dt><dd>{{ formatCurrency(fila.costoPromedioAnterior) }} / {{ formatCurrency(fila.costoMinimoAnterior) }} / {{ formatCurrency(fila.costoMaximoAnterior) }}</dd></div><div><dt>Último costo</dt><dd>{{ formatCurrency(fila.ultimoCostoAnterior) }}</dd></div><div><dt>Número de compras</dt><dd>{{ fila.numeroComprasAnterior }}</dd></div><div><dt>Última compra</dt><dd>{{ formatDate(fila.ultimaCompraAnterior) }}</dd></div></dl></section>
+                <section><h5>Evolución</h5><dl><div><dt>Variación cantidad</dt><dd>{{ formatPercent(fila.variacionCantidad, true) }}</dd></div><div><dt>Variación neto</dt><dd>{{ formatPercent(fila.variacionNeto, true) }}</dd></div><div><dt>Variación total</dt><dd>{{ formatPercent(fila.variacionTotal, true) }}</dd></div><div><dt>Variación costo promedio</dt><dd>{{ formatPercent(fila.variacionCostoPromedio, true) }}</dd></div><div><dt>Variación último costo</dt><dd>{{ formatPercent(fila.variacionUltimoCosto, true) }}</dd></div></dl></section>
+              </div>
+            </article></td></tr>
+          }
+        }
+      </tbody>
+    </table></div>
+  } @else {<div class="local-empty">No hay productos que coincidan con la búsqueda.</div>}
+</section>
+

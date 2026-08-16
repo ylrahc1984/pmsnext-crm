@@ -1,0 +1,50 @@
+<section class="sales-table-card">
+  <header class="sales-table-header">
+    <div><h3>Detalle por producto</h3><p>{{ filasVisibles().length }} de {{ filas().length }} productos</p></div>
+    <label class="sales-search"><span class="visually-hidden">Buscar producto</span><input class="form-control form-control-sm" type="search" placeholder="Buscar producto..." [value]="busqueda()" (input)="actualizarBusqueda($event)" /></label>
+  </header>
+  @if (filasVisibles().length) {
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr>
+          <th scope="col">Producto</th>
+          <th scope="col" class="is-number"><button type="button" (click)="ordenar('cantidadNeta')">Cantidad {{ iconoOrden('cantidadNeta') }}</button></th>
+          <th scope="col" class="is-number"><button type="button" (click)="ordenar('ventaNeta')">Venta neta {{ iconoOrden('ventaNeta') }}</button></th>
+          <th scope="col" class="is-number"><button type="button" (click)="ordenar('margenPorcentaje')">Margen {{ iconoOrden('margenPorcentaje') }}</button></th>
+          <th scope="col"><button type="button" (click)="ordenar('participacionProveedor')">Participación {{ iconoOrden('participacionProveedor') }}</button></th>
+          <th scope="col" class="is-number"><button type="button" (click)="ordenar('frecuenciaVenta')">Frecuencia {{ iconoOrden('frecuenciaVenta') }}</button></th>
+          <th scope="col" class="is-number"><button type="button" (click)="ordenar('variacionVenta')">Variación ventas {{ iconoOrden('variacionVenta') }}</button></th>
+          <th scope="col">Estado</th><th scope="col"><span class="visually-hidden">Detalle</span></th>
+        </tr></thead>
+        <tbody>
+          @for (fila of filasVisibles(); track fila.codProducto) {
+            <tr [class.sales-row--no-current]="fila.estadoComparativo.toUpperCase() === 'SIN VENTA ACTUAL'">
+              <td><strong class="product-name">{{ fila.producto }}</strong><small>{{ fila.codProducto }} · {{ fila.unidadMedida }}</small></td>
+              <td class="is-number">{{ formatNumber(fila.cantidadNeta) }}</td>
+              <td class="is-number"><strong>{{ formatCurrency(fila.ventaNeta) }}</strong></td>
+              <td class="is-number"><strong>{{ formatPercent(fila.margenPorcentaje) }}</strong><small>{{ formatCurrency(fila.margenNeto) }}</small></td>
+              <td><div class="participation-cell"><span>{{ formatPercent(fila.participacionProveedor) }}</span><span class="mini-bar"><i [style.width]="barWidth(fila.participacionProveedor)"></i></span></div></td>
+              <td class="is-number">{{ formatPercent(fila.frecuenciaVenta) }}</td>
+              <td class="is-number"><span class="variation" [class]="'variation variation--' + variacionClase(fila.variacionVenta)">{{ fila.variacionVenta !== null && fila.variacionVenta > 0 ? '↑' : fila.variacionVenta !== null && fila.variacionVenta < 0 ? '↓' : '' }} {{ formatPercent(fila.variacionVenta, true) }}</span></td>
+              <td><span class="status-badge" [class]="'status-badge status-badge--' + estadoClase(fila.estadoComparativo)"><span aria-hidden="true">{{ estadoIcono(fila.estadoComparativo) }}</span>{{ fila.estadoComparativo }}</span></td>
+              <td><button class="detail-button" type="button" [attr.aria-expanded]="productoExpandido() === fila.codProducto" [attr.aria-label]="'Ver detalle de ' + fila.producto" (click)="alternarDetalle(fila.codProducto)"><i class="feather" [class.icon-chevron-down]="productoExpandido() !== fila.codProducto" [class.icon-chevron-up]="productoExpandido() === fila.codProducto"></i></button></td>
+            </tr>
+            @if (productoExpandido() === fila.codProducto) {
+              <tr class="detail-row"><td colspan="9"><article class="product-detail">
+                <header><div><h4>{{ fila.producto }}</h4><span>{{ fila.codProducto }} · {{ fila.unidadMedida }}</span></div><span class="status-badge" [class]="'status-badge status-badge--' + estadoClase(fila.estadoComparativo)">{{ estadoIcono(fila.estadoComparativo) }} {{ fila.estadoComparativo }}</span></header>
+                <div class="detail-groups">
+                  <section><h5>Período actual</h5><dl><div><dt>Cantidad bruta / NC / neta</dt><dd>{{ formatNumber(fila.cantidadBruta) }} / {{ formatNumber(fila.cantidadNC) }} / {{ formatNumber(fila.cantidadNeta) }}</dd></div><div><dt>Ventas brutas / NC / netas</dt><dd>{{ formatCurrency(fila.ventaBruta) }} / {{ formatCurrency(fila.montoNC) }} / {{ formatCurrency(fila.ventaNeta) }}</dd></div><div><dt>Costo / margen / margen %</dt><dd>{{ formatCurrency(fila.costoNeto) }} / {{ formatCurrency(fila.margenNeto) }} / {{ formatPercent(fila.margenPorcentaje) }}</dd></div></dl></section>
+                  <section><h5>Período anterior</h5><dl><div><dt>Cantidad anterior</dt><dd>{{ formatNumber(fila.cantidadAnterior) }}</dd></div><div><dt>Venta anterior</dt><dd>{{ formatCurrency(fila.ventaAnterior) }}</dd></div><div><dt>Margen anterior</dt><dd>{{ formatCurrency(fila.margenAnterior) }}</dd></div><div><dt>Días con venta</dt><dd>{{ formatNumber(fila.diasConVentaAnterior, 0) }}</dd></div></dl></section>
+                  <section><h5>Actividad</h5><dl><div><dt>Promedio diario</dt><dd>{{ formatNumber(fila.promedioDiario) }}</dd></div><div><dt>Días con venta / frecuencia</dt><dd>{{ fila.diasConVenta }} / {{ formatPercent(fila.frecuenciaVenta) }}</dd></div><div><dt>Última venta</dt><dd>{{ formatDate(fila.ultimaVenta) }}</dd></div><div><dt>Días desde última venta</dt><dd>{{ fila.diasDesdeUltimaVenta ?? '—' }}</dd></div></dl></section>
+                  <section><h5>Evolución y proveedor</h5><dl><div><dt>Variación cantidad</dt><dd>{{ formatPercent(fila.variacionCantidad, true) }}</dd></div><div><dt>Variación ventas</dt><dd>{{ formatPercent(fila.variacionVenta, true) }}</dd></div><div><dt>Participación proveedor</dt><dd>{{ formatPercent(fila.participacionProveedor) }}</dd></div></dl></section>
+                </div>
+              </article></td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="local-empty">No hay productos que coincidan con la búsqueda.</div>
+  }
+</section>

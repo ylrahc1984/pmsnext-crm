@@ -27,6 +27,10 @@ export class ErrorInterceptor implements HttpInterceptor {
       return;
     }
 
+    if (this.isComprasReportingEndpoint(requestUrl) && (error.status === 400 || error.status === 404)) {
+      return;
+    }
+
     switch (error.status) {
       case 401:
         break;
@@ -70,5 +74,9 @@ export class ErrorInterceptor implements HttpInterceptor {
 
   private isAuthEndpoint(url: string | null): boolean {
     return !!url && /\/login\/(login|refresh|logout)$/i.test(url);
+  }
+
+  private isComprasReportingEndpoint(url: string | null): boolean {
+    return !!url && /\/reportes\/compras\/(analitico-ventas-proveedor|analitico-compras-proveedor|rotacion-productos|alertas-productos-sin-movimiento)(?:\?|$)/i.test(url);
   }
 }

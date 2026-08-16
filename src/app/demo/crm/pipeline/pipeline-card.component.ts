@@ -89,7 +89,7 @@ export class PipelineCardComponent {
     }
 
     if (opportunity.tieneCotizacion) {
-      void this.router.navigate(['/demo/ordenes-pedido'], {
+      void this.router.navigate(['/ventas/pedidos'], {
         queryParams: {
           tipOrden: opportunity.tipNDP || 'COT',
           nomCliente: opportunity.clienteNombre || '',

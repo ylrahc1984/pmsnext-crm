@@ -104,6 +104,16 @@ const routes: Routes = [
       {
         path: 'cotizaciones',
         loadComponent: () => import('./demo/ventas/cotizaciones/cotizaciones.component').then((c) => c.CotizacionesComponent)
+      },
+      {
+        path: 'pedidos',
+        loadComponent: () =>
+          import('./demo/orden-pedido/pages/orden-pedido-list/orden-pedido-list.component').then((c) => c.OrdenPedidoListComponent)
+      },
+      {
+        path: 'pedidos/nuevo',
+        loadComponent: () =>
+          import('./demo/orden-pedido/pages/orden-pedido-form/orden-pedido-form.component').then((c) => c.OrdenPedidoFormComponent)
       }
     ]
   },
@@ -187,24 +197,27 @@ const routes: Routes = [
       },
       {
         path: 'suplidores',
-        loadComponent: () => import('./demo/catalogos/suplidores/suplidores.component').then((c) => c.SuplidoresComponent)
+        redirectTo: '/catalogos/suplidores',
+        pathMatch: 'full'
       },
       {
         path: 'suplidores/nuevo',
-        loadComponent: () => import('./demo/catalogos/suplidores/suplidor-form.component').then((c) => c.SuplidorFormComponent)
+        redirectTo: '/catalogos/suplidores/nuevo',
+        pathMatch: 'full'
       },
       {
         path: 'suplidores/editar/:codSuplidor',
-        loadComponent: () => import('./demo/catalogos/suplidores/suplidor-form.component').then((c) => c.SuplidorFormComponent)
+        redirectTo: '/catalogos/suplidores/editar/:codSuplidor',
+        pathMatch: 'full'
       },
       {
         path: 'ordenes-pedido',
-        redirectTo: '/demo/ordenes-pedido',
+        redirectTo: '/ventas/pedidos',
         pathMatch: 'full'
       },
       {
         path: 'ordenes-pedido/nuevo',
-        redirectTo: '/demo/ordenes-pedido/nuevo',
+        redirectTo: '/ventas/pedidos/nuevo',
         pathMatch: 'full'
       }
     ]
@@ -217,13 +230,13 @@ const routes: Routes = [
     children: [
       {
         path: 'ordenes-pedido',
-        loadComponent: () =>
-          import('./demo/orden-pedido/pages/orden-pedido-list/orden-pedido-list.component').then((c) => c.OrdenPedidoListComponent)
+        redirectTo: '/ventas/pedidos',
+        pathMatch: 'full'
       },
       {
         path: 'ordenes-pedido/nuevo',
-        loadComponent: () =>
-          import('./demo/orden-pedido/pages/orden-pedido-form/orden-pedido-form.component').then((c) => c.OrdenPedidoFormComponent)
+        redirectTo: '/ventas/pedidos/nuevo',
+        pathMatch: 'full'
       }
     ]
   },
@@ -370,6 +383,18 @@ const routes: Routes = [
         loadComponent: () => import('./demo/catalogos/agencias-comisionistas/cliente-form.component').then((c) => c.ClienteFormComponent),
         data: { readOnly: true }
       },
+      {
+        path: 'suplidores',
+        loadComponent: () => import('./demo/catalogos/suplidores/suplidores.component').then((c) => c.SuplidoresComponent)
+      },
+      {
+        path: 'suplidores/nuevo',
+        loadComponent: () => import('./demo/catalogos/suplidores/suplidor-form.component').then((c) => c.SuplidorFormComponent)
+      },
+      {
+        path: 'suplidores/editar/:codSuplidor',
+        loadComponent: () => import('./demo/catalogos/suplidores/suplidor-form.component').then((c) => c.SuplidorFormComponent)
+      },
     ]
   },
   {
@@ -483,42 +508,22 @@ const routes: Routes = [
   },
   {
     path: 'agencias-comisionistas',
-    component: AdminComponent,
-    children: [
-      {
-        path: '',
-        loadComponent: () => import('./demo/catalogos/agencias-comisionistas/agencias-comisionistas.component').then((c) => c.AgenciasComisionistasComponent)
-      }
-    ]
+    redirectTo: 'catalogos/clientes',
+    pathMatch: 'full'
   },
   {
     path: 'suplidores',
-    redirectTo: 'comercial/suplidores',
+    redirectTo: 'catalogos/suplidores',
     pathMatch: 'full'
   },
   {
     path: 'suplidores/nuevo',
-    redirectTo: 'comercial/suplidores/nuevo',
+    redirectTo: 'catalogos/suplidores/nuevo',
     pathMatch: 'full'
   },
   {
     path: 'suplidores/editar/:codSuplidor',
-    redirectTo: 'comercial/suplidores/editar/:codSuplidor',
-    pathMatch: 'full'
-  },
-  {
-    path: 'catalogos/suplidores',
-    redirectTo: 'comercial/suplidores',
-    pathMatch: 'full'
-  },
-  {
-    path: 'catalogos/suplidores/nuevo',
-    redirectTo: 'comercial/suplidores/nuevo',
-    pathMatch: 'full'
-  },
-  {
-    path: 'catalogos/suplidores/editar/:codSuplidor',
-    redirectTo: 'comercial/suplidores/editar/:codSuplidor',
+    redirectTo: 'catalogos/suplidores/editar/:codSuplidor',
     pathMatch: 'full'
   },
   {
