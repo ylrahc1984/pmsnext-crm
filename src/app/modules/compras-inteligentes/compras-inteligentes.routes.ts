@@ -12,6 +12,11 @@ export const COMPRAS_INTELIGENTES_ROUTES: Routes = [
       import('./pages/dashboard/compras-inteligentes-dashboard.component').then((c) => c.ComprasInteligentesDashboardComponent)
   },
   {
+    path: 'inventario',
+    loadComponent: () =>
+      import('./pages/inventario/compras-inventario.component').then((c) => c.ComprasInventarioComponent)
+  },
+  {
     path: 'analisis',
     loadComponent: () =>
       import('./pages/analisis/compras-analisis-workspace.component').then((c) => c.ComprasAnalisisWorkspaceComponent)

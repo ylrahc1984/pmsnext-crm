@@ -1,0 +1,202 @@
+<section class="ci-page inventory-page">
+  <header class="ci-header">
+    <div>
+      <span class="ci-header__eyebrow"><i class="feather icon-package" aria-hidden="true"></i> Compras</span>
+      <h1>Inventario</h1>
+      <p>Consulte existencias, movimientos y valorización del inventario por período, almacén y proveedor.</p>
+    </div>
+    <div class="inventory-equation" aria-label="Inventario inicial más entradas menos salidas igual a inventario final">
+      <span>Inventario inicial</span><b>+</b><span>Entradas</span><b>−</b><span>Salidas</span><b>=</b><strong>Inventario final</strong>
+    </div>
+  </header>
+
+  <form class="ci-filter-shell" [formGroup]="form" (ngSubmit)="consultar()">
+    <div class="ci-filter-shell__heading">
+      <div><strong>Filtros de consulta</strong><span>El proveedor es opcional; la consulta y paginación se realizan en el servidor</span></div>
+    </div>
+    <div class="inventory-filter-grid">
+      <label>
+        <span>Fecha desde *</span>
+        <input class="form-control" type="date" formControlName="fechaDesde" />
+      </label>
+      <label>
+        <span>Fecha hasta *</span>
+        <input class="form-control" type="date" formControlName="fechaHasta" />
+      </label>
+      <label>
+        <span>Almacén *</span>
+        <select class="form-select" formControlName="codAlmacen">
+          <option value="" disabled>Seleccione un almacén</option>
+          @for (almacen of almacenes(); track almacen.CAC05_CodAlmacen) {
+            <option [value]="almacen.CAC05_CodAlmacen">{{ almacen.CAC05_NomAlmacen }}</option>
+          }
+        </select>
+      </label>
+      <label class="provider-autocomplete">
+        <span>Proveedor</span>
+        <div class="provider-control">
+          <input
+            class="form-control"
+            type="search"
+            formControlName="proveedorSearch"
+            placeholder="Todos los proveedores"
+            autocomplete="off"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="proveedorMenuVisible()"
+            (focus)="mostrarProveedores()"
+            (blur)="ocultarProveedores()"
+            (keydown.escape)="ocultarProveedores()"
+          />
+          @if (form.controls.proveedorSearch.value) {
+            <button class="provider-clear" type="button" aria-label="Quitar proveedor" (mousedown)="$event.preventDefault()" (click)="limpiarProveedor()">
+              <i class="feather icon-x" aria-hidden="true"></i>
+            </button>
+          }
+        </div>
+        @if (proveedorMenuVisible() && form.controls.proveedorSearch.value.trim().length >= 2) {
+          <div class="provider-menu" role="listbox">
+            @if (proveedoresLoading()) {
+              <div class="provider-message" role="status">Buscando proveedores...</div>
+            } @else if (proveedores().length) {
+              @for (proveedor of proveedores(); track proveedor.codigo) {
+                <button type="button" role="option" (mousedown)="$event.preventDefault()" (click)="seleccionarProveedor(proveedor)">
+                  <strong>{{ proveedor.descripcion }}</strong>
+                  <span>{{ proveedor.codigo }} · {{ proveedor.ruc || 'Sin RUC' }}</span>
+                </button>
+              }
+            } @else {
+              <div class="provider-message">No se encontraron proveedores.</div>
+            }
+          </div>
+        }
+        @if (submitted() && form.controls.proveedorSearch.value.trim() && !form.controls.codProveedor.value) {
+          <small class="control-error">Seleccione un proveedor de la lista o deje el campo vacío.</small>
+        }
+      </label>
+      <div class="filter-action">
+        <button class="btn btn-primary" type="submit" [disabled]="catalogosLoading() || estado() === 'loading'">
+          <i class="feather icon-search" aria-hidden="true"></i>
+          {{ estado() === 'loading' ? 'Consultando...' : 'Consultar' }}
+        </button>
+      </div>
+    </div>
+    @if (submitted() && (form.invalid || form.controls.fechaDesde.value > form.controls.fechaHasta.value)) {
+      <div class="filter-error" role="alert">Seleccione un almacén y un período válido; la fecha inicial no puede superar la fecha final.</div>
+    }
+  </form>
+
+  @switch (estado()) {
+    @case ('initial') {
+      <section class="inventory-state">
+        <i class="feather icon-calendar" aria-hidden="true"></i>
+        <div><strong>Defina el período que desea analizar</strong><p>Seleccione las fechas, el almacén y, si corresponde, un proveedor específico.</p></div>
+      </section>
+    }
+    @case ('loading') {
+      <section class="inventory-loading" role="status" aria-label="Consultando inventario">
+        <div class="loading-context"></div>
+        <div class="loading-table">@for (item of [1, 2, 3, 4, 5]; track item) { <span></span> }</div>
+      </section>
+    }
+    @case ('empty') {
+      <section class="inventory-state">
+        <i class="feather icon-inbox" aria-hidden="true"></i>
+        <div><strong>No se encontraron movimientos de inventario para los filtros seleccionados.</strong><p>Revise el período, almacén o proveedor e intente nuevamente.</p></div>
+      </section>
+    }
+    @case ('error') {
+      <section class="inventory-state inventory-state--error" role="alert">
+        <i class="feather icon-alert-circle" aria-hidden="true"></i>
+        <div><strong>No se pudo completar la consulta</strong><p>{{ mensajeError() }}</p><button class="btn btn-outline-primary btn-sm" type="button" (click)="consultar()">Reintentar</button></div>
+      </section>
+    }
+    @case ('data') {
+      @if (filtrosAplicados(); as contexto) {
+        <section class="query-context" aria-label="Contexto de la consulta">
+          <div><span>Período</span><strong>{{ contexto.periodo }}</strong></div>
+          <div><span>Almacén</span><strong>{{ contexto.almacen }}</strong></div>
+          <div><span>Proveedor</span><strong>{{ contexto.proveedor }}</strong></div>
+        </section>
+      }
+
+      <section class="inventory-card">
+        <header class="inventory-card__header">
+          <div><h2>Movimiento por producto</h2><p>El stock final mostrado es el valor oficial informado por el backend.</p></div>
+          <span>{{ paginacion().totalRows | number: '1.0-0' }} productos</span>
+        </header>
+        <div class="inventory-table-wrap">
+          <table class="inventory-table">
+            <thead>
+              <tr>
+                <th>Producto</th><th class="numeric">Stock inicial</th><th class="numeric">Entradas</th><th class="numeric">Salidas</th>
+                <th class="numeric final-column">Stock final</th><th class="numeric">Variación</th><th class="numeric">Valor final</th><th class="action-column"><span class="visually-hidden">Detalle</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filas(); track rowKey(fila)) {
+                <tr class="inventory-row" [class.inventory-row--expanded]="detalleVisible(fila)">
+                  <td data-label="Producto" class="product-cell"><strong>{{ fila.producto }}</strong><small>{{ fila.codProducto }} · {{ fila.unidadMedida }}</small></td>
+                  <td data-label="Stock inicial" class="numeric">{{ formatNumber(fila.stockInicialPeriodo) }}</td>
+                  <td data-label="Entradas" class="numeric movement-in">+{{ formatNumber(totalEntradas(fila)) }}</td>
+                  <td data-label="Salidas" class="numeric movement-out">−{{ formatNumber(totalSalidas(fila)) }}</td>
+                  <td data-label="Stock final" class="numeric final-stock">{{ formatNumber(fila.stockFinalPeriodo) }}</td>
+                  <td data-label="Variación" class="numeric variation-cell" [class]="'numeric variation-cell variation-cell--' + variacionTone(fila.variacionUnidades)">
+                    <strong>{{ formatSignedNumber(fila.variacionUnidades) }} unid.</strong><small>{{ formatCurrency(fila.variacionValor, true) }}</small>
+                  </td>
+                  <td data-label="Valor final" class="numeric money-cell">{{ formatCurrency(fila.valorInventarioFinal) }}</td>
+                  <td class="action-column">
+                    <button type="button" class="detail-button" [attr.aria-expanded]="detalleVisible(fila)" [attr.aria-label]="(detalleVisible(fila) ? 'Ocultar' : 'Ver') + ' detalle de ' + fila.producto" (click)="alternarDetalle(fila)">
+                      <i class="feather" [class.icon-chevron-down]="!detalleVisible(fila)" [class.icon-chevron-up]="detalleVisible(fila)" aria-hidden="true"></i>
+                    </button>
+                  </td>
+                </tr>
+                @if (detalleVisible(fila)) {
+                  <tr class="detail-row">
+                    <td colspan="8">
+                      <div class="inventory-detail">
+                        <section class="movement-detail">
+                          <header><h3>Movimiento del período</h3><span>{{ formatDate(fila.fechaDesde) }} – {{ formatDate(fila.fechaHasta) }}</span></header>
+                          <div class="movement-equation">
+                            <div><span>Stock inicial</span><strong>{{ formatNumber(fila.stockInicialPeriodo) }}</strong></div><b>+</b>
+                            <div class="is-entry"><span>Entradas</span><strong>{{ formatNumber(totalEntradas(fila)) }}</strong></div><b>−</b>
+                            <div class="is-exit"><span>Salidas</span><strong>{{ formatNumber(totalSalidas(fila)) }}</strong></div><b>=</b>
+                            <div class="is-final"><span>Stock final</span><strong>{{ formatNumber(fila.stockFinalPeriodo) }}</strong></div>
+                          </div>
+                          <div class="movement-breakdown">
+                            <dl><dt>Entradas</dt><div><span>Compras</span><strong>+{{ formatNumber(fila.comprasPeriodo) }}</strong></div><div><span>NC ventas</span><strong>+{{ formatNumber(fila.ncVentasPeriodo) }}</strong></div><div><span>Otras entradas</span><strong>+{{ formatNumber(fila.entradasPeriodo) }}</strong></div><div><span>Ajustes positivos</span><strong>+{{ formatNumber(fila.ajustesPositivosPeriodo) }}</strong></div></dl>
+                            <dl><dt>Salidas</dt><div><span>Ventas</span><strong>−{{ formatNumber(fila.ventasPeriodo) }}</strong></div><div><span>NC compras</span><strong>−{{ formatNumber(fila.ncComprasPeriodo) }}</strong></div><div><span>Otras salidas</span><strong>−{{ formatNumber(fila.salidasPeriodo) }}</strong></div><div><span>Producción</span><strong>−{{ formatNumber(fila.produccionPeriodo) }}</strong></div><div><span>Ajustes negativos</span><strong>−{{ formatNumber(fila.ajustesNegativosPeriodo) }}</strong></div></dl>
+                          </div>
+                        </section>
+                        <section class="valuation-detail">
+                          <header><h3>Valorización</h3></header>
+                          <dl><div><dt>Costo referencia</dt><dd>{{ formatCurrency(fila.costoReferencia) }}</dd></div><div><dt>Valor inventario inicial</dt><dd>{{ formatCurrency(fila.valorInventarioInicial) }}</dd></div><div class="emphasis"><dt>Valor inventario final</dt><dd>{{ formatCurrency(fila.valorInventarioFinal) }}</dd></div><div [class]="'variation-value variation-value--' + variacionTone(fila.variacionValor)"><dt>Variación de valor</dt><dd>{{ formatCurrency(fila.variacionValor, true) }}</dd></div></dl>
+                        </section>
+                        <section class="history-detail">
+                          <header><h3>Reconstrucción histórica</h3><span>Origen del saldo inicial</span></header>
+                          <div class="history-equation">
+                            <div><span>Inventario base</span><small>{{ formatDate(fila.fechaInventarioBase) }}</small><strong>{{ formatNumber(fila.stockInventarioBase) }} unid.</strong></div><b>+</b>
+                            <div><span>Movimientos anteriores</span><small>Antes del período</small><strong>{{ formatSignedNumber(fila.movimientoAnteriorPeriodo) }} unid.</strong></div><b>=</b>
+                            <div><span>Stock inicial</span><small>Al {{ formatDate(fila.fechaDesde) }}</small><strong>{{ formatNumber(fila.stockInicialPeriodo) }} unid.</strong></div>
+                          </div>
+                        </section>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="inventory-pagination">
+          <div><strong>{{ desdeRegistro() | number: '1.0-0' }}–{{ hastaRegistro() | number: '1.0-0' }}</strong> de {{ paginacion().totalRows | number: '1.0-0' }} productos</div>
+          <div class="page-size"><label for="inventory-page-size">Por página</label><select id="inventory-page-size" class="form-select form-select-sm" [value]="paginacion().pageSize" (change)="cambiarTamanoPagina($event)">@for (size of pageSizes; track size) { <option [value]="size">{{ size }}</option> }</select></div>
+          <div class="page-controls">
+            <span>Página {{ paginacion().pageNumber }} de {{ paginacion().totalPages }}</span>
+            <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="paginacion().pageNumber <= 1 || estado() === 'loading'" (click)="cambiarPagina(paginacion().pageNumber - 1)" aria-label="Página anterior"><i class="feather icon-chevron-left"></i></button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="paginacion().pageNumber >= paginacion().totalPages || estado() === 'loading'" (click)="cambiarPagina(paginacion().pageNumber + 1)" aria-label="Página siguiente"><i class="feather icon-chevron-right"></i></button>
+          </div>
+        </footer>
+      </section>
+    }
+  }
+</section>

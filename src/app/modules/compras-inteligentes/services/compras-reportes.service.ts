@@ -13,6 +13,10 @@ import {
   RotacionProducto,
   RotacionProductosRequest
 } from '../interfaces/compras-reportes.interface';
+import {
+  InventarioHistoricoRequest,
+  InventarioHistoricoResponse
+} from '../interfaces/inventario-historico.interface';
 
 @Injectable({ providedIn: 'root' })
 export class ComprasReportesService {
@@ -62,6 +66,19 @@ export class ComprasReportesService {
         DiasAlerta: params.diasAlerta,
         CodProveedor: params.codProveedor,
         CodProducto: params.codProducto
+      })
+    });
+  }
+
+  getInventarioHistorico(params: InventarioHistoricoRequest): Observable<InventarioHistoricoResponse> {
+    return this.http.get<InventarioHistoricoResponse>(`${this.baseUrl}/inventario-historico`, {
+      params: this.buildParams({
+        fechaDesde: params.fechaDesde,
+        fechaHasta: params.fechaHasta,
+        codAlmacen: params.codAlmacen,
+        codProveedor: params.codProveedor,
+        pageNumber: params.pageNumber,
+        pageSize: params.pageSize
       })
     });
   }

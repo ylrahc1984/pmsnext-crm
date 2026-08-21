@@ -92,6 +92,14 @@ export const NavigationItems: NavigationItem[] = [
             classes: 'nav-item'
           },
           {
+            id: 'compras-inventario',
+            title: 'Inventario',
+            type: 'item',
+            url: '/compras-inteligentes/inventario',
+            icon: 'feather icon-package',
+            classes: 'nav-item'
+          },
+          {
             id: 'compras-analisis',
             title: 'Análisis',
             type: 'item',
