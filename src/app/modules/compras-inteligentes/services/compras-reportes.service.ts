@@ -13,10 +13,7 @@ import {
   RotacionProducto,
   RotacionProductosRequest
 } from '../interfaces/compras-reportes.interface';
-import {
-  InventarioHistoricoRequest,
-  InventarioHistoricoResponse
-} from '../interfaces/inventario-historico.interface';
+import { InventarioHistoricoRequest, InventarioHistoricoResponse } from '../interfaces/inventario-historico.interface';
 
 @Injectable({ providedIn: 'root' })
 export class ComprasReportesService {
@@ -78,7 +75,9 @@ export class ComprasReportesService {
         codAlmacen: params.codAlmacen,
         codProveedor: params.codProveedor,
         pageNumber: params.pageNumber,
-        pageSize: params.pageSize
+        pageSize: params.pageSize,
+        stockFilter: params.stockFilter,
+        stockTolerance: params.stockTolerance
       })
     });
   }

@@ -17,6 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "aot": true,
             "allowedCommonJsDependencies": ["apexcharts", "sweetalert2"],
             "outputPath": "dist",
             "index": "src/index.html",

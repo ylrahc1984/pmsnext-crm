@@ -35,8 +35,23 @@ export interface InventarioHistoricoPaginacion {
   totalPages: number;
 }
 
+export type InventarioHistoricoStockFilter = 0 | 1 | 2 | 3;
+
+export interface InventarioHistoricoResumen {
+  totalRegistrosFiltrados: number;
+  sumStockInicialPeriodo: number;
+  sumStockFinalPeriodo: number;
+  sumMovimientoPeriodo: number;
+  valorInventarioInicialTotal: number;
+  valorInventarioFinalTotal: number;
+  countStockPositivo: number;
+  countStockNegativo: number;
+  countStockCero: number;
+}
+
 export interface InventarioHistoricoResponse {
   paginacion: InventarioHistoricoPaginacion;
+  resumen: InventarioHistoricoResumen;
   datos: InventarioHistoricoRegistro[];
 }
 
@@ -47,4 +62,6 @@ export interface InventarioHistoricoRequest {
   codProveedor?: string;
   pageNumber: number;
   pageSize: number;
+  stockFilter: InventarioHistoricoStockFilter;
+  stockTolerance: number;
 }

@@ -180,16 +180,21 @@ export interface CompraCambioRelevante {
   tone: 'info' | 'warning' | 'neutral';
   relevancia: number;
 }
-export type NivelRotacion = 'MUY RAPIDA' | 'RAPIDA' | 'NORMAL' | 'LENTA' | 'MUY LENTA' | 'SIN DATOS';
-
 export interface RotacionProducto {
   fechaDesde: string;
   fechaHasta: string;
   diasPeriodo: number;
-  codProveedor: string;
+  codProveedor: string | null;
   codProducto: string;
-  producto: string;
+  producto: string | null;
+  unidadMedida: string | null;
+  almacen: string | null;
+  fechaUltimoStockCero: string | null;
+  fechaInicioFIFO: string | null;
   cantidadVendida: number;
+  cantidadVendidaAnalizada: number;
+  cantidadNoAsignadaFIFO: number;
+  porcentajeCoberturaFIFO: number;
   fechaCompraMasAntigua: string | null;
   fechaCompraMasReciente: string | null;
   diasPromedioInventario: number | null;
@@ -197,24 +202,25 @@ export interface RotacionProducto {
   diasMaximoInventario: number | null;
   fechaUltimaVenta: string | null;
   diasInventarioUltimaVenta: number | null;
-  existenciaActual: number;
-  nivelRotacion: NivelRotacion;
 }
 
 export interface RotacionResumen {
   productosAnalizados: number;
   unidadesVendidas: number;
-  productosLentos: number;
-  productosRapidos: number;
-  productosMuyLentos: number;
-  productosStockNegativo: number;
+  unidadesAnalizadas: number;
+  unidadesNoAsignadas: number;
+  coberturaFIFOGlobal: number;
+  tiempoPromedioPonderado: number | null;
 }
 
+export type RangoTiempoRotacion = 'TODOS' | '0_7' | '8_15' | '16_30' | '31_60' | 'MAS_60' | 'SIN_DATOS';
+
 export interface RotacionDistribucion {
-  nivel: NivelRotacion;
+  rango: Exclude<RangoTiempoRotacion, 'TODOS'>;
+  etiqueta: string;
   cantidad: number;
   porcentaje: number;
-  tone: 'success' | 'info' | 'neutral' | 'warning' | 'danger';
+  tone: 'primary' | 'info' | 'neutral';
 }
 
 export interface RotacionHallazgo {

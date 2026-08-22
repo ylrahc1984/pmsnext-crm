@@ -1,11 +1,10 @@
+import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ErpKpiCardComponent } from 'src/app/theme/shared/components/erp-kpi-card/erp-kpi-card.component';
 import {
   ComprasAnalisisFiltros,
   EstadoConsulta,
-  NivelRotacion,
   RotacionDistribucion,
   RotacionHallazgo,
   RotacionProducto,
@@ -13,6 +12,7 @@ import {
 } from '../../../interfaces/compras-reportes.interface';
 import { ComprasReportesService } from '../../../services/compras-reportes.service';
 import { formatDateForApi } from '../../../utils/compras-date.util';
+import { getEtiquetaRangoTiempo, getRangoTiempo, RANGOS_TIEMPO_ROTACION } from '../../../utils/rotacion-analisis.util';
 import { RotacionProductosTableComponent } from './components/rotacion-productos-table/rotacion-productos-table.component';
 
 @Component({
@@ -25,7 +25,6 @@ import { RotacionProductosTableComponent } from './components/rotacion-productos
 })
 export class RotacionAnalisisComponent {
   private readonly service = inject(ComprasReportesService);
-  private readonly niveles: readonly NivelRotacion[] = ['MUY RAPIDA', 'RAPIDA', 'NORMAL', 'LENTA', 'MUY LENTA', 'SIN DATOS'];
 
   readonly filtros = input<ComprasAnalisisFiltros | null>(null);
   readonly loadingChange = output<boolean>();
@@ -36,13 +35,13 @@ export class RotacionAnalisisComponent {
   readonly contexto = computed(() => this.filas()[0] ?? null);
   readonly resumen = computed(() => this.buildResumen(this.filas()));
   readonly distribucion = computed(() => this.buildDistribucion(this.filas()));
-  readonly productosLentos = computed(() => this.filas()
-    .filter((fila) => fila.nivelRotacion === 'LENTA' || fila.nivelRotacion === 'MUY LENTA')
-    .slice().sort((a, b) => (b.diasPromedioInventario ?? -1) - (a.diasPromedioInventario ?? -1)));
-  readonly comparacion = computed(() => this.filas().slice()
-    .sort((a, b) => (b.diasPromedioInventario ?? -1) - (a.diasPromedioInventario ?? -1)).slice(0, 10));
+  readonly comparacion = computed(() => this.filas()
+    .filter((fila) => fila.diasPromedioInventario !== null && fila.diasPromedioInventario !== undefined)
+    .slice()
+    .sort((a, b) => (b.diasPromedioInventario ?? 0) - (a.diasPromedioInventario ?? 0))
+    .slice(0, 10));
   readonly maximoComparacion = computed(() => Math.max(...this.comparacion().map((fila) => fila.diasPromedioInventario ?? 0), 1));
-  readonly hallazgos = computed(() => this.buildHallazgos(this.filas(), this.resumen()));
+  readonly hallazgos = computed(() => this.buildHallazgos(this.filas()));
 
   constructor() {
     effect((onCleanup) => {
@@ -53,7 +52,7 @@ export class RotacionAnalisisComponent {
       this.mensajeError.set(null);
       this.loadingChange.emit(true);
 
-      // El endpoint de rotación no admite almacén.
+      // El endpoint de rotación no admite almacén; el filtro compartido se conserva para las otras perspectivas.
       const subscription = this.service.getRotacionProductos({
         fechaDesde: formatDateForApi(filtros.fechaDesde),
         fechaHasta: formatDateForApi(filtros.fechaHasta),
@@ -76,15 +75,30 @@ export class RotacionAnalisisComponent {
           this.loadingChange.emit(false);
         }
       });
-      onCleanup(() => { subscription.unsubscribe(); this.loadingChange.emit(false); });
+      onCleanup(() => {
+        subscription.unsubscribe();
+        this.loadingChange.emit(false);
+      });
     });
   }
 
   formatNumber(value: number | null | undefined): string {
-    return value === null || value === undefined ? '—' : new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(Number(value));
+    return value === null || value === undefined
+      ? '—'
+      : new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(Number(value));
   }
-  formatDays(value: number | null | undefined): string { return value === null || value === undefined ? '—' : `${this.formatNumber(value)} días`; }
-  formatPercent(value: number): string { return `${new Intl.NumberFormat('es-CR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)}%`; }
+
+  formatDays(value: number | null | undefined): string {
+    return value === null || value === undefined ? '—' : `${this.formatNumber(value)} días`;
+  }
+
+  formatUnits(value: number): string {
+    return `${this.formatNumber(value)} ${value === 1 ? 'unidad' : 'unidades'}`;
+  }
+
+  formatPercent(value: number): string {
+    return `${new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(value)} %`;
+  }
 
   formatDate(value: string | null | undefined): string {
     if (!value) return '—';
@@ -94,51 +108,106 @@ export class RotacionAnalisisComponent {
     return date ? new Intl.DateTimeFormat('es-CR', { day: '2-digit', month: 'short', year: 'numeric' }).format(date) : value;
   }
 
-  nivelTone(nivel: NivelRotacion): string {
-    if (nivel === 'MUY RAPIDA' || nivel === 'RAPIDA') return 'success';
-    if (nivel === 'NORMAL') return 'neutral';
-    if (nivel === 'LENTA') return 'warning';
-    if (nivel === 'MUY LENTA') return 'danger';
-    return 'info';
-  }
-
   comparisonWidth(value: number | null): string {
-    return `${Math.max(2, ((value ?? 0) / this.maximoComparacion()) * 100)}%`;
+    return `${value === null ? 0 : Math.max(2, (value / this.maximoComparacion()) * 100)}%`;
   }
 
   private buildResumen(filas: readonly RotacionProducto[]): RotacionResumen {
-    return filas.reduce((acc, fila) => {
-      acc.unidadesVendidas += Number(fila.cantidadVendida) || 0;
-      if (fila.nivelRotacion === 'LENTA' || fila.nivelRotacion === 'MUY LENTA') acc.productosLentos += 1;
-      if (fila.nivelRotacion === 'RAPIDA' || fila.nivelRotacion === 'MUY RAPIDA') acc.productosRapidos += 1;
-      if (fila.nivelRotacion === 'MUY LENTA') acc.productosMuyLentos += 1;
-      if (fila.existenciaActual < 0) acc.productosStockNegativo += 1;
-      return acc;
-    }, { productosAnalizados: filas.length, unidadesVendidas: 0, productosLentos: 0, productosRapidos: 0, productosMuyLentos: 0, productosStockNegativo: 0 });
+    const unidadesVendidas = filas.reduce((total, fila) => total + (Number(fila.cantidadVendida) || 0), 0);
+    const unidadesAnalizadas = filas.reduce((total, fila) => total + (Number(fila.cantidadVendidaAnalizada) || 0), 0);
+    const unidadesNoAsignadas = filas.reduce((total, fila) => total + (Number(fila.cantidadNoAsignadaFIFO) || 0), 0);
+    const productosConPromedio = filas.filter((fila) =>
+      fila.diasPromedioInventario !== null &&
+      fila.diasPromedioInventario !== undefined &&
+      fila.cantidadVendidaAnalizada > 0
+    );
+    const unidadesConPromedio = productosConPromedio.reduce((total, fila) => total + fila.cantidadVendidaAnalizada, 0);
+    const diasPonderados = productosConPromedio.reduce(
+      (total, fila) => total + (fila.diasPromedioInventario ?? 0) * fila.cantidadVendidaAnalizada,
+      0
+    );
+
+    return {
+      productosAnalizados: filas.length,
+      unidadesVendidas,
+      unidadesAnalizadas,
+      unidadesNoAsignadas,
+      coberturaFIFOGlobal: unidadesVendidas > 0 ? (unidadesAnalizadas / unidadesVendidas) * 100 : 0,
+      tiempoPromedioPonderado: unidadesConPromedio > 0 ? diasPonderados / unidadesConPromedio : null
+    };
   }
 
   private buildDistribucion(filas: readonly RotacionProducto[]): RotacionDistribucion[] {
-    const total = filas.length || 1;
-    return this.niveles.map((nivel) => {
-      const cantidad = filas.filter((fila) => fila.nivelRotacion === nivel).length;
-      return { nivel, cantidad, porcentaje: (cantidad / total) * 100, tone: this.nivelTone(nivel) as RotacionDistribucion['tone'] };
+    const total = filas.length;
+    const rangos = RANGOS_TIEMPO_ROTACION.filter((opcion) => opcion.valor !== 'TODOS');
+    return rangos.map((opcion, index) => {
+      const rango = opcion.valor as Exclude<typeof opcion.valor, 'TODOS'>;
+      const cantidad = filas.filter((fila) => getRangoTiempo(fila.diasPromedioInventario) === rango).length;
+      return {
+        rango,
+        etiqueta: getEtiquetaRangoTiempo(rango),
+        cantidad,
+        porcentaje: total > 0 ? (cantidad / total) * 100 : 0,
+        tone: index === rangos.length - 1 ? 'neutral' : index < 2 ? 'primary' : 'info'
+      };
     });
   }
 
-  private buildHallazgos(filas: readonly RotacionProducto[], resumen: RotacionResumen): RotacionHallazgo[] {
+  private buildHallazgos(filas: readonly RotacionProducto[]): RotacionHallazgo[] {
     const hallazgos: RotacionHallazgo[] = [];
-    if (resumen.productosMuyLentos > 0) hallazgos.push({ tipo: 'Rotación muy lenta', mensaje: `${resumen.productosMuyLentos} productos presentan rotación muy lenta.`, tone: 'warning', icono: 'feather icon-clock' });
-    if (resumen.productosLentos > 0) hallazgos.push({ tipo: 'Rotación lenta', mensaje: `${resumen.productosLentos} productos presentan rotación lenta o muy lenta.`, tone: 'warning', icono: 'feather icon-trending-down' });
-    const muyRapidos = filas.filter((fila) => fila.nivelRotacion === 'MUY RAPIDA').length;
-    if (muyRapidos > 0) hallazgos.push({ tipo: 'Rotación muy rápida', mensaje: `${muyRapidos} productos presentan rotación muy rápida.`, tone: 'success', icono: 'feather icon-zap' });
-    filas.filter((fila) => fila.existenciaActual < 0).forEach((fila) => hallazgos.push({ tipo: 'Stock negativo', mensaje: `${fila.producto.trim()} presenta existencia negativa (${this.formatNumber(fila.existenciaActual)}).`, tone: 'danger', icono: 'feather icon-alert-triangle' }));
+    const incluidos = new Set<string>();
+    const agregar = (fila: RotacionProducto, hallazgo: RotacionHallazgo): void => {
+      if (hallazgos.length < 5 && !incluidos.has(fila.codProducto)) {
+        hallazgos.push(hallazgo);
+        incluidos.add(fila.codProducto);
+      }
+    };
+
+    filas
+      .filter((fila) => fila.porcentajeCoberturaFIFO < 100)
+      .slice()
+      .sort((a, b) => b.cantidadNoAsignadaFIFO - a.cantidadNoAsignadaFIFO)
+      .forEach((fila) => agregar(fila, {
+        tipo: fila.producto?.trim() || fila.codProducto,
+        mensaje: `Cobertura FIFO: ${this.formatPercent(fila.porcentajeCoberturaFIFO)}. ${this.formatNumber(fila.cantidadNoAsignadaFIFO)} de ${this.formatNumber(fila.cantidadVendida)} unidades no pudieron trazarse.`,
+        tone: 'warning',
+        icono: 'feather icon-alert-circle'
+      }));
+
+    filas
+      .filter((fila) => (fila.diasPromedioInventario ?? 0) > 30 && fila.cantidadVendidaAnalizada <= 5)
+      .slice()
+      .sort((a, b) => (b.diasPromedioInventario ?? 0) - (a.diasPromedioInventario ?? 0))
+      .forEach((fila) => agregar(fila, {
+        tipo: fila.producto?.trim() || fila.codProducto,
+        mensaje: `${this.formatDays(fila.diasPromedioInventario)} promedio, pero solo ${this.formatUnits(fila.cantidadVendidaAnalizada)} ${fila.cantidadVendidaAnalizada === 1 ? 'analizada' : 'analizadas'}. Interpretar con cautela por el tamaño de la muestra.`,
+        tone: 'info',
+        icono: 'feather icon-info'
+      }));
+
+    filas
+      .filter((fila) => (fila.diasPromedioInventario ?? 0) > 15 && fila.cantidadVendidaAnalizada >= 20)
+      .slice()
+      .sort((a, b) => (b.diasPromedioInventario ?? 0) - (a.diasPromedioInventario ?? 0))
+      .forEach((fila) => agregar(fila, {
+        tipo: fila.producto?.trim() || fila.codProducto,
+        mensaje: `${this.formatUnits(fila.cantidadVendidaAnalizada)} ${fila.cantidadVendidaAnalizada === 1 ? 'analizada' : 'analizadas'} con ${this.formatDays(fila.diasPromedioInventario)} promedio.`,
+        tone: 'info',
+        icono: 'feather icon-bar-chart-2'
+      }));
+
     return hallazgos;
   }
 
   private handleError(error: HttpErrorResponse): void {
     this.filas.set([]);
-    if (error.status === 404) { this.estado.set('empty'); return; }
-    this.mensajeError.set(error.status === 400 ? this.safeBackendMessage(error) || 'Revise los filtros seleccionados.' : 'No fue posible obtener el análisis de rotación. Intente nuevamente.');
+    if (error.status === 404) {
+      this.estado.set('empty');
+      return;
+    }
+    this.mensajeError.set(error.status === 400
+      ? this.safeBackendMessage(error) || 'Revise los filtros seleccionados.'
+      : 'No fue posible obtener el análisis de rotación. Intente nuevamente.');
     this.estado.set('error');
   }
 
@@ -149,4 +218,3 @@ export class RotacionAnalisisComponent {
     return typeof message === 'string' && message.length <= 240 ? message : null;
   }
 }
-

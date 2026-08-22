@@ -1,9 +1,61 @@
 <section class="rotation-table-card">
-  <header class="rotation-table-header"><div><h3>Detalle por producto</h3><p>{{ filasVisibles().length }} de {{ filas().length }} productos</p></div><div class="table-tools"><label><span class="visually-hidden">Buscar producto</span><input class="form-control form-control-sm" type="search" placeholder="Buscar producto..." [value]="busqueda()" (input)="actualizarBusqueda($event)"/></label><label class="negative-check"><input type="checkbox" [checked]="soloStockNegativo()" (change)="actualizarStockNegativo($event)"/><span>Solo stock negativo</span></label></div></header>
-  <nav class="level-filters" aria-label="Filtrar por nivel de rotación">@for(item of niveles;track item){<button type="button" [class.active]="nivel()===item" (click)="seleccionarNivel(item)">{{ item==='TODOS'?'Todos':item }}</button>}</nav>
-  @if(filasVisibles().length){<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Producto</th><th class="number"><button type="button" (click)="ordenar('cantidadVendida')">Cantidad vendida {{ iconoOrden('cantidadVendida') }}</button></th><th class="number" title="Promedio de días transcurridos entre la compra y la venta de las unidades analizadas."><button type="button" (click)="ordenar('diasPromedioInventario')">Promedio {{ iconoOrden('diasPromedioInventario') }}</button></th><th class="number" title="Menor tiempo observado entre compra y venta."><button type="button" (click)="ordenar('diasMinimoInventario')">Mínimo {{ iconoOrden('diasMinimoInventario') }}</button></th><th class="number" title="Mayor tiempo observado entre compra y venta."><button type="button" (click)="ordenar('diasMaximoInventario')">Máximo {{ iconoOrden('diasMaximoInventario') }}</button></th><th>Última venta</th><th class="number" title="Tiempo transcurrido entre la compra y la venta de las unidades asociadas a la última venta analizada."><button type="button" (click)="ordenar('diasInventarioUltimaVenta')">Rotación última venta {{ iconoOrden('diasInventarioUltimaVenta') }}</button></th><th class="number" title="Existencia física actual del producto."><button type="button" (click)="ordenar('existenciaActual')">Existencia actual {{ iconoOrden('existenciaActual') }}</button></th><th>Nivel</th><th><span class="visually-hidden">Detalle</span></th></tr></thead><tbody>
-    @for(fila of filasVisibles();track fila.codProducto){<tr [class.negative-row]="fila.existenciaActual<0"><td><strong class="product-name">{{ fila.producto }}</strong><small>{{ fila.codProducto }}</small></td><td class="number">{{ formatNumber(fila.cantidadVendida) }}</td><td class="number"><strong>{{ formatDays(fila.diasPromedioInventario) }}</strong></td><td class="number">{{ formatDays(fila.diasMinimoInventario) }}</td><td class="number">{{ formatDays(fila.diasMaximoInventario) }}</td><td>{{ formatDate(fila.fechaUltimaVenta) }}</td><td class="number">{{ formatDays(fila.diasInventarioUltimaVenta) }}</td><td class="number"><span [class.stock-negative]="fila.existenciaActual<0">{{ formatNumber(fila.existenciaActual) }}</span>@if(fila.existenciaActual<0){<small class="anomaly">Stock negativo</small>}</td><td><span class="level-badge" [class]="'level-badge level-badge--'+nivelTone(fila.nivelRotacion)">{{ fila.nivelRotacion }}</span></td><td><button class="detail-button" type="button" [attr.aria-expanded]="expandido()===fila.codProducto" [attr.aria-label]="'Ver detalle de '+fila.producto" (click)="alternarDetalle(fila.codProducto)"><i class="feather" [class.icon-chevron-down]="expandido()!==fila.codProducto" [class.icon-chevron-up]="expandido()===fila.codProducto"></i></button></td></tr>
-      @if(expandido()===fila.codProducto){<tr class="detail-row"><td colspan="10"><article class="rotation-detail"><header><div><h4>{{ fila.producto }}</h4><span>{{ fila.codProducto }}</span></div><span class="level-badge" [class]="'level-badge level-badge--'+nivelTone(fila.nivelRotacion)">{{ fila.nivelRotacion }}</span></header><div class="detail-grid"><section><h5>Ventas</h5><dl><div><dt>Cantidad vendida</dt><dd>{{ formatNumber(fila.cantidadVendida) }}</dd></div><div><dt>Última venta</dt><dd>{{ formatDate(fila.fechaUltimaVenta) }}</dd></div></dl></section><section><h5>Rotación compra → venta</h5><dl><div><dt>Promedio</dt><dd>{{ formatDays(fila.diasPromedioInventario) }}</dd></div><div><dt>Mínimo / máximo</dt><dd>{{ formatDays(fila.diasMinimoInventario) }} / {{ formatDays(fila.diasMaximoInventario) }}</dd></div><div><dt>Tiempo de la última venta</dt><dd>{{ formatDays(fila.diasInventarioUltimaVenta) }}</dd></div></dl></section><section><h5>Compras relacionadas</h5><dl><div><dt>Más antigua</dt><dd>{{ formatDate(fila.fechaCompraMasAntigua) }}</dd></div><div><dt>Más reciente</dt><dd>{{ formatDate(fila.fechaCompraMasReciente) }}</dd></div></dl></section><section><h5>Inventario actual</h5><dl><div><dt>Existencia física</dt><dd [class.stock-negative]="fila.existenciaActual<0">{{ formatNumber(fila.existenciaActual) }}</dd></div></dl><p>La existencia actual no representa la antigüedad de esas unidades.</p></section></div></article></td></tr>}
+  <header class="rotation-table-header">
+    <div><h3>Detalle por producto</h3><p>{{ filasVisibles().length }} de {{ filas().length }} productos</p></div>
+    <div class="table-tools"><label><span class="visually-hidden">Buscar producto por nombre o código</span><input class="form-control form-control-sm" type="search" placeholder="Buscar producto o código..." [value]="busqueda()" (input)="actualizarBusqueda($event)" /></label></div>
+  </header>
+
+  <nav class="range-filters" aria-label="Filtrar por tiempo promedio de permanencia">
+    @for (item of rangos; track item.valor) {
+      <button type="button" [class.active]="rango() === item.valor" [attr.aria-pressed]="rango() === item.valor" (click)="seleccionarRango(item.valor)">{{ item.etiqueta }}</button>
     }
-  </tbody></table></div>}@else{<div class="local-empty">No hay productos que coincidan con los filtros locales.</div>}
+  </nav>
+
+  @if (filasVisibles().length) {
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr>
+          <th>Producto</th>
+          <th class="number"><button type="button" (click)="ordenar('cantidadVendida')">Ventas {{ iconoOrden('cantidadVendida') }}</button></th>
+          <th class="number" title="Proporción de unidades vendidas asociadas a compras anteriores mediante FIFO."><button type="button" (click)="ordenar('porcentajeCoberturaFIFO')">Cobertura FIFO {{ iconoOrden('porcentajeCoberturaFIFO') }}</button></th>
+          <th title="Rango de compras asociadas mediante FIFO a las ventas analizadas.">Compras asociadas</th>
+          <th class="number" title="Promedio ponderado de días entre la compra y la venta de las unidades analizadas."><button type="button" (click)="ordenar('diasPromedioInventario')">Promedio {{ iconoOrden('diasPromedioInventario') }}</button></th>
+          <th class="number">Rango</th>
+          <th><button type="button" (click)="ordenar('fechaUltimaVenta')">Última venta {{ iconoOrden('fechaUltimaVenta') }}</button></th>
+          <th class="number" title="Permanencia FIFO asociada a la última venta analizada."><button type="button" (click)="ordenar('diasInventarioUltimaVenta')">Días últ. venta {{ iconoOrden('diasInventarioUltimaVenta') }}</button></th>
+          <th><span class="visually-hidden">Acciones</span></th>
+        </tr></thead>
+        <tbody>
+          @for (fila of filasVisibles(); track fila.codProducto) {
+            <tr [class.expanded-row]="expandido() === fila.codProducto">
+              <td><strong class="product-name" [title]="fila.producto || fila.codProducto">{{ fila.producto || 'Producto sin nombre' }}</strong><small>{{ fila.codProducto }}</small></td>
+              <td class="number">{{ formatNumber(fila.cantidadVendida) }}@if (fila.cantidadVendidaAnalizada !== fila.cantidadVendida) { <small>{{ formatNumber(fila.cantidadVendidaAnalizada) }} analizadas</small> }</td>
+              <td class="number"><span class="coverage" [class.coverage--incomplete]="fila.cantidadNoAsignadaFIFO > 0" [title]="coberturaTooltip(fila)">{{ formatPercent(fila.porcentajeCoberturaFIFO) }}@if (fila.cantidadNoAsignadaFIFO > 0) { <i class="feather icon-alert-circle" aria-hidden="true"></i> }</span></td>
+              <td><span class="purchase-range" title="Rango de compras asociadas mediante FIFO a las ventas analizadas.">{{ formatRangoCompras(fila.fechaCompraMasAntigua, fila.fechaCompraMasReciente) }}</span></td>
+              <td class="number"><strong class="average-days">{{ formatDays(fila.diasPromedioInventario) }}</strong></td>
+              <td class="number">{{ formatRangoDias(fila.diasMinimoInventario, fila.diasMaximoInventario) }}</td>
+              <td>{{ formatDate(fila.fechaUltimaVenta) }}</td>
+              <td class="number">{{ formatDays(fila.diasInventarioUltimaVenta) }}</td>
+              <td><button class="detail-button" type="button" [attr.aria-expanded]="expandido() === fila.codProducto" [attr.aria-label]="(expandido() === fila.codProducto ? 'Ocultar detalle de ' : 'Ver detalle de ') + (fila.producto || fila.codProducto)" (click)="alternarDetalle(fila.codProducto)"><i class="feather" [class.icon-chevron-down]="expandido() !== fila.codProducto" [class.icon-chevron-up]="expandido() === fila.codProducto" aria-hidden="true"></i></button></td>
+            </tr>
+            @if (expandido() === fila.codProducto) {
+              <tr class="detail-row"><td colspan="9">
+                <article class="rotation-detail">
+                  <header><div><h4>{{ fila.producto || 'Producto sin nombre' }}</h4><span>Código: {{ fila.codProducto }} · Almacén: {{ fila.almacen || '—' }}@if (fila.unidadMedida) { · {{ fila.unidadMedida }} }</span></div></header>
+                  <div class="detail-grid">
+                    <section><h5>Ventas del período</h5><dl><div><dt>Vendidas</dt><dd>{{ formatNumber(fila.cantidadVendida) }}</dd></div><div><dt>Analizadas FIFO</dt><dd>{{ formatNumber(fila.cantidadVendidaAnalizada) }}</dd></div><div><dt>Sin asignar</dt><dd>{{ formatNumber(fila.cantidadNoAsignadaFIFO) }}</dd></div><div><dt>Cobertura</dt><dd>{{ formatPercent(fila.porcentajeCoberturaFIFO) }}</dd></div></dl></section>
+                    <section><h5>Rotación compra → venta</h5><dl><div><dt>Promedio</dt><dd>{{ formatDays(fila.diasPromedioInventario) }}</dd></div><div><dt>Mínimo</dt><dd>{{ formatDays(fila.diasMinimoInventario) }}</dd></div><div><dt>Máximo</dt><dd>{{ formatDays(fila.diasMaximoInventario) }}</dd></div></dl></section>
+                    <section><h5>Compras asociadas</h5><dl><div><dt>Más antigua</dt><dd>{{ formatDate(fila.fechaCompraMasAntigua) }}</dd></div><div><dt>Más reciente</dt><dd>{{ formatDate(fila.fechaCompraMasReciente) }}</dd></div></dl><p>Compras asociadas mediante FIFO a las ventas analizadas.</p></section>
+                    <section><h5>Última venta</h5><dl><div><dt>Fecha</dt><dd>{{ formatDate(fila.fechaUltimaVenta) }}</dd></div><div><dt>Permanencia FIFO</dt><dd>{{ formatDays(fila.diasInventarioUltimaVenta) }}</dd></div></dl></section>
+                    <section class="technical-section"><h5>Información del cálculo</h5><dl><div title="Fecha desde la cual se reconstruyó la secuencia FIFO."><dt>Inicio FIFO</dt><dd>{{ formatDate(fila.fechaInicioFIFO) }}</dd></div><div title="Último punto de referencia de stock cero utilizado por el cálculo."><dt>Último stock cero</dt><dd>{{ formatDate(fila.fechaUltimoStockCero) }}</dd></div></dl><p>Referencias técnicas utilizadas para reconstruir la secuencia FIFO.</p></section>
+                  </div>
+                </article>
+              </td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="local-empty">No hay productos que coincidan con la búsqueda y el rango seleccionados.</div>
+  }
 </section>
